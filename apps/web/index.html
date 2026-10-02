@@ -10,7 +10,8 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="mark">V3D</span><div><strong>VYNDI 3rd DIAMENSION</strong><small>TRAILRELIEF LIVE · VYNDI PRODUCTION</small></div></div>
-    <nav><button id="openAdvanced">Advanced</button><button id="resetView">Reset view</button></nav>
+    <nav><button id="openAdvanced">Advanced</button><button id="resetView">Reset view</button>
+      <button type="button" id="helpOpenBtn" class="ghost">Help</button></nav>
   </header>
 
   <section class="event-ribbon" aria-label="Route event ribbon">
@@ -314,6 +315,24 @@
         <div class="industry-block">
           
         <div class="industry-block">
+          
+        <div class="industry-block">
+          <strong>Pro tools · coastline · stories · print package</strong>
+          <label>Coastline emboss strength (mm)
+            <input id="coastStrength" type="number" min="0.05" max="1.2" step="0.05" value="0.4">
+          </label>
+          <button type="button" id="applyCoastBtn">Apply vector coastline emboss</button>
+          <button type="button" id="textOnlyRegenBtn">Fast regen (shared mesh + text)</button>
+          <button type="button" id="printerPackageBtn">Printer package JSON</button>
+          <p class="hint">Ride Stories (second surface / order narrative)</p>
+          <div id="storiesList" class="stories-list"></div>
+          <div class="mem-bar">
+            <button type="button" id="addStoryBtn">Add chapter</button>
+            <button type="button" id="exportStoriesBtn">Stories PDF</button>
+          </div>
+        </div>
+
+        <div class="industry-block">
           <strong>Fonts · places · geography · memory</strong>
           <label>Rim lettering font
             <select id="rimFont"><option value="expedition">Expedition</option></select>
@@ -447,5 +466,29 @@
   </aside>
 
   <script type="module" src="./app.mjs"></script>
+
+<div id="helpOverlay" class="help-overlay" hidden>
+  <div class="help-card" role="dialog" aria-label="User manual">
+    <header class="help-head">
+      <strong>VYNDI 3rd Diamension — User Manual</strong>
+      <button type="button" id="helpClose" class="ghost">Close</button>
+    </header>
+    <div class="help-body">
+      <nav class="help-toc">
+        <button type="button" data-help="start">1. Quick start</button>
+        <button type="button" data-help="premium">2. Premium medal</button>
+        <button type="button" data-help="fonts">3. Fonts & rim</button>
+        <button type="button" data-help="places">4. Places & geography</button>
+        <button type="button" data-help="coast">5. Coastline emboss</button>
+        <button type="button" data-help="batch">6. Batch & memory</button>
+        <button type="button" data-help="print">7. Printers & formats</button>
+        <button type="button" data-help="stories">8. Ride Stories</button>
+        <button type="button" data-help="tools">9. Pro tools matrix</button>
+      </nav>
+      <article id="helpContent" class="help-content"></article>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -225,3 +225,24 @@ model-viewer{background:radial-gradient(circle at 52% 38%,#2b231d 0,#15100d 34%,
 .geo-grid button{font-size:8px;padding:5px 6px;text-align:left}
 .mem-bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .mem-bar button{font-size:9px}
+
+/* Help manual + advanced surfaces */
+.help-overlay{position:fixed;inset:0;background:#000a;z-index:80;display:grid;place-items:center;padding:16px}
+.help-overlay[hidden]{display:none!important}
+.help-card{width:min(920px,96vw);max-height:90vh;background:#16120f;border:1px solid #4a3a22;border-radius:10px;display:flex;flex-direction:column;box-shadow:0 24px 80px #000c}
+.help-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #3d3228}
+.help-body{display:grid;grid-template-columns:180px 1fr;min-height:0;flex:1;overflow:hidden}
+.help-toc{overflow:auto;border-right:1px solid #2e261f;padding:8px;display:flex;flex-direction:column;gap:4px}
+.help-toc button{text-align:left;font-size:10px;padding:8px;background:transparent;border:1px solid transparent;color:#cbb9a8}
+.help-toc button.active,.help-toc button:hover{border-color:#7a4e1a;background:#2a1c12;color:#ffe2a8}
+.help-content{overflow:auto;padding:16px 18px;font-size:12px;line-height:1.55;color:#e7d3b0}
+.help-content h3{margin:0 0 8px;color:#f0d9a8;font-size:14px}
+.help-content h4{margin:14px 0 6px;color:#d4a24a;font-size:12px}
+.help-content ul{margin:6px 0 10px 18px}
+.help-content code{background:#0f0d0b;padding:1px 5px;border-radius:3px;font-size:11px}
+.help-content table{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}
+.help-content th,.help-content td{border:1px solid #3d3228;padding:6px 8px;text-align:left}
+.stories-list{display:grid;gap:6px;max-height:180px;overflow:auto}
+.story-card{border:1px solid #3d3228;border-radius:4px;padding:6px;background:#0f0d0b;font-size:10px}
+.story-card input,.story-card textarea{width:100%;margin-top:3px}
+#helpOpenBtn{min-width:auto}
