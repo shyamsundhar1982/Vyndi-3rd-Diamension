@@ -227,16 +227,56 @@ function pointInLonLatRing(lat,lon,ring=[]){
   return inside;
 }
 
+export function prepareTerrainLandcover(landcover=[],bounds={}){
+  const minLat=Number(bounds.minLat),maxLat=Number(bounds.maxLat),minLon=Number(bounds.minLon),maxLon=Number(bounds.maxLon);
+  const cols=24,rows=24,cells=new Map(),entries=[];
+  const latSpan=Math.max(1e-9,maxLat-minLat),lonSpan=Math.max(1e-9,maxLon-minLon);
+  const key=(x,y)=>x+":"+y;
+  for(const feature of landcover||[]){
+    if(!["water","forest"].includes(feature?.kind))continue;
+    for(const path of feature.paths||[]){
+      if(!Array.isArray(path)||path.length<3)continue;
+      let a=Infinity,b=-Infinity,l=Infinity,r=-Infinity;
+      for(const p of path){const lat=Number(p?.lat),lon=Number(p?.lon);if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;a=Math.min(a,lat);b=Math.max(b,lat);l=Math.min(l,lon);r=Math.max(r,lon);}
+      if(!Number.isFinite(a))continue;
+      const entry={kind:feature.kind,path,minLat:a,maxLat:b,minLon:l,maxLon:r};entries.push(entry);
+      const x0=Math.max(0,Math.min(cols-1,Math.floor((l-minLon)/lonSpan*cols))),x1=Math.max(0,Math.min(cols-1,Math.floor((r-minLon)/lonSpan*cols)));
+      const y0=Math.max(0,Math.min(rows-1,Math.floor((a-minLat)/latSpan*rows))),y1=Math.max(0,Math.min(rows-1,Math.floor((b-minLat)/latSpan*rows)));
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=key(x,y);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(entry);}
+    }
+  }
+  return {
+    entries,
+    query(lat,lon){
+      if(!Number.isFinite(lat)||!Number.isFinite(lon)||!Number.isFinite(minLat))return entries;
+      const x=Math.max(0,Math.min(cols-1,Math.floor((lon-minLon)/lonSpan*cols))),y=Math.max(0,Math.min(rows-1,Math.floor((lat-minLat)/latSpan*rows)));
+      return cells.get(key(x,y))||[];
+    }
+  };
+}
+
 export function classifyTerrainMaterial(sample={},thresholds={},landcover=[]){
   const lat=Number(sample.lat),lon=Number(sample.lon),elevation=Number(sample.elevation);
   if(Number.isFinite(lat)&&Number.isFinite(lon)){
-    for(const feature of landcover||[]){
-      if(feature?.kind!=="water")continue;
-      if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 4;
-    }
-    for(const feature of landcover||[]){
-      if(feature?.kind!=="forest")continue;
-      if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 1;
+    const candidates=typeof landcover?.query==="function"?landcover.query(lat,lon):null;
+    if(candidates){
+      for(const entry of candidates){
+        if(entry.kind!=="water"||lat<entry.minLat||lat>entry.maxLat||lon<entry.minLon||lon>entry.maxLon)continue;
+        if(pointInLonLatRing(lat,lon,entry.path))return 4;
+      }
+      for(const entry of candidates){
+        if(entry.kind!=="forest"||lat<entry.minLat||lat>entry.maxLat||lon<entry.minLon||lon>entry.maxLon)continue;
+        if(pointInLonLatRing(lat,lon,entry.path))return 1;
+      }
+    }else{
+      for(const feature of landcover||[]){
+        if(feature?.kind!=="water")continue;
+        if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 4;
+      }
+      for(const feature of landcover||[]){
+        if(feature?.kind!=="forest")continue;
+        if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 1;
+      }
     }
   }
   const mountainM=Number.isFinite(Number(thresholds.mountainM))?Number(thresholds.mountainM):1200;
@@ -600,6 +640,26 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   return meshes;
 }
 
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18}={}){
+  if(!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[],occupied=[];
+  const places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class)).slice(0,Math.max(0,maxLabels));
+  for(const place of places){
+    const nx=Number(place.x),ny=Number(place.y);
+    if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
+    if(ny>.56||ny<-.56)continue;
+    const x=nx*radius,y=ny*radius;
+    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<radius*.18))continue;
+    const cell=place.class==="city"?Math.max(.62,radius/82):place.class==="town"?Math.max(.56,radius/94):Math.max(.50,radius/108);
+    const labels=textLineMeshes(String(place.name),{
+      centerX:x,centerY:y,maxWidth:radius*.42,cellMm:cell,riseMm:.38,
+      terrainTopMm,inside:(px,py)=>insideNormalized(px/radius,py/radius)
+    });
+    if(labels.length){meshes.push(...labels);occupied.push({x,y});}
+  }
+  return meshes;
+}
+
 function modelExtents(config,projection,outlinePolygons){
   const kind=config.shape.kind,radius=projection.radius;
   if(kind==="route-fit")return {minX:-projection.widthMm/2,maxX:projection.widthMm/2,minY:-projection.heightMm/2,maxY:projection.heightMm/2};
@@ -630,7 +690,7 @@ function makePockets(config,extents){
   ];
 }
 
-function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainTopMm,points,cartography,extents}){
+function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents}){
   const widthMm=extents.maxX-extents.minX,heightMm=extents.maxY-extents.minY;
   const adaptive=adaptiveLargeFormatPlan({
     widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:config.fabrication.maxTileMm
@@ -657,7 +717,10 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
         }
         return depth;
       },
-      regionAt:()=>0
+      regionAt:(lx,ly)=>{
+        const gx=centerX+lx,gy=centerY+ly;
+        return terrainRegionNormalized(gx/projection.radius,gy/projection.radius);
+      }
     });
     const clip={minX:centerX-tile.widthMm/2,maxX:centerX+tile.widthMm/2,minY:centerY-tile.heightMm/2,maxY:centerY+tile.heightMm/2};
     const overlays=featureMeshes({points,cartography,config,projection,terrainTopMm,insideNormalized,clipRect:clip,offsetX:centerX,offsetY:centerY});
@@ -707,9 +770,10 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     return Math.max(0,Math.min(c.fabrication.reliefMm,corrected));
   };
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
+  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const terrainRegionNormalized=(nx,ny)=>{
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
-    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcover);
+    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
   };
   const extents=modelExtents(c,projection,outlinePolygons),pockets=makePockets(c,extents);
   let baseMesh;
@@ -739,11 +803,12 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized,routePoints:points});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7))
   });
-  const meshes=[baseMesh,...overlays,...logos,...textMeshes];
+  const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){
     const outer=7,inner=3,centerY=extents.maxY+outer*.55;
     meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
@@ -762,7 +827,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   ]);
   let tilePlan=null,tileBundle=null;
   if(c.fabrication.tiled){
-    const tiled=buildTileBundle({config:c,projection,insideNormalized,terrainHeightNormalized,terrainTopMm,points,cartography,extents});
+    const tiled=buildTileBundle({config:c,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents});
     tilePlan=tiled.plan;tileBundle=tiled.bundle;
   }
   let standStl=null;
