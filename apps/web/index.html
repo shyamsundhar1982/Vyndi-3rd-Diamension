@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VYNDI 3rd Diamension</title>
+  <meta name="theme-color" content="#090c0e">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark">V3D</span><div><strong>VYNDI 3rd DIAMENSION</strong><small>ROUTE → TERRAIN → OBJECT</small></div></div>
+    <nav><button id="openAdvanced">Advanced</button><button id="resetView">Reset view</button></nav>
+  </header>
+
+  <section class="event-ribbon" aria-label="Route event ribbon">
+    <div class="event-id"><span>EVENT</span><strong id="ribbonEvent">UPLOAD A GPX</strong><small id="ribbonRider">RIDER · DATE</small></div>
+    <div class="metric"><span>DISTANCE</span><strong id="ribbonDistance">— KM</strong></div>
+    <div class="metric"><span>ELEVATION</span><strong id="ribbonElevation">— M</strong></div>
+    <div class="metric"><span>TIME</span><strong id="ribbonDuration">—</strong></div>
+    <div class="metric"><span>DATA</span><strong id="ribbonPoints">— PTS</strong></div>
+    <label class="upload">GPX<input id="gpxInput" type="file" accept=".gpx,application/gpx+xml"></label>
+  </section>
+
+  <section class="material-ribbon" aria-label="Terrain material ribbon">
+    <div class="ribbon-label"><strong>TERRAIN</strong><span>live material palette</span></div>
+    <label>Land<input data-palette="land" type="color" value="#b7a77a"></label>
+    <label>Forest<input data-palette="forest" type="color" value="#3f6b3a"></label>
+    <label>Mountain<input data-palette="mountain" type="color" value="#8b8378"></label>
+    <label>Snow<input data-palette="snow" type="color" value="#f4f7f8"></label>
+    <label>Water<input data-palette="water" type="color" value="#2f86a6"></label>
+    <label>Route<input data-palette="route" type="color" value="#ff6a1f"></label>
+    <label>Roads<input data-palette="roads" type="color" value="#c9c1b5"></label>
+    <label>Labels<input data-palette="labels" type="color" value="#f2c14e"></label>
+  </section>
+
+  <main class="studio">
+    <aside class="quick-panel">
+      <section>
+        <h2>QUICK ADJUST</h2>
+        <label>Rider<input id="riderName" value=""></label>
+        <label>Date<input id="eventDate" placeholder="Auto from GPX"></label>
+        <label>Relief <output id="reliefOut">8.0 mm</output><input id="relief" type="range" min="1" max="30" step=".5" value="8"></label>
+        <label>Route width <output id="routeWidthOut">1.6 mm</output><input id="routeWidth" type="range" min=".4" max="6" step=".1" value="1.6"></label>
+        <label>Mountain from <output id="mountainOut">1200 m</output><input id="mountainM" type="range" min="200" max="3000" step="50" value="1200"></label>
+        <label>Snow from <output id="snowOut">2600 m</output><input id="snowM" type="range" min="800" max="6000" step="50" value="2600"></label>
+      </section>
+      <section class="production">
+        <h2>PRODUCTION</h2>
+        <button id="generate" class="primary" disabled>Generate production model</button>
+        <p id="productionStatus">Upload a GPX route to begin.</p>
+        <div class="exports">
+          <button data-export="3mf" disabled>3MF</button>
+          <button data-export="stl" disabled>STL</button>
+          <button data-export="obj" disabled>OBJ</button>
+          <button data-export="glb" disabled>GLB</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="viewport">
+      <div class="view-tabs"><button class="active" data-view="concept">Live terrain</button><button data-view="production" disabled>Production GLB</button><span id="viewState">CONCEPT</span></div>
+      <div id="conceptStage" class="stage active">
+        <canvas id="terrainCanvas" width="1200" height="760"></canvas>
+        <div class="stage-note">Drag to orbit · wheel to zoom · concept preview</div>
+      </div>
+      <div id="productionStage" class="stage">
+        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity=".8" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
+        <div class="stage-note" id="viewerStatus">Generate the exact production model to inspect GLB / AR.</div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="advancedDrawer" class="advanced" aria-hidden="true">
+    <header><div><strong>ADVANCED WORKBENCH</strong><span>progressive engineering controls</span></div><button id="closeAdvanced">×</button></header>
+    <div class="advanced-scroll">
+      <details open><summary>DEM & elevation</summary><div class="block">
+        <label>Elevation source<select id="demSource"><option value="terrarium">AWS Terrarium</option><option value="geotiff">Local GeoTIFF</option><option value="arc">Local Arc-ASCII</option></select></label>
+        <label>XY detail mm<input id="xyDetail" type="number" min=".25" max="3" step=".05" value="1"></label>
+        <label>Elevation reconcile<select id="elevationMode"><option value="dem">DEM</option><option value="blend">Blend GPX + DEM</option><option value="gpx">GPX</option></select></label>
+      </div></details>
+      <details><summary>Map layers</summary><div class="block checks">
+        <label><input id="roads" type="checkbox" checked> Roads</label>
+        <label><input id="trails" type="checkbox" checked> Trails</label>
+        <label><input id="railways" type="checkbox" checked> Railways</label>
+        <label><input id="buildings" type="checkbox"> Buildings</label>
+      </div></details>
+      <details><summary>Shape & branding</summary><div class="block">
+        <label>Shape<select id="shape"><option value="route-fit">Route fit</option><option value="circle">Circle</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="geographic">Geo boundary</option></select></label>
+        <label>Event override<input id="eventOverride" placeholder="Auto from GPX"></label>
+      </div></details>
+      <details><summary>Fabrication</summary><div class="block">
+        <label>Model width mm<input id="modelWidth" type="number" min="60" max="600" step="5" value="180"></label>
+        <label>Base mm<input id="baseMm" type="number" min=".8" max="10" step=".2" value="3"></label>
+        <label class="check"><input id="tiled" type="checkbox"> Split large format into tiles</label>
+        <label class="check"><input id="magnets" type="checkbox"> Magnet pockets</label>
+        <label class="check"><input id="stand" type="checkbox"> Separate display stand</label>
+      </div></details>
+      <details><summary>Export & validation</summary><div class="block">
+        <p>Production uses the shared canonical engine for 3MF / STL / OBJ / GLB and mesh validation.</p>
+        <button id="downloadValidation" disabled>Validation ZIP</button>
+      </div></details>
+    </div>
+  </aside>
+
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
