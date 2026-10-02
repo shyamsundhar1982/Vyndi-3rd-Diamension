@@ -1,0 +1,21 @@
+name: Apply workbench layout
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/workbench_layout.css"
+      - "scripts/patch_workbench_layout.py"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_workbench_layout.py
+      - run: |
+          git config user.name "vyndi-ui"
+          git config user.email "vyndi-ui@users.noreply.github.com"
+          git add apps/web/styles.css
+          git diff --cached --quiet || git commit -m "Workbench layout: clearer rails and responsive orientation"
+          git push

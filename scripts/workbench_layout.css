@@ -1,0 +1,19 @@
+/* —— Workbench layout orientation —— */
+.studio{
+  height:calc(100vh - 200px)!important;
+  grid-template-columns:minmax(220px,260px) minmax(0,1fr) minmax(220px,260px)!important;
+}
+.control-rail,.production-rail{
+  max-height:calc(100vh - 200px);
+  overflow:auto;
+}
+.material-ribbon{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px}
+.mat-inspector{display:grid!important;grid-template-columns:minmax(120px,160px) 1fr auto;gap:10px 16px;align-items:center}
+.event-ribbon{display:grid!important;grid-template-columns:minmax(140px,1.2fr) repeat(4,minmax(70px,1fr)) auto;gap:8px;align-items:center}
+@media(max-width:1100px){
+  .event-ribbon{grid-template-columns:1fr 1fr}
+  .studio{grid-template-columns:1fr!important;grid-template-rows:auto minmax(40vh,1fr) auto!important;height:auto!important}
+}
+.work-flow{justify-content:center}
+.prod-actions .primary{width:100%}
+.viewport-wrap{min-height:320px}
