@@ -1,0 +1,24 @@
+name: Premium quality patch
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "packages/toolkit/apply-premium-patches.py"
+jobs:
+  patch-toolkit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply premium mesh patches
+        run: |
+          python3 packages/toolkit/apply-premium-patches.py
+          node --check packages/toolkit/toolkit-core.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "vyndi-premium"
+          git config user.email "vyndi-premium@users.noreply.github.com"
+          git add packages/toolkit/toolkit-core.mjs
+          git diff --cached --quiet || git commit -m "Premium mesh: continuous routes, elevation seas, deeper water"
+          git push
