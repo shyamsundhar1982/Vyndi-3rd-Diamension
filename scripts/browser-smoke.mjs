@@ -34,7 +34,7 @@ try{
   await page.waitForFunction(()=>{
     const viewer=document.querySelector("#liveModelViewer");
     const status=document.querySelector("#livePreviewStatus")?.textContent||"";
-    return Boolean(viewer?.getAttribute("src"))&&status.includes("LIVE 3D READY");
+    return Boolean(viewer?.src)&&status.includes("LIVE 3D READY");
   },null,{timeout:60000});
   await page.waitForTimeout(800);
   await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
