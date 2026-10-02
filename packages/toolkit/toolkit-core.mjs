@@ -630,15 +630,15 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
   const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
   if(meta.event)meshes.push(...textLineMeshes(meta.event,{
-    centerX:0,centerY:extents.maxY-height*.10,maxWidth,cellMm:baseCell,
+    centerX:0,centerY:extents.maxY-height*.17,maxWidth,cellMm:baseCell,
     riseMm:Math.max(.45,riseMm),terrainTopMm,inside
   }));
   if(identity)meshes.push(...textLineMeshes(identity,{
-    centerX:0,centerY:extents.minY+height*.13,maxWidth,cellMm:baseCell*.78,
+    centerX:0,centerY:extents.minY+height*.18,maxWidth,cellMm:baseCell*.78,
     riseMm:Math.max(.35,riseMm*.82),terrainTopMm,inside
   }));
   if(stats)meshes.push(...textLineMeshes(stats,{
-    centerX:0,centerY:extents.minY+height*.065,maxWidth,cellMm:baseCell*.56,
+    centerX:0,centerY:extents.minY+height*.105,maxWidth,cellMm:baseCell*.56,
     riseMm:Math.max(.3,riseMm*.68),terrainTopMm,inside
   }));
   return meshes;
