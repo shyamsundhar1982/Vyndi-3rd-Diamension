@@ -6,7 +6,8 @@ import {
   professionalHangerPlacement,
   surfaceLetteringAllowed,
   productionBounds,
-  generateProductionModel
+  generateProductionModel,
+  premiumRimTextCopy
 } from "../packages/toolkit/toolkit-core.mjs";
 import { filterPrintableOutlinePolygons } from "../packages/engine/map-outline-core.mjs";
 
@@ -106,4 +107,20 @@ test("premium medal preset is exposed as the primary presentation style",()=>{
   assert.match(html,/value="geo-medallion"/);
   assert.match(app,/applyVisualPreset/);
   assert.match(app,/premium-medal/);
+});
+
+test("premium rim copy keeps event and ride statistics while dropping rider/date clutter",()=>{
+  const copy=premiumRimTextCopy({
+    event:"Kashmir to Kanyakumari Expedition",
+    name:"Shyam",
+    date:"01 Nov 2025",
+    distance:"4008 KM",
+    elevation:"15066 M",
+    duration:"169H 29M"
+  });
+  assert.equal(copy.event,"Kashmir to Kanyakumari Expedition");
+  assert.match(copy.stats,/4008 KM/);
+  assert.match(copy.stats,/\+15066 M/);
+  assert.match(copy.stats,/169H 29M/);
+  assert.doesNotMatch(copy.event+copy.stats,/Shyam|01 Nov 2025/i);
 });
