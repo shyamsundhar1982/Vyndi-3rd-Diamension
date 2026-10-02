@@ -41,3 +41,24 @@ test("non-HTML assets also receive baseline security headers",async()=>{
   assert.equal(response.headers.get("x-content-type-options"),"nosniff");
   assert.equal(response.headers.get("referrer-policy"),"strict-origin-when-cross-origin");
 });
+
+
+test("directory route does not request index.html from Cloudflare Static Assets",async()=>{
+  const seen=[];
+  const canonicalAssets={
+    async fetch(request){
+      const url=new URL(request.url);
+      seen.push(url.pathname);
+      if(url.pathname==="/apps/web/index.html"){
+        return new Response(null,{status:308,headers:{location:"/apps/web/"}});
+      }
+      if(url.pathname==="/apps/web/"){
+        return new Response("<!doctype html><title>V3D</title>",{headers:{"content-type":"text/html; charset=utf-8"}});
+      }
+      return new Response("not found",{status:404});
+    }
+  };
+  const response=await worker.fetch(new Request("https://example.test/apps/web/"),{ASSETS:canonicalAssets});
+  assert.equal(response.status,200);
+  assert.deepEqual(seen,["/apps/web/"]);
+});
