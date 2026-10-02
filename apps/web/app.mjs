@@ -20,6 +20,27 @@ const state={
   trailRenderer:null,sourceRenderGeneration:0,vyndiView:{yaw:VYNDI_SOURCE_VIEW.yaw,pitch:VYNDI_SOURCE_VIEW.pitch,zoom:VYNDI_SOURCE_VIEW.zoom}
 };
 
+const KNOWN_EVENT_PROFILES = [
+  {
+    match: /paris\s*brest\s*paris|\bpbp\b/i,
+    event: "Paris Brest Paris 2023",
+    location: "Rambouillet, France",
+    bib: "I277",
+    status: "Finished",
+    start: "Rambouillet",
+    finish: "Rambouillet"
+  }
+];
+
+function applyKnownEventProfile(route=state.route){
+  const source=[route?.name,$("eventOverride")?.value].filter(Boolean).join(" ");
+  const profile=KNOWN_EVENT_PROFILES.find(item=>item.match.test(source));
+  if(!profile)return false;
+  const values={eventOverride:profile.event,eventLocation:profile.location,bib:profile.bib,resultStatus:profile.status,startDetail:profile.start,finishDetail:profile.finish};
+  for(const [id,value] of Object.entries(values)){const el=$(id);if(el&&!clean(el.value))el.value=value}
+  return true;
+}
+
 function finite(v,f=0){const n=Number(v);return Number.isFinite(n)?n:f}
 function clean(v=""){return String(v??"").trim()}
 function stem(value){return String(value||"vyndi-3rd-diamension").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"vyndi-3rd-diamension"}
@@ -531,6 +552,7 @@ async function loadRoutes(files){
   if(state.previewUrl){URL.revokeObjectURL(state.previewUrl);state.previewUrl=null}
   $("liveModelViewer").removeAttribute("src");$("liveEmpty").hidden=false;$("livePreviewStatus").textContent="BUILDING LIVE 3D · GPX ELEVATION";
   resetGenerated("Route loaded · production model not generated.");
+  applyKnownEventProfile(state.route);
   updateRibbon();$("generate").disabled=false;$("downloadJob").disabled=false;
   void generateLivePreview();void loadLandcover();
 }
