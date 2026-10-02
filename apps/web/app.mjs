@@ -1,12 +1,22 @@
 import { parseGpxText } from "../../packages/gpx/gpx-core.mjs";
 import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, loadOpenFreeMapCartography, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
-import { deriveRibbonMeta, normalizeTerrainPalette, terrainBandForElevation, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
+import { deriveRibbonMeta, formatDuration, normalizeTerrainPalette, terrainBandForElevation, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
 import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
 
 const $=id=>document.getElementById(id);
 const state={route:null,palette:{...DEFAULT_TERRAIN_PALETTE},production:null,glbUrl:null,yaw:-.35,pitch:.82,zoom:1,drag:false,last:[0,0],demFile:null,arcFile:null,landcover:[]};
 
-function readOverrides(){return {event:$("eventOverride").value,rider:$("riderName").value,date:$("eventDate").value}}
+function readOverrides(){
+  const route=state.route||{};
+  return {
+    event:$("eventOverride").value,
+    name:$("riderName").value,
+    date:$("eventDate").value,
+    distance:Number(route.distanceKm)>0?Math.round(Number(route.distanceKm)).toLocaleString("en-US")+" KM":"",
+    elevation:Number(route.elevationGainM)>0?Math.round(Number(route.elevationGainM)).toLocaleString("en-US")+" M":"",
+    duration:Number(route.elapsedTimeSeconds)>0?formatDuration(Number(route.elapsedTimeSeconds)):""
+  };
+}
 function updateRibbon(){
   const meta=deriveRibbonMeta(state.route||{},readOverrides());
   $("ribbonEvent").textContent=meta.event;
@@ -69,7 +79,13 @@ function download(data,name,type="application/octet-stream"){const blob=data ins
 function currentConfig(){
   const base=defaultAdvancedConfig(),palette=readPalette();
   return normalizeAdvancedConfig({...base,
-    colors:{...base.colors,terrain:palette.land,route:palette.route,roads:palette.roads,text:palette.labels,logo:palette.labels},
+    colors:{
+      ...base.colors,
+      land:palette.land,terrain:palette.land,forest:palette.forest,mountain:palette.mountain,
+      snow:palette.snow,water:palette.water,route:palette.route,roads:palette.roads,
+      trails:palette.forest,text:palette.labels,logo:palette.labels
+    },
+    terrainBands:{mountainM:Number($("mountainM").value),snowM:Number($("snowM").value)},
     customization:readOverrides(),
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{...base.shape,kind:$("shape").value},
@@ -108,9 +124,9 @@ async function generate(){
       cartography=await loadOpenFreeMapCartography(bounds,{preferredZoom:9,tileBudget:40});
     }
     const title=productionDisplayTitle(state.route.name,config.customization);
-    state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,config,title});
+    state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,landcover:state.landcover,config,title});
     const p=state.production;
-    $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles";
+    $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles · "+p.materials.length+" governed materials";
     document.querySelectorAll("[data-export]").forEach(b=>b.disabled=false);$("downloadValidation").disabled=!p.validationBundle;
     await import("./vendor/model-viewer.min.js");
     if(state.glbUrl)URL.revokeObjectURL(state.glbUrl);state.glbUrl=URL.createObjectURL(new Blob([p.glb],{type:"model/gltf-binary"}));
