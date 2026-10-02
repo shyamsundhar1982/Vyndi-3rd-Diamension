@@ -5,7 +5,7 @@ import worker from "../src/worker.mjs";
 const assets={
   async fetch(request){
     const url=new URL(request.url);
-    if(url.pathname==="/apps/web/index.html")return new Response("<!doctype html><title>V3D</title>",{headers:{"content-type":"text/html; charset=utf-8"}});
+    if(url.pathname==="/apps/web/"||url.pathname==="/apps/web/index.html")return new Response("<!doctype html><title>V3D</title>",{headers:{"content-type":"text/html; charset=utf-8"}});
     return new Response("asset",{headers:{"content-type":"text/plain"}});
   }
 };
