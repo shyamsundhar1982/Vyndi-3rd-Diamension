@@ -131,7 +131,7 @@ function currentConfig(){
     customization:readOverrides(),
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{...base.shape,kind:$("shape").value},
-    fabrication:{...base.fabrication,modelWidthMm:Number($("modelWidth").value),baseMm:Number($("baseMm").value),reliefMm:Number($("relief").value),targetXyMm:Number($("xyDetail").value),routeWidthMm:Number($("routeWidth").value),tiled:$("tiled").checked,magnetEnabled:$("magnets").checked,standEnabled:$("stand").checked},
+    fabrication:{...base.fabrication,modelWidthMm:Number($("modelWidth").value),baseMm:Number($("baseMm").value),reliefMm:Number($("relief").value),targetXyMm:Number($("xyDetail").value),routeWidthMm:Number($("routeWidth").value),rimWidthMm:Number($("rimWidthMm").value),rimHeightMm:Number($("rimHeightMm").value),tiled:$("tiled").checked,magnetEnabled:$("magnets").checked,standEnabled:$("stand").checked},
     dem:{...base.dem,source:$("demSource").value,routeElevationMode:$("elevationMode").value}
   });
 }
@@ -193,14 +193,14 @@ $("gpxInput").addEventListener("change",async e=>{const file=e.target.files?.[0]
   void generateLivePreview();void loadLandcover();
 }catch(error){$("productionStatus").textContent=error.message||String(error);$("livePreviewStatus").textContent="LIVE 3D ERROR · "+(error.message||String(error))}});
 ["riderName","eventDate","eventOverride"].forEach(id=>$(id).addEventListener("input",()=>{updateRibbon();schedulePreview(260)}));
-document.querySelectorAll("[data-palette],#relief,#routeWidth,#mountainM,#snowM").forEach(el=>el.addEventListener("input",()=>{syncOutputs();schedulePreview()}));
+document.querySelectorAll("[data-palette],#relief,#routeWidth,#mountainM,#snowM,#rimWidthMm,#rimHeightMm").forEach(el=>el.addEventListener("input",()=>{syncOutputs();schedulePreview()}));
 $("generate").addEventListener("click",()=>void generate());
 $("openAdvanced").onclick=()=>{$("advancedDrawer").classList.add("open");$("advancedDrawer").setAttribute("aria-hidden","false")};
 $("closeAdvanced").onclick=()=>{$("advancedDrawer").classList.remove("open");$("advancedDrawer").setAttribute("aria-hidden","true")};
 document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{if(button.disabled)return;document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b===button));const production=button.dataset.view==="production";$("liveStage").classList.toggle("active",!production);$("productionStage").classList.toggle("active",production);$("viewState").textContent=production?"PRODUCTION QUALITY":"LIVE 3D"}));
 document.querySelectorAll("[data-export]").forEach(button=>button.addEventListener("click",()=>{const p=state.production;if(!p)return;const stem=(state.route?.name||"vyndi-3rd-diamension").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase();if(button.dataset.export==="3mf")download(p.threeMf,stem+".3mf","model/3mf");if(button.dataset.export==="stl")download(p.stl,stem+".stl","model/stl");if(button.dataset.export==="obj")download(p.objBundle,stem+"-obj.zip","application/zip");if(button.dataset.export==="glb")download(p.glb,stem+".glb","model/gltf-binary")}));
 $("downloadValidation").addEventListener("click",()=>state.production?.validationBundle&&download(state.production.validationBundle,"validation.zip","application/zip"));
-$("resetView").onclick=()=>{for(const id of ["liveModelViewer","modelViewer"]){const viewer=$(id);if(viewer){viewer.cameraOrbit="0deg 62deg auto";viewer.fieldOfView="30deg";viewer.jumpCameraToGoal?.();}}};
+$("resetView").onclick=()=>{for(const id of ["liveModelViewer","modelViewer"]){const viewer=$(id);if(viewer){viewer.cameraOrbit="-25deg 50deg auto";viewer.fieldOfView="30deg";viewer.jumpCameraToGoal?.();}}};
 syncOutputs();updateRibbon();
 
 function syncDemSource(){
