@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { productionMaterials, classifyTerrainMaterial, buildPersonalizationMeshes } from "../packages/toolkit/toolkit-core.mjs";
+import { productionMaterials, classifyTerrainMaterial, buildPersonalizationMeshes, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
 import { encodeGlb } from "../packages/engine/print-model-core.mjs";
 
 function glbJson(bytes){
@@ -72,4 +72,32 @@ test("physical model retains rider date and ride statistics",()=>{
   });
   assert.ok(meshes.length>20,"expected printable event/rider/stat geometry");
   assert.ok(meshes.every(mesh=>mesh.triangles.some(t=>t.region===11)));
+});
+
+
+test("generated production object contains terrain bands, route and text material regions",async()=>{
+  const points=[
+    {lat:0.10,lon:0.10,ele:300,time:0},
+    {lat:0.50,lon:0.50,ele:1500,time:600000},
+    {lat:0.90,lon:0.90,ele:2900,time:1200000}
+  ];
+  const model=await generateProductionModel({
+    points,
+    demSampler:(lat)=>lat*3200,
+    landcover:[],
+    config:{
+      shape:{kind:"circle"},
+      terrainBands:{mountainM:900,snowM:2200},
+      customization:{event:"TEST 300",name:"RIDER",date:"02 OCT 2026",distance:"300 KM",elevation:"3000 M",duration:"12:00:00"},
+      fabrication:{modelWidthMm:48,baseMm:2.4,reliefMm:5,targetXyMm:4,routeWidthMm:1.2,routeRiseMm:.8}
+    },
+    title:"Visual parity"
+  });
+  const regions=new Set(model.mesh.triangles.map(t=>t.region));
+  assert.ok(regions.has(0),"land material missing");
+  assert.ok(regions.has(2),"mountain material missing");
+  assert.ok(regions.has(3),"snow material missing");
+  assert.ok(regions.has(5),"route material missing");
+  assert.ok(regions.has(11),"text material missing");
+  assert.equal(model.materials.length,12);
 });
