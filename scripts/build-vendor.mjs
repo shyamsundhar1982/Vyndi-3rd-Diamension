@@ -27,4 +27,10 @@ await build({
   bundle:true,format:"esm",platform:"browser",target:["es2022"],minify:true,legalComments:"eof"
 });
 
+await build({
+  entryPoints:[resolve(root,"apps","web","trailrelief-source-renderer-entry.mjs")],
+  outfile:resolve(webVendor,"trailrelief-source-renderer.mjs"),
+  bundle:true,format:"esm",platform:"browser",target:["es2022"],minify:true,legalComments:"eof"
+});
+
 console.log("VYNDI 3rd Diamension shared + web vendor bundles generated.");
