@@ -11,15 +11,16 @@ const BASE_HEADERS={
   "permissions-policy":"camera=(self), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), display-capture=(), accelerometer=(self), gyroscope=(self), xr-spatial-tracking=(self), browsing-topics=()"
 };
 
-function secure(response){
+function secure(response,{allowSameOriginFrame=false}={}){
   const headers=new Headers(response.headers);
   for(const [name,value] of Object.entries(BASE_HEADERS))headers.set(name,value);
+  if(allowSameOriginFrame)headers.set("x-frame-options","SAMEORIGIN");
   const type=String(headers.get("content-type")||"").toLowerCase();
   if(type.includes("text/html")){
     headers.set("content-security-policy",[
-      "default-src 'self'","base-uri 'none'","object-src 'none'","frame-ancestors 'none'","form-action 'self'",
-      "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline'","img-src 'self' data: blob:",
-      "media-src 'self' blob:","connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems",
+      "default-src 'self'","base-uri 'none'","object-src 'none'",allowSameOriginFrame?"frame-ancestors 'self'":"frame-ancestors 'none'","form-action 'self'",
+      "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline' https://fonts.googleapis.com","font-src 'self' https://fonts.gstatic.com data:","img-src 'self' data: blob: https://raw.githack.com",
+      "media-src 'self' blob:","connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems https://raw.githack.com",
       "worker-src 'self' blob:","manifest-src 'self'"
     ].join("; "));
   }
@@ -123,6 +124,13 @@ export default {
     if(url.pathname==="/"){
       const target=new URL(request.url);target.pathname="/apps/web/";return secure(await env.ASSETS.fetch(new Request(target,request)));
     }
-    return secure(await env.ASSETS.fetch(request));
+    if(url.pathname==="/vendor/model-viewer.min.js"){
+      const target=new URL(request.url);target.pathname="/apps/web/vendor/model-viewer.min.js";return secure(await env.ASSETS.fetch(new Request(target,request)));
+    }
+    if(url.pathname==="/assets/vayu-official.png"){
+      const target=new URL(request.url);target.pathname="/apps/ride-stories-exact/assets/vayu-official.png";return secure(await env.ASSETS.fetch(new Request(target,request)));
+    }
+    const sourceFrame=url.pathname.startsWith("/apps/trailrelief-exact/")||url.pathname.startsWith("/apps/ride-stories-exact/");
+    return secure(await env.ASSETS.fetch(request),{allowSameOriginFrame:sourceFrame});
   }
 };

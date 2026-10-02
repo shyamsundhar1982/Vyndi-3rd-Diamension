@@ -5,7 +5,8 @@ import worker from "../src/worker.mjs";
 const assets={
   async fetch(request){
     const url=new URL(request.url);
-    if(url.pathname==="/apps/web/"||url.pathname==="/apps/web/index.html")return new Response("<!doctype html><title>V3D</title>",{headers:{"content-type":"text/html; charset=utf-8"}});
+    if(url.pathname==="/apps/web/"||url.pathname==="/apps/web/index.html"||url.pathname==="/apps/trailrelief-exact/"||url.pathname==="/apps/ride-stories-exact/")return new Response("<!doctype html><title>V3D</title>",{headers:{"content-type":"text/html; charset=utf-8"}});
+    if(url.pathname==="/apps/web/vendor/model-viewer.min.js")return new Response("model-viewer",{headers:{"content-type":"text/javascript"}});
     return new Response("asset",{headers:{"content-type":"text/plain"}});
   }
 };
@@ -61,4 +62,20 @@ test("directory route does not request index.html from Cloudflare Static Assets"
   const response=await worker.fetch(new Request("https://example.test/apps/web/"),{ASSETS:canonicalAssets});
   assert.equal(response.status,200);
   assert.deepEqual(seen,["/apps/web/"]);
+});
+
+test("exact source-renderer HTML is frameable only by the same V3D origin",async()=>{
+  const response=await worker.fetch(new Request("https://example.test/apps/trailrelief-exact/"),{ASSETS:assets});
+  assert.equal(response.status,200);
+  assert.equal(response.headers.get("x-frame-options"),"SAMEORIGIN");
+  const csp=response.headers.get("content-security-policy")||"";
+  assert.match(csp,/frame-ancestors 'self'/);
+  assert.match(csp,/fonts\.googleapis\.com/);
+  assert.match(csp,/raw\.githack\.com/);
+});
+
+test("Ride Stories model-viewer absolute path resolves to the V3D vendored runtime",async()=>{
+  const response=await worker.fetch(new Request("https://example.test/vendor/model-viewer.min.js"),{ASSETS:assets});
+  assert.equal(response.status,200);
+  assert.equal(await response.text(),"model-viewer");
 });
