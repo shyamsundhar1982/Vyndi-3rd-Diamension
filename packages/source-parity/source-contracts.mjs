@@ -21,6 +21,12 @@ export const TRAILRELIEF_SOURCE_SCENE=Object.freeze({
   roughness:.82,metalness:.02,contactShadowBlur:2.5,contactShadowOpacity:.6
 });
 
+export const VYNDI_SOURCE_DEFAULTS=Object.freeze({
+  exaggeration:5,reliefLimitMm:4,waterMode:"procedural-waves",waveHeightMm:.3,wavelengthMm:2.6,
+  baseMm:3.2,routeStyle:"raised",routeWidthMm:1.2,routeRiseMm:1,
+  shape:"circle",terrainColor:"#343a3e",waterColor:"#2f9bc1",routeColor:"#ff5c35",roadsColor:"#e7ece9",labelsColor:"#b8f229"
+});
+
 export const VYNDI_SOURCE_VIEW=Object.freeze({
   yaw:-.42,pitch:.92,zoom:1,perspectiveDepth:.0024,
   waterBase:.13,landBase:.16,landReliefBase:.18,exaggerationRelief:.055,
