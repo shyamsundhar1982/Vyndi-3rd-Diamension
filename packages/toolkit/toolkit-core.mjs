@@ -1,1 +1,2 @@
-PLACEHOLDER_WILL_FAIL_IF_TOO_LARGE
+/** VYNDI toolkit — thin entry; implementation in toolkit-core-impl.mjs */
+export * from "./toolkit-core-impl.mjs";
