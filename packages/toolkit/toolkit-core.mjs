@@ -1,5 +1,5 @@
-import { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob } from "../gpx/gpx-core.mjs";
-export { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob } from "../gpx/gpx-core.mjs";
+import { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob, mergeGpxRoutes } from "../gpx/gpx-core.mjs";
+export { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob, mergeGpxRoutes } from "../gpx/gpx-core.mjs";
 import {
   adaptiveLargeFormatPlan,
   classifyTerrainWorkload,
@@ -37,7 +37,9 @@ import {
   shapeBoundaryRadius,
   magnetPocketDepth,
   dovetailSlotDepth,
-  alignmentSocketDepth
+  alignmentSocketDepth,
+  contourEmbossHeight,
+  rasterSampler
 } from "../engine/fabrication-extras-core.mjs";
 import {
   projectGeographicOutline,
@@ -90,14 +92,19 @@ export function defaultAdvancedConfig(){
     shape:{kind:"route-fit",aspect:1.35,outlineGeometry:null,logoEnabled:false,logoAuto:true,logoWidthMm:18,logoRiseMm:.8},
     colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8a7a68",snow:"#f4f3ee",water:"#3d86b8",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e",rim:"#23201d"},
     terrainBands:{mountainM:1200,snowM:2600},
+    surface:{forestRaiseMm:.4,waterDepthMm:.6,waterMode:"procedural-waves",waveHeightMm:.3,waveSpacingMm:2.6},
+    contours:{enabled:false,intervalMm:1,widthMm:.08,riseMm:.2},
+    placeLabels:{mode:"major",selectedNames:[],maxCount:18},
+    production:{printerProfile:"bambu-p1s",medalSize:"custom",bottomMark:"",bottomEngraveDepthMm:.35},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
-      routeWidthMm:1.6,routeRiseMm:1.2,
+      routeStyle:"raised",routeWidthMm:1.6,routeRiseMm:1.2,
       rimWidthMm:12,rimHeightMm:5,
-      tiled:false,maxTileMm:200,jointType:"dovetail",
-      magnetEnabled:false,magnetDiameterMm:8,magnetDepthMm:2,
-      hangerEnabled:false,standEnabled:false
+      tiled:false,maxTileMm:200,maxTileWidthMm:200,maxTileHeightMm:200,jointType:"dovetail",jointDiameterMm:8,jointDepthMm:2,jointClearanceMm:.2,
+      magnetEnabled:false,magnetDiameterMm:8,magnetDepthMm:2,magnetSpacingMm:30,
+      hangerEnabled:false,hangerInnerDiameterMm:6,hangerWallMm:3,
+      standEnabled:false,heightmapStrengthMm:0
     }
   };
 }
