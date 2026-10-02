@@ -35,20 +35,57 @@ export function parseGpxText(text="",fallbackName="Route",options={}){
   const source=String(text||""),maxPoints=boundedMaxPoints(options.maxPoints);
   const name=extractGpxName(source.slice(0,524288),fallbackName);
   let points=[],sourcePointCount=0,stride=1,finalPoint=null;
-  let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity;
+  let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity,minEle=Infinity,maxEle=-Infinity;
+  let lastDistancePoint=null,lastElevationPoint=null,lastTimedPoint=null,firstTimeMs=null,lastTimeMs=null;
+  let distanceKm=0,elevationGainM=0,movingTimeSeconds=0,segment=0,previousEnd=0;
+
+  const haversine=(a,b)=>{
+    const toRad=value=>value*Math.PI/180,R=6371;
+    const dLat=toRad(b.lat-a.lat),dLon=toRad(b.lon-a.lon);
+    const aa=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLon/2)**2;
+    return 2*R*Math.atan2(Math.sqrt(aa),Math.sqrt(Math.max(0,1-aa)));
+  };
+
   const re=/<(?:trkpt|rtept|wpt)\b([^>]*)>([\s\S]*?)<\/(?:trkpt|rtept|wpt)>/gi;
   let match;
   while((match=re.exec(source))){
+    const between=source.slice(previousEnd,match.index),openings=between.match(/<(?:trkseg|rte)\b/gi);
+    if(openings)segment+=openings.length;
+    previousEnd=re.lastIndex;
+
     const attrs=match[1]||"",body=match[2]||"";
     const latMatch=attrs.match(/\blat\s*=\s*["']([^"']+)["']/i);
     const lonMatch=attrs.match(/\blon\s*=\s*["']([^"']+)["']/i);
     const lat=Number(latMatch?.[1]),lon=Number(lonMatch?.[1]);
     if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
+
     const eleMatch=body.match(/<ele>([^<]+)<\/ele>/i),timeMatch=body.match(/<time>([^<]+)<\/time>/i);
-    const ele=eleMatch?Number(eleMatch[1]):null,time=timeMatch?Date.parse(timeMatch[1]):null;
-    const point={lat,lon,ele:Number.isFinite(ele)?ele:null,time:Number.isFinite(time)?time:null};
+    const ele=eleMatch?Number(eleMatch[1]):null,timeMs=timeMatch?Date.parse(timeMatch[1]):NaN;
+    const point={lat,lon,ele:Number.isFinite(ele)?ele:null,time:Number.isFinite(timeMs)?timeMs:null,segment};
     finalPoint=point;sourcePointCount++;
+
     minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);minLon=Math.min(minLon,lon);maxLon=Math.max(maxLon,lon);
+    if(Number.isFinite(ele)){minEle=Math.min(minEle,ele);maxEle=Math.max(maxEle,ele)}
+
+    if(lastDistancePoint&&lastDistancePoint.segment===segment)distanceKm+=haversine(lastDistancePoint,point);
+    if(Number.isFinite(ele)&&Number.isFinite(lastElevationPoint?.ele)&&lastElevationPoint.segment===segment)elevationGainM+=Math.max(0,ele-lastElevationPoint.ele);
+    if(Number.isFinite(ele))lastElevationPoint=point;
+    else if(lastElevationPoint?.segment!==segment)lastElevationPoint=null;
+
+    if(Number.isFinite(timeMs)){
+      if(firstTimeMs===null)firstTimeMs=timeMs;
+      lastTimeMs=timeMs;
+      if(lastTimedPoint&&lastTimedPoint.segment===segment&&Number.isFinite(lastTimedPoint.time)){
+        const deltaSeconds=(timeMs-lastTimedPoint.time)/1000;
+        if(deltaSeconds>0&&deltaSeconds<=21600){
+          const legKm=haversine(lastTimedPoint,point),speedKmh=legKm/(deltaSeconds/3600);
+          if(speedKmh>=.5&&speedKmh<=200)movingTimeSeconds+=deltaSeconds;
+        }
+      }
+      lastTimedPoint=point;
+    }
+
+    lastDistancePoint=point;
     if((sourcePointCount-1)%stride===0)points.push(point);
     if(points.length>maxPoints*2){
       const thinned=[points[0]];
@@ -57,16 +94,19 @@ export function parseGpxText(text="",fallbackName="Route",options={}){
       points=thinned;stride*=2;
     }
   }
+
   if(sourcePointCount<2)throw new Error("GPX needs at least two track, route or waypoint records.");
   if(finalPoint&&points.at(-1)!==finalPoint)points.push(finalPoint);
   points=reducePoints(points,maxPoints);
+  const elapsedTimeSeconds=firstTimeMs!==null&&lastTimeMs!==null&&lastTimeMs>=firstTimeMs?Math.round((lastTimeMs-firstTimeMs)/1000):0;
+
   return {
-    name,points,sourcePointCount,
-    simplified:points.length<sourcePointCount,
-    bounds:{minLat,maxLat,minLon,maxLon}
+    name,points,sourcePointCount,simplified:points.length<sourcePointCount,
+    distanceKm:Number(distanceKm.toFixed(2)),elevationGainM:Number(elevationGainM.toFixed(1)),
+    movingTimeSeconds:Math.round(movingTimeSeconds),elapsedTimeSeconds,
+    bounds:{minLat,maxLat,minLon,maxLon,minEle:Number.isFinite(minEle)?minEle:0,maxEle:Number.isFinite(maxEle)?maxEle:0}
   };
 }
-
 
 function encodeXml(value=""){
   return String(value)
