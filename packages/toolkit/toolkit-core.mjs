@@ -627,7 +627,41 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
   return meshes;
 }
 
-export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8}={}){
+
+function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,flipRadial=false,maxArcRad=2.7,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0}={}){
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const outer=Math.max(1,Number(radiusMm)||0),rim=Math.max(0,Number(rimWidthMm)||0);
+  if(!value||rim<2||outer<=rim)return [];
+  const arcRadius=outer-rim/2,nominalWidth=value.length*6-1;
+  const cell=Math.max(.45,Math.min(Number(cellMm)||1.2,arcRadius*Math.max(.5,maxArcRad)/Math.max(1,nominalWidth),rim/8));
+  const totalWidth=nominalWidth*cell,startU=-totalWidth/2,meshes=[];
+  const map=(u,v)=>{
+    const theta=flipRadial?centerAngle+u/arcRadius:centerAngle-u/arcRadius;
+    const radial=flipRadial?arcRadius-v:arcRadius+v;
+    return {x:radial*Math.cos(theta),y:radial*Math.sin(theta)};
+  };
+  for(let ci=0;ci<value.length;ci++){
+    const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
+    for(let row=0;row<7;row++)for(let col=0;col<5;col++){
+      if(glyph[row][col]!=="1")continue;
+      const u0=startU+(ci*6+col)*cell,u1=u0+cell*.82;
+      const v1=(3.5-row)*cell,v0=v1-cell*.82;
+      const points=[map(u0,v0),map(u1,v0),map(u1,v1),map(u0,v1)];
+      if(points.some(p=>Math.hypot(p.x,p.y)>outer+.001||Math.hypot(p.x,p.y)<outer-rim-.001))continue;
+      try{
+        meshes.push(buildExtrudedPolygonMesh({
+          points,
+          baseZAt:(x,y)=>terrainTopMm(x,y),
+          heightMm:Math.max(.3,riseMm),
+          region:11
+        }));
+      }catch{}
+    }
+  }
+  return meshes;
+}
+
+export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape=""}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
   const meta=normalizeCustomization(customization);
   const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
@@ -636,6 +670,18 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   const width=Math.max(1,extents.maxX-extents.minX),height=Math.max(1,extents.maxY-extents.minY);
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
   const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
+  if(shape==="circle"&&Number(rimWidthMm)>=2){
+    if(meta.event)meshes.push(...curvedRimTextMeshes(meta.event,{
+      radiusMm:radius,rimWidthMm,centerAngle:Math.PI/2,maxArcRad:2.65,cellMm:baseCell,
+      riseMm:Math.max(.45,riseMm),terrainTopMm
+    }));
+    const lower=[identity,stats].filter(Boolean).join(" - ");
+    if(lower)meshes.push(...curvedRimTextMeshes(lower,{
+      radiusMm:radius,rimWidthMm,centerAngle:-Math.PI/2,flipRadial:true,maxArcRad:2.8,cellMm:baseCell*.72,
+      riseMm:Math.max(.35,riseMm*.78),terrainTopMm
+    }));
+    return meshes;
+  }
   if(meta.event)meshes.push(...textLineMeshes(meta.event,{
     centerX:0,centerY:extents.maxY-height*.17,maxWidth,cellMm:baseCell,
     riseMm:Math.max(.45,riseMm),terrainTopMm,inside
@@ -833,7 +879,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
-    riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7))
+    riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
+    rimWidthMm:c.fabrication.rimWidthMm,shape:c.shape.kind
   });
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){
