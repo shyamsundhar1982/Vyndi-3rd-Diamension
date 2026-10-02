@@ -51,9 +51,7 @@ test("live terrain is a real canonical 3D model, not a decorative 2D canvas",()=
 });
 
 
-test("Workbench keeps production diagnostics DOM contract and known-event personalization", async () => {
-  const html = await readFile(new URL("../apps/web/index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../apps/web/app.mjs", import.meta.url), "utf8");
+test("Workbench keeps production diagnostics DOM contract and known-event personalization", () => {
   assert.match(html, /id="modelDiagnostics"/);
   assert.match(app, /KNOWN_EVENT_PROFILES/);
   assert.match(app, /Paris Brest Paris/i);
