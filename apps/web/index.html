@@ -173,6 +173,12 @@
     </aside>
 
     <section class="viewport">
+      <div class="engine-tabs" aria-label="Rendering engine">
+        <span>SOURCE ENGINE</span>
+        <button id="engineUnified" class="active" type="button" data-engine="unified">V3D UNIFIED</button>
+        <button id="engineTrailRelief" type="button" data-engine="trailrelief-source" data-src="engines/trailrelief/index.html">TRAILRELIEF · EXACT</button>
+        <button id="engineVyndi" type="button" data-engine="vyndi-source" data-src="engines/vyndi-medal/terrain-medal.html">VYNDI MEDAL · EXACT</button>
+      </div>
       <div class="view-tabs"><button class="active" data-view="live">LIVE</button><button data-view="production" disabled>PRODUCTION</button><span id="viewState">LIVE 3D</span></div>
       <div class="camera-tools" aria-label="3D camera controls">
         <button id="cameraIso" type="button" title="Professional three-quarter view">3D</button>
@@ -188,6 +194,10 @@
       <div id="productionStage" class="stage">
         <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div class="stage-note" id="viewerStatus">Generate the governed model to inspect exact GLB / AR.</div>
+      </div>
+      <div id="sourceStage" class="stage source-stage">
+        <iframe id="sourceEngineFrame" title="Source fidelity terrain engine" loading="eager" referrerpolicy="same-origin"></iframe>
+        <div class="source-engine-badge" id="sourceEngineBadge">SOURCE FIDELITY</div>
       </div>
     </section>
 
