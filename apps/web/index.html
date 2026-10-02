@@ -42,7 +42,14 @@
       <div class="route-brief">
         <strong id="routeBrief">No route loaded</strong>
         <span id="routeDetail">Drop one or more GPX files or use Demo.</span>
-        <label class="preset-line">Presentation
+        <label class="preset-line">Renderer
+          <select id="sourceRenderer">
+            <option value="trailrelief-original" selected>TrailRelief Original</option>
+            <option value="vyndi-original">VYNDI Terrain Medal Original</option>
+            <option value="v3d-unified">V3D Unified</option>
+          </select>
+        </label>
+        <label class="preset-line" id="visualPresetRow">Presentation
           <select id="visualPreset">
             <option value="premium-medal" selected>Premium terrain medal</option>
             <option value="detailed-map">Detailed cartography</option>
@@ -181,6 +188,8 @@
         <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
       </div>
       <div id="liveStage" class="stage active">
+        <canvas id="trailReliefSourceCanvas" class="source-canvas" hidden></canvas>
+        <canvas id="sourcePreviewCanvas" class="source-canvas" hidden></canvas>
         <model-viewer id="liveModelViewer" camera-controls environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>
         <div class="stage-note" id="livePreviewStatus">Upload GPX · instant 3D builds locally, then refines with DEM.</div>
