@@ -1,0 +1,66 @@
+name: Restore worker from git history
+on:
+  workflow_dispatch:
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+      - name: Restore worker.mjs from pre-placeholder commit
+        run: |
+          set -e
+          # last known good blob before PLACEHOLDER overwrite
+          git show c8f94e7bc72fb544f4fddbf7d89a59fe841a641f > /tmp/w.mjs || true
+          # if blob not found as commit, search history
+          if ! node --check /tmp/w.mjs 2>/dev/null; then
+            GOOD=$(git log --all --pretty=format:%H -- src/worker.mjs | while read c; do
+              git show "$c:src/worker.mjs" > /tmp/try.mjs 2>/dev/null || continue
+              if grep -q 'OPEN_TOPO_DATASETS' /tmp/try.mjs && grep -q 'issueReceipt' /tmp/try.mjs && ! grep -q 'PLACEHOLDER' /tmp/try.mjs; then
+                if node --check /tmp/try.mjs 2>/dev/null; then echo $c; break; fi
+              fi
+            done)
+            echo "Using commit $GOOD"
+            git show "$GOOD:src/worker.mjs" > /tmp/w.mjs
+          fi
+          # Prefer path that serves merch from apps/web/merch.html; if missing, inject
+          if ! grep -q 'merch' /tmp/w.mjs; then
+            python3 - <<'PY'
+from pathlib import Path
+t=Path('/tmp/w.mjs').read_text()
+old='''    if(url.pathname==="/"){\n      const target=new URL(request.url);target.pathname="/apps/web/";return secure(Response.redirect(target.toString(),302));\n    }\n    return secure(await env.ASSETS.fetch(request));'''
+new='''    if(url.pathname==="/"||url.pathname==="/merch"||url.pathname==="/merch.html"||url.pathname==="/apps/web/merch"){\n      const assetUrl=new URL(request.url);\n      assetUrl.pathname="/apps/web/merch.html";\n      return secure(await env.ASSETS.fetch(new Request(assetUrl.toString(), request)));\n    }\n    if(url.pathname==="/workbench"||url.pathname==="/studio"){\n      const target=new URL(request.url);target.pathname="/apps/web/";return secure(Response.redirect(target.toString(),302));\n    }\n    return secure(await env.ASSETS.fetch(request));'''
+if old in t:
+    t=t.replace(old,new)
+else:
+    t=t.replace('return secure(await env.ASSETS.fetch(request));', new, 1)
+Path('/tmp/w.mjs').write_text(t)
+PY
+          fi
+          # CF strips .html — also serve extensionless by rewriting request to merch.html only once
+          python3 - <<'PY'
+from pathlib import Path
+t=Path('/tmp/w.mjs').read_text()
+if 'apps/web/merch.html' in t and 'not_found' not in t:
+    # ensure /apps/web/merch without .html works via same branch
+    t=t.replace(
+      'url.pathname==="/merch.html"',
+      'url.pathname==="/merch.html"||url.pathname==="/apps/web/merch"',
+      1,
+    )
+Path('src/worker.mjs').write_text(t)
+print('size', Path('src/worker.mjs').stat().st_size)
+PY
+          node --check src/worker.mjs
+          # Ensure merch.html exists in apps/web
+          test -f apps/web/merch.html
+      - run: |
+          git config user.name "vyndi-restore"
+          git config user.email "vyndi-restore@users.noreply.github.com"
+          git add src/worker.mjs apps/web/merch.html
+          git status
+          git diff --cached --quiet || git commit -m "Restore worker + merch landing routes"
+          git push
