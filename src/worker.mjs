@@ -43,9 +43,9 @@ export default {
         headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...BASE_HEADERS}
       });
     }
-    if(url.pathname==="/"||url.pathname==="/apps/web"||url.pathname==="/apps/web/"){
+    if(url.pathname==="/"){
       const target=new URL(request.url);
-      target.pathname="/apps/web/index.html";
+      target.pathname="/apps/web/";
       return secure(await env.ASSETS.fetch(new Request(target,request)));
     }
     return secure(await env.ASSETS.fetch(request));
