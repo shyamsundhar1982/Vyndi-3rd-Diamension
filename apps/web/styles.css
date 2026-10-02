@@ -167,3 +167,61 @@ model-viewer{background:radial-gradient(circle at 52% 38%,#2b231d 0,#15100d 34%,
   .studio{height:auto;min-height:70vh;grid-template-columns:1fr;grid-template-rows:auto 50vh auto}
   .work-flow{overflow-x:auto}
 }
+
+/* —— Premium workbench skin —— */
+:root{
+  --gold:#d4a24a;
+  --gold-soft:#f0d9a8;
+  --panel-elev:#16120f;
+  --edge:#3d3228;
+}
+.topbar{
+  background:linear-gradient(180deg,#1c1612,#120f0c);
+  border-bottom:1px solid var(--edge);
+  box-shadow:0 8px 28px #0006;
+}
+.brand .mark{
+  background:linear-gradient(145deg,#ffb347,#c47a1a);
+  box-shadow:0 0 16px #ff9f2f44;
+}
+.work-flow{
+  background:linear-gradient(90deg,#14100c,#1a1510 40%,#14100c);
+  border-bottom:1px solid var(--edge);
+}
+.work-flow .step.active{
+  background:linear-gradient(180deg,#3a2a14,#24180c);
+  border-color:var(--gold);
+  color:var(--gold-soft);
+  box-shadow:0 0 12px #d4a24a33;
+}
+.mat-chip.active{
+  border-color:var(--gold);
+  box-shadow:0 0 0 1px #d4a24a55;
+}
+.prod-actions .primary{
+  background:linear-gradient(180deg,#ffb347,#c47a1a);
+  color:#1a1008;
+  border:none;
+  font-weight:800;
+}
+.premium-btn{
+  border-color:var(--gold);
+  color:var(--gold-soft);
+  background:linear-gradient(180deg,#2a2214,#1a140c);
+}
+.viewport-wrap{
+  background:radial-gradient(ellipse at 50% 40%,#1a1612 0%,#080706 70%);
+}
+.industry-panel{
+  border-color:#4a3a22;
+  background:linear-gradient(180deg,#1a1510,#120f0c);
+}
+.place-list{
+  max-height:140px;overflow:auto;display:grid;gap:3px;
+  border:1px solid var(--edge);border-radius:4px;padding:6px;background:#0f0d0b;
+}
+.place-list label{display:flex;gap:6px;align-items:center;font-size:9px;color:#cbb9a8;margin:0}
+.geo-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:160px;overflow:auto}
+.geo-grid button{font-size:8px;padding:5px 6px;text-align:left}
+.mem-bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.mem-bar button{font-size:9px}

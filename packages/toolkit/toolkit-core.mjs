@@ -599,7 +599,7 @@ function buildRouteChannelField(points,projection,config){
 
 function featureMeshes({points,cartography,config,projection,terrainTopMm,insideNormalized,clipRect=null,offsetX=0,offsetY=0}){
   const meshes=[],radius=projection.radius,route=points.map(point=>projection.project(point));
-  const densifyProjectedRoute=(route,maxStepMm=.7,maxPoints=5200)=>{
+  const densifyProjectedRoute=(route,maxStepMm=.55,maxPoints=5200)=>{
     if(!route.length)return route;
     const out=[route[0]];
     for(let i=1;i<route.length;i++){
@@ -624,7 +624,7 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
         const a=toMm(list[i-1]),b=toMm(list[i]);
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
         const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
-        if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect)||len>8)continue;
+        if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect)||len>5.5)continue;
         const zA=terrainTopMm(a.x,a.y),zB=terrainTopMm(b.x,b.y),mesh=segmentPrism(a,b,width,rise,zA,zB,region);
         if(mesh){meshes.push(shifted(mesh,offsetX,offsetY));used++;}
       }
