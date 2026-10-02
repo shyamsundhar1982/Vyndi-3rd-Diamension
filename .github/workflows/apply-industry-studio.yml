@@ -1,0 +1,32 @@
+name: Apply industry studio
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/industry_panel.html"
+      - "scripts/patch_index_industry.py"
+      - "scripts/patch_css_industry.py"
+      - "scripts/patch_app_industry.py"
+      - "scripts/patch_toolkit_coastline.py"
+      - "apps/web/industry-studio.mjs"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_index_industry.py
+      - run: python3 scripts/patch_css_industry.py
+      - run: python3 scripts/patch_app_industry.py
+      - run: python3 scripts/patch_toolkit_coastline.py
+      - run: |
+          node --check apps/web/app.mjs
+          node --check packages/toolkit/toolkit-core.mjs
+      - run: |
+          git config user.name "vyndi-industry"
+          git config user.email "vyndi-industry@users.noreply.github.com"
+          git add apps/web/index.html apps/web/styles.css apps/web/app.mjs packages/toolkit/toolkit-core.mjs
+          git status
+          git diff --cached --quiet || git commit -m "Industry studio: readiness, batch CSV, coastline, wizard, order sheet"
+          git push
