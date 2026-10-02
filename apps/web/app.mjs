@@ -1,9 +1,9 @@
 import { parseGpxText } from "../../packages/gpx/gpx-core.mjs";
-import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
+import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
 import { deriveRibbonMeta, normalizeTerrainPalette, terrainBandForElevation, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
 
 const $=id=>document.getElementById(id);
-const state={route:null,palette:{...DEFAULT_TERRAIN_PALETTE},production:null,glbUrl:null,yaw:-.35,pitch:.82,zoom:1,drag:false,last:[0,0]};
+const state={route:null,palette:{...DEFAULT_TERRAIN_PALETTE},production:null,glbUrl:null,yaw:-.35,pitch:.82,zoom:1,drag:false,last:[0,0],demFile:null,arcFile:null};
 
 function readOverrides(){return {event:$("eventOverride").value,rider:$("riderName").value,date:$("eventDate").value}}
 function updateRibbon(){
@@ -62,10 +62,27 @@ async function generate(){
   $("generate").disabled=true;$("productionStatus").textContent="Loading terrain and building governed mesh…";
   try{
     const config=currentConfig(),bounds=productionBounds({minLat:Math.min(...state.route.points.map(p=>p.lat)),maxLat:Math.max(...state.route.points.map(p=>p.lat)),minLon:Math.min(...state.route.points.map(p=>p.lon)),maxLon:Math.max(...state.route.points.map(p=>p.lon))},config.shape);
-    if(config.dem.source!=="terrarium")throw new Error("Local GeoTIFF / Arc-ASCII selection is exposed in Advanced; file-loader wiring is the next foundation gate. Terrarium is production-ready now.");
-    const terrain=await loadTerrariumSampler(bounds,{preferredZoom:11,tileBudget:48});
+    let demSampler;
+    if(config.dem.source==="terrarium"){
+      $("demStatus").textContent="Loading AWS Terrarium elevation…";
+      const terrain=await loadTerrariumSampler(bounds,{preferredZoom:11,tileBudget:48});
+      demSampler=terrain.sample;
+      $("demStatus").textContent="Terrarium ready · zoom "+terrain.zoom+" · "+terrain.tileCount+" tiles";
+    }else if(config.dem.source==="geotiff"){
+      if(!state.demFile)throw new Error("Choose a GeoTIFF DEM in Advanced → DEM & elevation.");
+      $("demStatus").textContent="Reading GeoTIFF…";
+      const raster=await loadGeoTiffFile(state.demFile,{fillNoData:true,smoothingRadius:0});
+      demSampler=raster.sampleLatLon;
+      $("demStatus").textContent="GeoTIFF ready · "+raster.width+"×"+raster.height+" · "+raster.sourceCrs;
+    }else{
+      if(!state.arcFile)throw new Error("Choose an Arc-ASCII DEM in Advanced → DEM & elevation.");
+      $("demStatus").textContent="Reading Arc-ASCII…";
+      const raster=await loadArcAsciiFile(state.arcFile);
+      demSampler=raster.sample;
+      $("demStatus").textContent="Arc-ASCII ready · "+raster.grid.ncols+"×"+raster.grid.nrows;
+    }
     const title=productionDisplayTitle(state.route.name,config.customization);
-    state.production=await generateProductionModel({points:state.route.points,demSampler:terrain.sample,cartography:null,config,title});
+    state.production=await generateProductionModel({points:state.route.points,demSampler,cartography:null,config,title});
     const p=state.production;
     $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles";
     document.querySelectorAll("[data-export]").forEach(b=>b.disabled=false);$("downloadValidation").disabled=!p.validationBundle;
@@ -88,3 +105,14 @@ $("downloadValidation").addEventListener("click",()=>state.production?.validatio
 $("resetView").onclick=()=>{state.yaw=-.35;state.pitch=.82;state.zoom=1;render()};
 const canvas=$("terrainCanvas");canvas.addEventListener("pointerdown",e=>{state.drag=true;state.last=[e.clientX,e.clientY];canvas.setPointerCapture?.(e.pointerId)});canvas.addEventListener("pointermove",e=>{if(!state.drag)return;state.yaw+=(e.clientX-state.last[0])*.007;state.pitch+=(e.clientY-state.last[1])*.006;state.last=[e.clientX,e.clientY];render()});canvas.addEventListener("pointerup",()=>state.drag=false);canvas.addEventListener("wheel",e=>{e.preventDefault();state.zoom=Math.max(.5,Math.min(3,state.zoom*(e.deltaY>0?.92:1.08)));render()},{passive:false});
 syncOutputs();updateRibbon();render();
+
+function syncDemSource(){
+  const source=$("demSource").value;
+  $("geoTiffRow").hidden=source!=="geotiff";
+  $("arcRow").hidden=source!=="arc";
+  if(source==="terrarium")$("demStatus").textContent="Terrarium will load automatically during production.";
+}
+$("demSource").addEventListener("change",syncDemSource);
+$("geoTiffInput").addEventListener("change",event=>{state.demFile=event.target.files?.[0]||null;$("demStatus").textContent=state.demFile?"GeoTIFF selected · "+state.demFile.name:"Choose a GeoTIFF DEM.";});
+$("arcInput").addEventListener("change",event=>{state.arcFile=event.target.files?.[0]||null;$("demStatus").textContent=state.arcFile?"Arc-ASCII selected · "+state.arcFile.name:"Choose an Arc-ASCII DEM.";});
+syncDemSource();
