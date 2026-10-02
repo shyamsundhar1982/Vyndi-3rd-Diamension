@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { defaultAdvancedConfig, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
+import { defaultAdvancedConfig, productionBounds, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
 import { mergeGpxRoutes } from "../packages/gpx/gpx-core.mjs";
 
 const html=readFileSync(new URL("../apps/web/index.html",import.meta.url),"utf8");
@@ -58,4 +58,22 @@ test("route style none removes the physical route while raised retains it and pr
   assert.equal(raised.mesh.triangles.some(t=>t.region===5),true);
   assert.ok(raised.printPackage instanceof Uint8Array);
   assert.ok(raised.printPackage.length>100);
+});
+
+test("area-around-route control expands canonical production bounds in kilometres",()=>{
+  const route={minLat:10,maxLat:10.02,minLon:76,maxLon:76.02};
+  const near=productionBounds(route,{kind:"route-fit",routeBufferKm:1});
+  const wide=productionBounds(route,{kind:"route-fit",routeBufferKm:20});
+  assert.ok((wide.maxLat-wide.minLat)>(near.maxLat-near.minLat));
+  assert.ok((wide.maxLon-wide.minLon)>(near.maxLon-near.minLon));
+});
+
+test("bottom mark is physical underside engraving, not metadata only",async()=>{
+  const points=[{lat:10,lon:76,ele:100,segment:1},{lat:10.01,lon:76.01,ele:300,segment:1},{lat:10.02,lon:76.02,ele:180,segment:1}];
+  const model=await generateProductionModel({
+    points,demSampler:(lat)=>100+(lat-10)*10000,
+    config:{shape:{kind:"circle"},production:{bottomMark:"SHYAM VYNDI",bottomEngraveDepthMm:.4},fabrication:{modelWidthMm:80,baseMm:3,reliefMm:5,targetXyMm:1.5,routeStyle:"none",rimWidthMm:5,rimHeightMm:2}},
+    title:"Underside engraving"
+  });
+  assert.ok(model.mesh.vertices.some(v=>v.z>.05&&v.z<.55),"expected recessed underside engraving vertices");
 });
