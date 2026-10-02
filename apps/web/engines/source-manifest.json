@@ -1,0 +1,17 @@
+{
+  "schema": "vyndi-3rd-diamension/source-fidelity-v1",
+  "generatedAt": "2026-10-02",
+  "trailrelief": {
+    "repository": "shyamsundhar1982/trailrelief",
+    "entrypoint": "dist-desktop/index.html",
+    "bundle": "dist-desktop/assets/index-NHlygkOy.js",
+    "bundleSha": "c448883cd5ecf18ed243762d3e181f5a55d3a4e6",
+    "mode": "vendored source-fidelity"
+  },
+  "vyndi": {
+    "repository": "vayu-shastr/vyndi-ride-stories",
+    "entrypoint": "dist/terrain-medal.html",
+    "terrainMedalSha": "4584945ea4fc830d7156d4f843251bcb28e5a50b",
+    "mode": "vendored source-fidelity"
+  }
+}

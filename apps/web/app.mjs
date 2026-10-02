@@ -290,6 +290,26 @@ function updateQualityBadge(model,prefix="QUALITY"){
   $("qualityBadge").textContent=bits.length?prefix+" · "+bits.join(" · "):prefix+" · PASS";
   $("qualityBadge").classList.toggle("active",bits.length>0);
 }
+function switchEngineMode(mode="unified"){
+  const source=mode==="trailrelief-source"||mode==="vyndi-source";
+  document.body.dataset.engineMode=mode;
+  for(const button of document.querySelectorAll("[data-engine]"))button.classList.toggle("active",button.dataset.engine===mode);
+  $("sourceStage").classList.toggle("active",source);
+  $("liveStage").classList.toggle("engine-hidden",source);
+  $("productionStage").classList.toggle("engine-hidden",source);
+  document.querySelector(".camera-tools")?.classList.toggle("engine-hidden",source);
+  document.querySelector(".view-tabs")?.classList.toggle("engine-hidden",source);
+  if(source){
+    const button=document.querySelector('[data-engine="'+mode+'"]'),src=button?.dataset.src||"";
+    if(src&&$("sourceEngineFrame").getAttribute("src")!==src)$("sourceEngineFrame").setAttribute("src",src);
+    $("sourceEngineBadge").textContent=mode==="trailrelief-source"?"TRAILRELIEF SOURCE · EXACT BUNDLE":"VYNDI TERRAIN MEDAL · EXACT SOURCE";
+  }else{
+    $("sourceEngineFrame").removeAttribute("src");
+    const production=document.querySelector('[data-view="production"]')?.classList.contains("active");
+    $("liveStage").classList.toggle("active",!production);$("productionStage").classList.toggle("active",Boolean(production));
+  }
+}
+
 function applyCameraPreset(kind){
   const viewers=[$("liveModelViewer"),$("modelViewer")].filter(Boolean);
   for(const viewer of viewers){
@@ -533,9 +553,10 @@ $("downloadPrintPackage").addEventListener("click",()=>state.production?.printPa
 $("downloadJob").addEventListener("click",exportJob);
 $("openAdvanced").onclick=()=>{$("advancedDrawer").classList.add("open");$("advancedDrawer").setAttribute("aria-hidden","false")};
 $("closeAdvanced").onclick=()=>{$("advancedDrawer").classList.remove("open");$("advancedDrawer").setAttribute("aria-hidden","true")};
+for(const button of document.querySelectorAll("[data-engine]"))button.addEventListener("click",()=>switchEngineMode(button.dataset.engine));
 $("cameraIso").addEventListener("click",()=>applyCameraPreset("iso"));
 $("cameraTop").addEventListener("click",()=>applyCameraPreset("top"));
 $("cameraFit").addEventListener("click",()=>applyCameraPreset("fit"));
 $("resetView").onclick=()=>applyCameraPreset("iso");
 
-applyVisualPreset($("visualPreset").value,{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
+switchEngineMode("unified");applyVisualPreset($("visualPreset").value,{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();

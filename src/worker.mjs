@@ -25,6 +25,21 @@ function secure(response){
   }
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
+function secureEngine(response){
+  const headers=new Headers(response.headers);
+  for(const [name,value] of Object.entries(BASE_HEADERS))headers.set(name,value);
+  headers.set("x-frame-options","SAMEORIGIN");
+  headers.set("content-security-policy",[
+    "default-src 'self'","base-uri 'none'","object-src 'none'","frame-ancestors 'self'","form-action 'self'",
+    "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://vyndi-ride-stories.vayushastr.workers.dev",
+    "media-src 'self' blob:",
+    "connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems https://vyndi-ride-stories.vayushastr.workers.dev",
+    "worker-src 'self' blob:","manifest-src 'self'"
+  ].join("; "));
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
 function json(body,status=200){return secure(new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}}))}
 function trusted(request){
   const url=new URL(request.url),origin=request.headers.get("origin"),site=String(request.headers.get("sec-fetch-site")||"").toLowerCase();
@@ -74,6 +89,15 @@ async function verifyPage(url,secret){
   const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>VYNDI authenticity</title><style>body{background:#100d0b;color:#f4efe7;font-family:Arial;margin:0}main{max-width:760px;margin:auto;padding:70px 28px}.card{border:1px solid #4b392c;background:#171310;padding:24px;line-height:1.8}.ok{color:#c9ff38}.bad{color:#ff6a1f}code{word-break:break-all}</style></head><body><main><p>VYNDI 3rd Diamension</p><h1 class="'+(ok?"ok":"bad")+'">'+(ok?"AUTHENTIC RECEIPT":"NOT VERIFIED")+'</h1><div class="card">'+(ok?'Artifact <strong>'+esc(claim.artifactId)+'</strong><br>Issued '+esc(claim.issuedAt)+'<br>Manifest <code>'+esc(claim.manifestHash)+'</code>':esc(result.error))+'</div></main></body></html>';
   return secure(new Response(html,{status:ok?200:400,headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}}));
 }
+async function sourceVyndiProxy(request,url){
+  const upstream=new URL("https://vyndi-ride-stories.vayushastr.workers.dev"+url.pathname+url.search);
+  const headers=new Headers(request.headers);headers.delete("host");headers.delete("origin");headers.delete("referer");
+  const init={method:request.method,headers,redirect:"follow"};
+  if(!["GET","HEAD"].includes(request.method))init.body=await request.arrayBuffer();
+  const response=await fetch(upstream,init);
+  const outHeaders=new Headers(response.headers);outHeaders.set("cache-control","no-store");
+  return secure(new Response(response.body,{status:response.status,statusText:response.statusText,headers:outHeaders}));
+}
 async function geoSearch(url){
   const q=String(url.searchParams.get("city")||url.searchParams.get("q")||"").trim();if(!q||q.length>180)throw new Error("Enter a valid place name.");
   const upstream=new URL("https://nominatim.openstreetmap.org/search");upstream.searchParams.set("q",q);upstream.searchParams.set("format","jsonv2");upstream.searchParams.set("addressdetails","1");upstream.searchParams.set("limit","8");
@@ -95,6 +119,7 @@ export default {
     const url=new URL(request.url);
     if(url.pathname.startsWith("/api/")&&!trusted(request))return json({error:"Cross-site API access is not permitted."},403);
     if(url.pathname==="/health")return json({ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
+    if(["/api/geo/search","/api/geo/outline","/api/events/search","/api/events/import-result","/api/terrain/plan","/api/map/plan"].includes(url.pathname))return sourceVyndiProxy(request,url);
     if(url.pathname==="/api/geo/search"&&request.method==="GET"){try{return json({results:await geoSearch(url)})}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/geo/outline"&&request.method==="GET"){try{return json(await geoOutline(url))}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/terrain/opentopography"&&request.method==="POST"){
@@ -123,6 +148,7 @@ export default {
     if(url.pathname==="/"){
       const target=new URL(request.url);target.pathname="/apps/web/";return secure(await env.ASSETS.fetch(new Request(target,request)));
     }
+    if(url.pathname.startsWith("/apps/web/engines/")&&url.pathname.endsWith(".html"))return secureEngine(await env.ASSETS.fetch(request));
     return secure(await env.ASSETS.fetch(request));
   }
 };
