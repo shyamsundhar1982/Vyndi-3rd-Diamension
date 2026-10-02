@@ -26,3 +26,11 @@ test("production GLB uses the proven self-hosted model-viewer path",()=>{
   assert.match(app,/import\("\.\/vendor\/model-viewer\.min\.js"\)/);
   assert.match(app,/modelViewer"\)\.src=state\.glbUrl/);
 });
+
+test("advanced DEM sources are wired as real file workflows",()=>{
+  for(const id of ["geoTiffInput","arcInput","demSource"])assert.match(html,new RegExp('id="'+id+'"'));
+  assert.match(app,/loadGeoTiffFile/);
+  assert.match(app,/loadArcAsciiFile/);
+  assert.match(app,/state\.demFile/);
+  assert.match(app,/state\.arcFile/);
+});
