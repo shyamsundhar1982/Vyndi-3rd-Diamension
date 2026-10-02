@@ -34,3 +34,9 @@ test("advanced DEM sources are wired as real file workflows",()=>{
   assert.match(app,/state\.demFile/);
   assert.match(app,/state\.arcFile/);
 });
+
+test("selected map layers feed the governed production model",()=>{
+  assert.match(app,/loadOpenFreeMapCartography/);
+  assert.match(app,/cartography/);
+  assert.match(app,/mapEnabled/);
+});
