@@ -1,3 +1,4 @@
+const OPEN_TOPO_DATASETS=new Set(["COP30","COP90","NASADEM","SRTM_GL1","AW3D30","EU_DTM"]);
 const BASE_HEADERS={
   "strict-transport-security":"max-age=31536000; includeSubDomains",
   "x-content-type-options":"nosniff",
@@ -96,6 +97,22 @@ export default {
     if(url.pathname==="/health")return json({ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
     if(url.pathname==="/api/geo/search"&&request.method==="GET"){try{return json({results:await geoSearch(url)})}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/geo/outline"&&request.method==="GET"){try{return json(await geoOutline(url))}catch(error){return json({error:error.message},400)}}
+    if(url.pathname==="/api/terrain/opentopography"&&request.method==="POST"){
+      if(Number(request.headers.get("content-length")||0)>16384)return json({error:"DEM request is too large."},413);
+      try{
+        const input=await request.json(),dataset=String(input.dataset||"COP30"),apiKey=String(input.apiKey||"").trim(),b=input.bounds||{};
+        const south=Number(b.minLat),north=Number(b.maxLat),west=Number(b.minLon),east=Number(b.maxLon);
+        if(!OPEN_TOPO_DATASETS.has(dataset))return json({error:"Unsupported OpenTopography dataset."},400);
+        if(!apiKey)return json({error:"OpenTopography API key is required."},400);
+        if(![south,north,west,east].every(Number.isFinite)||south>=north||west>=east)return json({error:"Valid terrain bounds are required."},400);
+        const upstreamUrl=new URL("https://portal.opentopography.org/API/globaldem");
+        upstreamUrl.searchParams.set("demtype",dataset);upstreamUrl.searchParams.set("south",String(south));upstreamUrl.searchParams.set("north",String(north));upstreamUrl.searchParams.set("west",String(west));upstreamUrl.searchParams.set("east",String(east));upstreamUrl.searchParams.set("outputFormat","AAIGrid");upstreamUrl.searchParams.set("API_Key",apiKey);
+        const upstream=await fetch(upstreamUrl,{headers:{"user-agent":"VYNDI-3rd-Diamension/1.0 (+https://vayushastr.com)","accept":"text/plain,*/*"}});
+        if(!upstream.ok)return json({error:"OpenTopography returned "+upstream.status+"."},502);
+        const text=await upstream.text();if(text.length>12000000)return json({error:"OpenTopography grid is too large for browser processing."},413);
+        return secure(new Response(text,{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store","x-terrain-source":"opentopography-"+dataset}}));
+      }catch(error){return json({error:error.message||"OpenTopography request failed."},400)}
+    }
     if(url.pathname==="/api/authenticity/status"&&request.method==="GET")return json({configured:typeof env.VYNDI_AUTH_SECRET==="string"&&env.VYNDI_AUTH_SECRET.length>=32,version:1});
     if(url.pathname==="/api/authenticity/issue"&&request.method==="POST"){
       if(Number(request.headers.get("content-length")||0)>65536)return json({error:"Authenticity request is too large."},413);
