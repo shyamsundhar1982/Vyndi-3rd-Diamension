@@ -157,7 +157,7 @@ function renderPlaceSelectionList(){
 
 async function ensurePermanentVayuLogo(){
   if(fabricationState.permanentLogoBitmap)return fabricationState.permanentLogoBitmap;
-  const response=await fetch("./assets/vayu-official.png",{cache:"force-cache"});
+  const response=await fetch("https://vyndi-ride-stories.vayushastr.workers.dev/assets/vayu-official.png",{cache:"force-cache",mode:"cors"});
   if(!response.ok)throw new Error("Permanent provenance watermark asset is unavailable.");
   fabricationState.permanentLogoBytes=new Uint8Array(await response.arrayBuffer());
   fabricationState.permanentLogoBitmap=await createImageBitmap(new Blob([fabricationState.permanentLogoBytes],{type:"image/png"}));
