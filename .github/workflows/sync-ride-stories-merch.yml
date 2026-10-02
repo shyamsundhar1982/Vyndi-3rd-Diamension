@@ -1,0 +1,33 @@
+name: Sync Ride Stories merch landing
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/sync-ride-stories-merch.sh"
+      - "scripts/build-web.mjs"
+      - ".github/workflows/sync-ride-stories-merch.yml"
+  schedule:
+    - cron: "0 6 * * 1"
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync official merch from vayu-shastr/vyndi-ride-stories
+        run: |
+          chmod +x scripts/sync-ride-stories-merch.sh
+          bash scripts/sync-ride-stories-merch.sh
+      - name: Verify merch landing
+        run: |
+          test -f apps/merch-site/index.html
+          grep -q "My Road" apps/merch-site/index.html
+          grep -q "/apps/web/" apps/merch-site/index.html
+      - name: Commit merch-site
+        run: |
+          git config user.name "vyndi-merch-sync"
+          git config user.email "vyndi-merch-sync@users.noreply.github.com"
+          git add apps/merch-site scripts/sync-ride-stories-merch.sh scripts/build-web.mjs src/worker.mjs
+          git diff --cached --quiet || git commit -m "Sync official Ride Stories merch (My Road — My Glory) as landing"
+          git push
