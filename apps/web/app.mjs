@@ -465,11 +465,24 @@ async function installLiveModel(model,label){
 }
 async function generateLivePreview({preferDem=true}={}){
   if(!state.route?.points?.length)return;
-  const generation=++state.previewGeneration,route=state.route,config=previewConfig();
-  if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
-  $("livePreviewStatus").textContent=state.liveDemSampler?"REFINING LIVE 3D · TERRAIN DEM":"BUILDING LIVE 3D · GPX ELEVATION";
+  const generation=++state.previewGeneration,route=state.route,sourceMode=$("sourceRenderer").value;
+  let config=previewConfig();
+  if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline&&sourceMode==="v3d-unified"){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
+  $("livePreviewStatus").textContent=state.liveDemSampler?"REFINING SOURCE VIEW · TERRAIN DEM":"BUILDING SOURCE VIEW · GPX ELEVATION";
   try{
     const demSampler=state.liveDemSampler||gpxPreviewSampler(route.points),title=productionDisplayTitle(route.name,config.customization);
+    if(sourceMode!=="v3d-unified"){
+      if(sourceMode==="vyndi-original"){
+        renderVyndiSourcePreview({route,demSampler,config});
+      }else{
+        config=normalizeAdvancedConfig({...config,fabrication:{...config.fabrication,reliefMm:trailReliefSourceRelief(route,demSampler,config)},shape:{...config.shape,kind:"circle",outlineGeometry:null},map:{roads:false,trails:false,railways:false,buildings:false},placeLabels:{...config.placeLabels,mode:"none"}});
+        const model=await generateProductionModel({points:route.points,demSampler,cartography:null,landcover:state.landcover,config,logoImage:null,heightmapImage:null,title});
+        if(generation!==state.previewGeneration||route!==state.route)return;
+        await renderTrailReliefSource(model,config);
+      }
+      if(preferDem&&!state.liveDemSampler&&!state.liveDemPromise)void enhanceLivePreviewWithTerrain(route);
+      return;
+    }
     const model=await generateProductionModel({points:route.points,demSampler,cartography:null,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     if(generation!==state.previewGeneration||route!==state.route)return;
     if($("visualPreset").value==="premium-medal"&&config.shape.kind==="geo-medallion"&&state.geoOutline){
@@ -479,9 +492,10 @@ async function generateLivePreview({preferDem=true}={}){
         model.quality={...(model.quality||{}),premiumTexture:true};
       }catch{}
     }
-    await installLiveModel(model,state.liveDemSampler?"LIVE 3D READY · TERRAIN DEM":"LIVE 3D READY · GPX ELEVATION");
+    setSourceSurface("v3d-unified");
+    await installLiveModel(model,state.liveDemSampler?"V3D READY · TERRAIN DEM":"V3D READY · GPX ELEVATION");
     if(preferDem&&!state.liveDemSampler&&!state.liveDemPromise)void enhanceLivePreviewWithTerrain(route);
-  }catch(error){if(generation===state.previewGeneration)$("livePreviewStatus").textContent="LIVE 3D ERROR · "+(error.message||String(error))}
+  }catch(error){if(generation===state.previewGeneration)$("livePreviewStatus").textContent="SOURCE RENDER ERROR · "+(error.message||String(error))}
 }
 async function enhanceLivePreviewWithTerrain(route){
   if(!route?.points?.length||route!==state.route||state.liveDemSampler||state.liveDemPromise)return;
