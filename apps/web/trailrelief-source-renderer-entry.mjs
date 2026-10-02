@@ -20,7 +20,7 @@ function regionColor(region,colors={}){
     0:colors.land||"#b7a77a",1:colors.forest||"#3f6b3a",2:colors.mountain||"#8a7a68",3:colors.snow||"#f4f3ee",
     4:colors.water||"#3d86b8",5:colors.route||"#ff6a1f",6:colors.roads||"#c9c1b5",7:colors.trails||colors.forest||"#3f6b3a",
     8:colors.railways||"#7e8791",9:colors.buildings||"#d8d1c4",10:colors.logo||colors.text||"#f2c14e",
-    11:colors.text||"#f2c14e",12:colors.rim||"#23201d"
+    11:colors.text||"#f2c14e",12:colors.rim||"#23201d",13:colors.base||"#2b2622",14:colors.sea||"#1f4f7a"
   };
   return map[region]||colors.base||"#2b2622";
 }
