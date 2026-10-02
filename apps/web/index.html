@@ -42,7 +42,14 @@
       <div class="route-brief">
         <strong id="routeBrief">No route loaded</strong>
         <span id="routeDetail">Drop one or more GPX files or use Demo.</span>
-        <label class="preset-line">Presentation
+        <label class="preset-line">Renderer
+          <select id="sourceRenderer">
+            <option value="trailrelief-original" selected>TrailRelief Original</option>
+            <option value="vyndi-original">VYNDI Terrain Medal Original</option>
+            <option value="v3d-unified">V3D Unified</option>
+          </select>
+        </label>
+        <label class="preset-line" id="visualPresetRow">Presentation
           <select id="visualPreset">
             <option value="premium-medal" selected>Premium terrain medal</option>
             <option value="detailed-map">Detailed cartography</option>
