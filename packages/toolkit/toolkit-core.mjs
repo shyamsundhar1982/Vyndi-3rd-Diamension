@@ -57,6 +57,13 @@ export const ADVANCED_GROUPS=Object.freeze([
 ]);
 
 export const PRODUCTION_FORMATS=Object.freeze(["3mf","stl","obj","glb"]);
+export const PRINTER_PROFILES=Object.freeze({
+  "bambu-p1s":{label:"Bambu Lab P1S / AMS",technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3,recommendedLayerMm:.16,bed:[256,256,256],slicers:["Bambu Studio","OrcaSlicer"],preferredFormat:"3mf"},
+  "generic-fdm":{label:"Generic FDM · 0.4 mm nozzle",technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3,recommendedLayerMm:.2,bed:[220,220,250],slicers:["PrusaSlicer","Cura"],preferredFormat:"3mf"},
+  "fine-fdm":{label:"Fine FDM · 0.25 mm nozzle",technology:"FDM",nozzleMm:.25,minFeatureMm:.5,minEmbossMm:.2,recommendedLayerMm:.12,bed:[180,180,180],slicers:["Bambu Studio","OrcaSlicer","PrusaSlicer"],preferredFormat:"3mf"},
+  "resin":{label:"MSLA / SLA resin",technology:"MSLA",nozzleMm:.25,minFeatureMm:.35,minEmbossMm:.18,recommendedLayerMm:.05,bed:[130,80,160],slicers:["Lychee","Chitubox"],preferredFormat:"stl"},
+  "sls":{label:"SLS / MJF service",technology:"SLS",nozzleMm:.4,minFeatureMm:.6,minEmbossMm:.25,recommendedLayerMm:.1,bed:[250,250,250],slicers:["Service bureau"],preferredFormat:"stl"}
+});
 
 
 export function normalizeCustomization(input={}){
@@ -730,10 +737,13 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   return meshes;
 }
 
-export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18}={}){
-  if(!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
-  const radius=projection.radius,meshes=[],occupied=[];
-  const places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class)).slice(0,Math.max(0,maxLabels));
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[]}={}){
+  if(mode==="none"||!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[],occupied=[],selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
+  let places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
+  if(mode==="selected")places=places.filter(p=>selected.has(String(p.name).toLowerCase()));
+  else if(mode==="major")places=places.filter(p=>p.class==="city"||p.class==="town");
+  places=places.slice(0,Math.max(0,maxLabels));
   for(const place of places){
     const nx=Number(place.x),ny=Number(place.y);
     if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
@@ -771,7 +781,9 @@ function modelExtents(config,projection,outlinePolygons){
 
 function makePockets(config,extents){
   if(!config.fabrication.magnetEnabled)return [];
-  const x=(extents.maxX-extents.minX)*.26,y=(extents.maxY-extents.minY)*.26;
+  const maxX=(extents.maxX-extents.minX)*.32,maxY=(extents.maxY-extents.minY)*.32;
+  const halfSpacing=Math.max(4,(Number(config.fabrication.magnetSpacingMm)||30)/2);
+  const x=Math.min(maxX,halfSpacing),y=Math.min(maxY,halfSpacing);
   return [
     {xMm:-x,yMm:-y,diameterMm:config.fabrication.magnetDiameterMm,depthMm:config.fabrication.magnetDepthMm},
     {xMm:x,yMm:-y,diameterMm:config.fabrication.magnetDiameterMm,depthMm:config.fabrication.magnetDepthMm},
@@ -783,7 +795,7 @@ function makePockets(config,extents){
 function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents}){
   const widthMm=extents.maxX-extents.minX,heightMm=extents.maxY-extents.minY;
   const adaptive=adaptiveLargeFormatPlan({
-    widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:config.fabrication.maxTileMm
+    widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:Math.min(Number(config.fabrication.maxTileWidthMm)||config.fabrication.maxTileMm,Number(config.fabrication.maxTileHeightMm)||config.fabrication.maxTileMm)
   });
   const connectors=planTiledMap({
     widthMm,heightMm,maxTileWidthMm:widthMm/adaptive.columns+.001,maxTileHeightMm:heightMm/adaptive.rows+.001,jointType:config.fabrication.jointType
@@ -802,8 +814,8 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
       bottomAt:(lx,ly)=>{
         let depth=0;
         for(const connector of related){
-          if(config.fabrication.jointType==="dovetail")depth=Math.max(depth,dovetailSlotDepth(lx,ly,tile,connector,{lengthMm:16,headWidthMm:8,neckWidthMm:5,depthMm:Math.min(config.fabrication.baseMm-.4,2)}));
-          if(config.fabrication.jointType==="pin")depth=Math.max(depth,alignmentSocketDepth(lx,ly,tile,connector,{diameterMm:8,depthMm:Math.min(config.fabrication.baseMm-.4,2)}));
+          if(config.fabrication.jointType==="dovetail")depth=Math.max(depth,dovetailSlotDepth(lx,ly,tile,connector,{lengthMm:16,headWidthMm:8,neckWidthMm:5,depthMm:Math.min(config.fabrication.baseMm-.4,Number(config.fabrication.jointDepthMm)||2)}));
+          if(config.fabrication.jointType==="pin")depth=Math.max(depth,alignmentSocketDepth(lx,ly,tile,connector,{diameterMm:Number(config.fabrication.jointDiameterMm)||8,depthMm:Math.min(config.fabrication.baseMm-.4,Number(config.fabrication.jointDepthMm)||2)}));
         }
         return depth;
       },
@@ -824,7 +836,7 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
     const key=buildDovetailKeyMesh({lengthMm:16,headWidthMm:8,neckWidthMm:5,heightMm:2.4});
     files.push({name:"dovetail-key.stl",data:encodeBinaryStl(key,{name:"TrailRelief dovetail key"})});
   }else if(config.fabrication.jointType==="pin"){
-    const puck=buildCylinderMesh({diameterMm:7.7,heightMm:2,segments:48,region:6});
+    const clearance=Math.max(0,Number(config.fabrication.jointClearanceMm)||0);const puck=buildCylinderMesh({diameterMm:Math.max(1,(Number(config.fabrication.jointDiameterMm)||8)-clearance),heightMm:Math.max(.5,Number(config.fabrication.jointDepthMm)||2),segments:48,region:6});
     files.push({name:"alignment-puck.stl",data:encodeBinaryStl(puck,{name:"TrailRelief alignment puck"})});
   }
   files.push({name:"manifest.json",data:JSON.stringify({...plan,jointQuantity:config.fabrication.jointType==="flat"?0:jointPairs},null,2)});
@@ -928,7 +940,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18),mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
@@ -936,7 +948,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   });
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){
-    const outer=7,inner=3,centerY=extents.maxY+outer*.55;
+    const inner=Math.max(1,(Number(c.fabrication.hangerInnerDiameterMm)||6)/2),wall=Math.max(1,Number(c.fabrication.hangerWallMm)||3),outer=inner+wall,centerY=extents.maxY+outer*.55;
     meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
   }
   const mesh=mergeMeshes(meshes),validation=validateMesh(mesh);
@@ -944,7 +956,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const materials=productionMaterials(c);
   const stl=encodeBinaryStl(mesh,{name:title}),threeMf=encode3mf(mesh,{title,materials}),mtl=encodeMtl(materials),obj=encodeObj(mesh,{name:title,materials,mtlFile:"model.mtl"}),glb=encodeGlb(mesh,{title,materials});
   const objBundle=encodeArtifactZip([{name:"model.obj",data:obj},{name:"model.mtl",data:mtl}]);
-  const coupon=buildPrintValidationCoupon({technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3});
+  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
+  const coupon=buildPrintValidationCoupon({technology:profile.technology,nozzleMm:profile.nozzleMm,minFeatureMm:profile.minFeatureMm,minEmbossMm:profile.minEmbossMm});
   const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),config:c};
   const validationBundle=encodeArtifactZip([
     {name:"validation.json",data:JSON.stringify(manifest,null,2)},
@@ -962,5 +975,14 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     standStl=encodeBinaryStl(stand,{name:"TrailRelief display stand"});
   }
   const workload=classifyTerrainWorkload({estimatedVertices:mesh.vertices.length,deviceMemoryGb:Number(globalThis.navigator?.deviceMemory||8)});
-  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,workload};
+  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,config:c};
+  const packageFiles=[
+    {name:"model.3mf",data:threeMf},{name:"model.stl",data:stl},{name:"model.glb",data:glb},
+    {name:"model-obj.zip",data:objBundle},{name:"validation.zip",data:validationBundle},
+    {name:"production.json",data:JSON.stringify(packageManifest,null,2)}
+  ];
+  if(standStl)packageFiles.push({name:"display-stand.stl",data:standStl});
+  if(tileBundle)packageFiles.push({name:"tiled-map.zip",data:tileBundle});
+  const printPackage=encodeArtifactZip(packageFiles);
+  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,workload};
 }
