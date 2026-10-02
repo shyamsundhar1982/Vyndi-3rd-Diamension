@@ -85,3 +85,7 @@ test("source parity profiles bypass the invented premium hillshade path",()=>{
   assert.match(app,/premium-medal/);
   assert.match(app,/sourceMode!==\"v3d-unified\"/);
 });
+
+test("authenticity manifest records the renderer source",()=>{
+  assert.match(app,/sourceRenderer:state\.production\.config\.production\.sourceRenderer/);
+});
