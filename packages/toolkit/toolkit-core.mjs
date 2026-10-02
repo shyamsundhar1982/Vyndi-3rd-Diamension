@@ -88,12 +88,13 @@ export function defaultAdvancedConfig(){
     dem:{source:"terrarium",fillNoData:true,smoothingRadius:0,crsOverride:"",routeElevationMode:"dem",routeElevationBlend:.5,maxDeltaM:150},
     map:{roads:true,trails:true,railways:true,buildings:false},
     shape:{kind:"route-fit",aspect:1.35,outlineGeometry:null,logoEnabled:false,logoAuto:true,logoWidthMm:18,logoRiseMm:.8},
-    colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8b8378",snow:"#f4f7f8",water:"#2f86a6",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e"},
+    colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8a7a68",snow:"#f4f3ee",water:"#3d86b8",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e",rim:"#23201d"},
     terrainBands:{mountainM:1200,snowM:2600},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
-      modelWidthMm:180,baseMm:3,reliefMm:8,targetXyMm:1,
+      modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
       routeWidthMm:1.6,routeRiseMm:1.2,
+      rimWidthMm:12,rimHeightMm:5,
       tiled:false,maxTileMm:200,jointType:"dovetail",
       magnetEnabled:false,magnetDiameterMm:8,magnetDepthMm:2,
       hangerEnabled:false,standEnabled:false
@@ -184,6 +185,9 @@ export function productionBounds(route,shape={}){
   const currentAspect=geoWidth/Math.max(1e-9,geoHeight);
   if(currentAspect>targetAspect)geoHeight=geoWidth/targetAspect;
   else geoWidth=geoHeight*targetAspect;
+  // A route bbox fitted directly into a circle places its corners outside the printable disk.
+  // TrailRelief instead reserves radial padding around the furthest route point.
+  if(shape.kind==="circle"){const radialSafety=Math.SQRT2*1.15;geoWidth*=radialSafety;geoHeight*=radialSafety;}
   const latHalf=geoHeight/2,lonHalf=geoWidth/(2*lonScale);
   return {
     minLat:Math.max(-85,midLat-latHalf),maxLat:Math.min(85,midLat+latHalf),
@@ -212,7 +216,8 @@ export function productionMaterials(config={}){
     {name:"Railways",color:opaqueHex(colors.railways,"#7e8791")},
     {name:"Buildings",color:opaqueHex(colors.buildings,"#d8d1c4")},
     {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e")},
-    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")}
+    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")},
+    {name:"Rim",color:opaqueHex(colors.rim,"#23201d")}
   ];
 }
 
@@ -510,7 +515,9 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
         };
         const a=toMm(list[i-1]),b=toMm(list[i]);
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
-        if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect))continue;
+        const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,ox=-dy/len*width/2,oy=dx/len*width/2;
+        const footprint=[[a.x+ox,a.y+oy],[a.x-ox,a.y-oy],[b.x+ox,b.y+oy],[b.x-ox,b.y-oy]];
+        if(!insideNormalized(nx,ny)||!footprint.every(([x,y])=>insideNormalized(x/radius,y/radius))||!inRect(mx,my,clipRect))continue;
         const zA=terrainTopMm(a.x,a.y),zB=terrainTopMm(b.x,b.y),mesh=segmentPrism(a,b,width,rise,zA,zB,region);
         if(mesh){meshes.push(shifted(mesh,offsetX,offsetY));used++;}
       }
@@ -620,7 +627,41 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
   return meshes;
 }
 
-export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8}={}){
+
+function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,flipRadial=false,maxArcRad=2.7,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0}={}){
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const outer=Math.max(1,Number(radiusMm)||0),rim=Math.max(0,Number(rimWidthMm)||0);
+  if(!value||rim<2||outer<=rim)return [];
+  const arcRadius=outer-rim/2,nominalWidth=value.length*6-1;
+  const cell=Math.max(.45,Math.min(Number(cellMm)||1.2,arcRadius*Math.max(.5,maxArcRad)/Math.max(1,nominalWidth),rim/8));
+  const totalWidth=nominalWidth*cell,startU=-totalWidth/2,meshes=[];
+  const map=(u,v)=>{
+    const theta=flipRadial?centerAngle+u/arcRadius:centerAngle-u/arcRadius;
+    const radial=flipRadial?arcRadius-v:arcRadius+v;
+    return {x:radial*Math.cos(theta),y:radial*Math.sin(theta)};
+  };
+  for(let ci=0;ci<value.length;ci++){
+    const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
+    for(let row=0;row<7;row++)for(let col=0;col<5;col++){
+      if(glyph[row][col]!=="1")continue;
+      const u0=startU+(ci*6+col)*cell,u1=u0+cell*.82;
+      const v1=(3.5-row)*cell,v0=v1-cell*.82;
+      const points=[map(u0,v0),map(u1,v0),map(u1,v1),map(u0,v1)];
+      if(points.some(p=>Math.hypot(p.x,p.y)>outer+.001||Math.hypot(p.x,p.y)<outer-rim-.001))continue;
+      try{
+        meshes.push(buildExtrudedPolygonMesh({
+          points,
+          baseZAt:(x,y)=>terrainTopMm(x,y),
+          heightMm:Math.max(.3,riseMm),
+          region:11
+        }));
+      }catch{}
+    }
+  }
+  return meshes;
+}
+
+export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape=""}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
   const meta=normalizeCustomization(customization);
   const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
@@ -629,6 +670,18 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   const width=Math.max(1,extents.maxX-extents.minX),height=Math.max(1,extents.maxY-extents.minY);
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
   const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
+  if(shape==="circle"&&Number(rimWidthMm)>=2){
+    if(meta.event)meshes.push(...curvedRimTextMeshes(meta.event,{
+      radiusMm:radius,rimWidthMm,centerAngle:Math.PI/2,maxArcRad:2.65,cellMm:baseCell,
+      riseMm:Math.max(.45,riseMm),terrainTopMm
+    }));
+    const lower=[identity,stats].filter(Boolean).join(" - ");
+    if(lower)meshes.push(...curvedRimTextMeshes(lower,{
+      radiusMm:radius,rimWidthMm,centerAngle:-Math.PI/2,flipRadial:true,maxArcRad:2.8,cellMm:baseCell*.72,
+      riseMm:Math.max(.35,riseMm*.78),terrainTopMm
+    }));
+    return meshes;
+  }
   if(meta.event)meshes.push(...textLineMeshes(meta.event,{
     centerX:0,centerY:extents.maxY-height*.17,maxWidth,cellMm:baseCell,
     riseMm:Math.max(.45,riseMm),terrainTopMm,inside
@@ -760,13 +813,29 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(c.shape.kind==="geographic")return insidePolygons(nx,ny,outlinePolygons);
     return pointInsideShape(nx,ny,c.shape.kind,{aspect:c.shape.aspect});
   };
-  const range=sampleRange(demSampler,bounds,insideNormalized);
+  // TrailRelief's 12 mm rim is ~13% of a 180 mm object's radius; preserve that proportion on smaller medals.
+  const rimWidthMm=Math.max(0,Math.min(projection.radius*.14,Number(c.fabrication.rimWidthMm)||0));
+  const rimHeightMm=Math.max(0,Number(c.fabrication.rimHeightMm)||0);
+  const rimScale=Math.max(.45,1-rimWidthMm/projection.radius);
+  const contentInsideNormalized=(nx,ny)=>{
+    if(!insideNormalized(nx,ny))return false;
+    if(!rimWidthMm||c.shape.kind==="geographic")return true;
+    if(c.shape.kind==="route-fit"){
+      const halfW=projection.widthMm/2-rimWidthMm,halfH=projection.heightMm/2-rimWidthMm;
+      return halfW>0&&halfH>0&&Math.abs(nx*projection.radius)<=halfW&&Math.abs(ny*projection.radius)<=halfH;
+    }
+    return pointInsideShape(nx/rimScale,ny/rimScale,c.shape.kind,{aspect:c.shape.aspect});
+  };
+  const isRimNormalized=(nx,ny)=>rimWidthMm>0&&insideNormalized(nx,ny)&&!contentInsideNormalized(nx,ny);
+  const range=sampleRange(demSampler,bounds,contentInsideNormalized);
   const routeCorrection=buildRouteElevationCorrection(points,demSampler,projection,range,{
     mode:c.dem.routeElevationMode,blend:c.dem.routeElevationBlend,maxDeltaM:c.dem.maxDeltaM,
     reliefMm:c.fabrication.reliefMm,routeWidthMm:c.fabrication.routeWidthMm
   });
   const terrainHeightNormalized=(nx,ny)=>{
     if(!insideNormalized(nx,ny))return 0;
+    if(isRimNormalized(nx,ny))return rimHeightMm;
+    if(!contentInsideNormalized(nx,ny))return 0;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     if(!Number.isFinite(elevation))return 0;
     const base=(elevation-range.min)/(range.max-range.min)*c.fabrication.reliefMm;
@@ -776,6 +845,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
   const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const terrainRegionNormalized=(nx,ny)=>{
+    if(isRimNormalized(nx,ny))return 12;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
   };
@@ -805,12 +875,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
     });
   }
-  const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized});
-  const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized,routePoints:points});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
+  const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
+  const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
-    riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7))
+    riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
+    rimWidthMm:c.fabrication.rimWidthMm,shape:c.shape.kind
   });
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){

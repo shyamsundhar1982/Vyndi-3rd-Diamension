@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { productionMaterials, classifyTerrainMaterial, buildPersonalizationMeshes, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
+import { defaultAdvancedConfig, productionBounds, productionMaterials, classifyTerrainMaterial, buildPersonalizationMeshes, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
 import { encodeGlb } from "../packages/engine/print-model-core.mjs";
 
 function glbJson(bytes){
@@ -18,7 +18,7 @@ test("production palette carries terrain classes and fabrication overlays",()=>{
     logo:"#ffee33",text:"#ffee33"
   }});
   assert.deepEqual(materials.map(m=>m.name),[
-    "Land","Forest","Mountain","Snow","Water","Route","Roads","Trails","Railways","Buildings","Logo","Text"
+    "Land","Forest","Mountain","Snow","Water","Route","Roads","Trails","Railways","Buildings","Logo","Text","Rim"
   ]);
   assert.equal(materials[1].color,"#228833FF");
   assert.equal(materials[4].color,"#2288aaFF");
@@ -99,5 +99,56 @@ test("generated production object contains terrain bands, route and text materia
   assert.ok(regions.has(3),"snow material missing");
   assert.ok(regions.has(5),"route material missing");
   assert.ok(regions.has(11),"text material missing");
-  assert.equal(model.materials.length,12);
+  assert.equal(model.materials.length,13);
+});
+
+
+test("TrailRelief parity reserves a dark raised rim in the canonical defaults",()=>{
+  const config=defaultAdvancedConfig();
+  assert.equal(config.fabrication.rimWidthMm,12);
+  assert.equal(config.fabrication.rimHeightMm,5);
+  assert.equal(config.fabrication.reliefMm,12);
+  const materials=productionMaterials(config);
+  assert.equal(materials[12].name,"Rim");
+  assert.equal(materials[12].color,"#23201dFF");
+});
+
+test("circular production bounds circumscribe the route rectangle instead of cutting its corners",()=>{
+  const route={minLat:10,maxLat:10.02,minLon:76,maxLon:76.02};
+  const bounds=productionBounds(route,{kind:"circle"});
+  const midLat=(bounds.minLat+bounds.maxLat)/2;
+  const lonScale=Math.cos(midLat*Math.PI/180);
+  const rx=(route.maxLon-route.minLon)*lonScale/((bounds.maxLon-bounds.minLon)*lonScale);
+  const ry=(route.maxLat-route.minLat)/(bounds.maxLat-bounds.minLat);
+  assert.ok(Math.hypot(rx,ry)<.94,"route corners need a safe circular inset");
+});
+
+test("circular production keeps route geometry inside the object and emits a governed rim",async()=>{
+  const points=[
+    {lat:10,lon:76,ele:100,time:0},
+    {lat:10.01,lon:76.01,ele:500,time:600000},
+    {lat:10.02,lon:76.02,ele:200,time:1200000}
+  ];
+  const model=await generateProductionModel({
+    points,
+    demSampler:(lat,lon)=>100+(lat-10)*18000+(lon-76)*7000,
+    landcover:[],
+    config:{
+      shape:{kind:"circle"},
+      fabrication:{modelWidthMm:48,baseMm:2.4,reliefMm:7,targetXyMm:3,routeWidthMm:1.2,routeRiseMm:.8,rimWidthMm:4,rimHeightMm:2.5},
+      customization:{event:"DIAGONAL TEST",name:"RIDER"}
+    },
+    title:"Circular containment"
+  });
+  const routeVertexIds=new Set();
+  for(const tri of model.mesh.triangles)if(tri.region===5){routeVertexIds.add(tri.a);routeVertexIds.add(tri.b);routeVertexIds.add(tri.c);}
+  assert.ok(routeVertexIds.size>0,"route material missing");
+  const routeRadius=Math.max(...[...routeVertexIds].map(i=>Math.hypot(model.mesh.vertices[i].x,model.mesh.vertices[i].y)));
+  assert.ok(routeRadius<=24.001,"route protrudes beyond circular object");
+  assert.ok(model.mesh.triangles.some(tri=>tri.region===12),"dark raised rim material missing");
+  const textVertexIds=new Set();
+  for(const tri of model.mesh.triangles)if(tri.region===11){textVertexIds.add(tri.a);textVertexIds.add(tri.b);textVertexIds.add(tri.c);}
+  assert.ok(textVertexIds.size>0,"border personalization missing");
+  const minTextRadius=Math.min(...[...textVertexIds].map(i=>Math.hypot(model.mesh.vertices[i].x,model.mesh.vertices[i].y)));
+  assert.ok(minTextRadius>=19.5,"circular personalization should live on the rim, not cover the terrain");
 });

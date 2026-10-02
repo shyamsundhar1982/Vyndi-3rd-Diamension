@@ -31,13 +31,23 @@ try{
   }
   const paletteCount=await page.locator("[data-palette]").count();
   if(paletteCount!==8)throw new Error("Expected 8 terrain palette controls, got "+paletteCount);
+  await page.waitForFunction(()=>{
+    const viewer=document.querySelector("#liveModelViewer");
+    const status=document.querySelector("#livePreviewStatus")?.textContent||"";
+    return Boolean(viewer?.src)&&status.includes("LIVE 3D READY");
+  },null,{timeout:60000});
+  await page.waitForFunction(()=>{
+    const viewer=document.querySelector("#liveModelViewer");
+    return viewer?.loaded===true && viewer?.modelIsVisible===true;
+  },null,{timeout:30000});
+  await page.waitForTimeout(1000);
+  await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
   await page.click("#openAdvanced");
   await page.waitForFunction(()=>document.querySelector("#advancedDrawer")?.classList.contains("open"));
   const labels=await page.locator("#advancedDrawer summary").allTextContents();
   for(const expected of ["DEM & elevation","Map layers","Shape & branding","Fabrication","Export & validation"]){
     if(!labels.includes(expected))throw new Error("Missing Advanced section: "+expected);
   }
-  await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
   if(errors.length)throw new Error("Browser errors: "+errors.join(" | "));
   console.log("BROWSER PASS · ribbon + palette + GPX intelligence + Advanced workbench");
 }finally{

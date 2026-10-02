@@ -40,3 +40,12 @@ test("selected map layers feed the governed production model",()=>{
   assert.match(app,/cartography/);
   assert.match(app,/mapEnabled/);
 });
+
+
+test("live terrain is a real canonical 3D model, not a decorative 2D canvas",()=>{
+  assert.doesNotMatch(html,/id="terrainCanvas"/);
+  assert.match(html,/id="liveModelViewer"/);
+  assert.match(app,/generateLivePreview/);
+  assert.match(app,/gpxPreviewSampler/);
+  assert.match(app,/liveModelViewer"\)\.src=state\.previewUrl/);
+});
