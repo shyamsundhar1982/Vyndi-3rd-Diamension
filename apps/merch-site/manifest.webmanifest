@@ -1,0 +1,25 @@
+{
+  "name": "VYBES · VYNDI Ride Stories",
+  "short_name": "VYBES",
+  "description": "Cycling stories, riders, routes and knowledge.",
+  "start_url": "/community",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050706",
+  "theme_color": "#050706",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/vayu-official.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/vayu-official.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

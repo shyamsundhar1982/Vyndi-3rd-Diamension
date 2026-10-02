@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="VYNDI Ride Stories Community — meaningful cycling stories, route intelligence and knowledge from riders.">
+  <meta name="theme-color" content="#050706">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VYBES">
+  <title>Vybes · VYNDI Ride Stories</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/vayu-official.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/vayu-official.png">
+  <link rel="stylesheet" href="/community.css?v=20261001-mobile-route-scale-1">
+  <link rel="stylesheet" href="/vyndi-typography.css?v=20261001-mobile-route-scale-1">
+</head>
+<body class="compact-community" data-view-mode="community" data-account-open="false" data-readable="true">
+  <header class="community-header">
+    <a class="community-brand" href="https://vyndi-ride-stories.vayushastr.workers.dev/community" aria-label="Vybes community home">
+      <img src="/assets/vayu-official.png" alt="Vāyú Shastr official logo">
+      <span class="community-brand-premium">Vybes<small>VYNDI Ride Stories Community</small></span>
+    </a>
+    <div class="community-header-search">
+      <label for="communitySearch" class="sr-only">Search community feed</label>
+      <input id="communitySearch" type="search" autocomplete="off" placeholder="Search stories, riders, routes, knowledge…">
+    </div>
+    <div class="header-actions">
+      <button id="mobileSearchToggle" class="header-icon-button mobile-search-toggle" type="button" aria-label="Search" aria-controls="mobileSearchSheet" aria-expanded="false"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#search"></use></svg></button>
+      <button id="themeToggle" class="header-icon-button" type="button" aria-label="Customize theme" aria-controls="themePanel" aria-expanded="false">◐</button>
+      <button id="communityNotifications" class="header-icon-button" type="button" aria-label="Notifications"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#bell"></use></svg></button>
+      <button id="accountHeaderLink" class="accent-link header-profile-link" type="button" data-account-entry aria-haspopup="menu" aria-expanded="false">
+        <span id="headerProfileAvatar" class="header-profile-avatar" aria-hidden="true">V</span>
+        <span id="headerAccountText">Join / Sign in</span>
+      </button>
+      <div id="accountMenu" class="account-menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-account-action="profile">Profile & settings</button>
+        <button type="button" role="menuitem" data-account-action="appearance">Appearance / theme</button>
+        <button type="button" role="menuitem" data-account-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+  <section id="themePanel" class="theme-panel" hidden aria-label="Choose your VYBES theme"><strong>Appearance</strong><button type="button" data-theme-choice="midnight">Midnight</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="contrast">High contrast</button></section>
+
+  <main>
+    <aside class="community-global-sidebar" aria-label="VYNDI navigation">
+      <nav class="sidebar-nav" aria-label="VYNDI primary navigation">
+        <a href="https://vyndi-ride-stories.vayushastr.workers.dev/community" data-community-route aria-current="page"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#feed"></use></svg>Home</a>
+        <a href="/stories" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#story"></use></svg>Stories</a>
+        <a href="/journals" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#riders"></use></svg>Riders</a>
+        <a href="/routes" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#route"></use></svg>Routes</a>
+        <a href="/knowledge" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#knowledge"></use></svg>Knowledge</a>
+        <a href="/events" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#calendar"></use></svg>Events</a>
+        <a href="/forum" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#chat"></use></svg>Forum</a>
+        <a id="sidebarMemberLink" href="/community#account" data-member-gate><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#user"></use></svg>My VYNDI</a>
+        <a id="sidebarAdminLink" class="sidebar-admin-link" href="/admin" data-app-route hidden><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#shield"></use></svg>Admin</a>
+        <a href="/community/create" id="sidebarCreateCommunity" class="sidebar-create-community" data-app-route>+ Create community</a>
+        <button class="sidebar-pwa-install" type="button" data-pwa-install hidden>Install VYBES</button>
+        <p class="sidebar-pwa-ios" data-pwa-ios hidden>On iPhone/iPad: Safari → Share → Add to Home Screen.</p>
+      </nav>
+
+    </aside>
+
+    <div class="community-main-content">
+      <p id="communitySearchStatus" class="search-status" role="status" hidden></p>
+    <section class="community-social-shell" aria-label="VYNDI Community dashboard">
+      <div class="community-feed-column">
+        <section class="community-hero community-feed-heading">
+          <div>
+            <p class="eyebrow">YOUR VYBES</p>
+            <h1>VYBES Home</h1>
+            <p class="hero-lead">The road is moving. See what riders are sharing now.</p>
+          </div>
+        </section>
+        <a class="vybes-composer" href="/community#account" data-member-gate aria-label="Create a VYBES post">
+          <span class="composer-plus">+</span>
+          <span><strong>Share your road…</strong><small>Ride story · Route · Knowledge · Event</small></span>
+        </a>
+
+        <section class="community-section discover-section" id="stories">
+          <div class="circle-scope-row" role="group" aria-label="Community scope">
+            <button class="circle-scope active" type="button" data-circle-scope="global">Global</button><button class="circle-scope" type="button" data-circle-scope="country">Country</button><button class="circle-scope" type="button" data-circle-scope="region">Region</button><button class="circle-scope" type="button" data-circle-scope="nearby">Nearby</button><button class="circle-scope" type="button" data-circle-scope="mine">My Circles</button>
+          </div>
+          <div class="feed-toolbar">
+            <div class="feed-filters" aria-label="Feed filters">
+              <div class="sport-filter-row" role="group" aria-label="Filter by sport">
+                <button type="button" class="sport-filter" data-sport="cycling">Cycling</button>
+                <button type="button" class="sport-filter" data-sport="running">Running</button>
+                <button type="button" class="sport-filter" data-sport="ultra_running">Ultra</button>
+                <button type="button" class="sport-filter" data-sport="triathlon">Triathlon</button>
+                <button type="button" class="sport-filter" data-sport="swimming">Swimming</button>
+              </div>
+            </div>
+          </div>
+          <div id="communityFeed" class="story-grid" aria-live="polite">
+            <article class="empty-card"><p>No published entries yet. Founding riders can start the archive from My VYNDI.</p></article>
+          </div>
+        </section>
+      </div>
+
+      <aside class="community-context-rail" aria-label="Community context">
+        <section class="rail-card rail-pulse">
+          <div class="rail-card-head">
+            <div><p class="eyebrow">Today for You</p><strong class="rail-title">Your VYBES, at a glance.</strong></div>
+            <span class="today-context-label">PERSONAL</span>
+          </div>
+          <div id="todayForYouBody" class="today-for-you-body"><p class="muted">Sign in to see activity from your riders and Circles.</p></div>
+        </section>
+
+        <section id="communityRailProfile" class="rail-card rail-profile">
+          <div class="rail-card-head">
+            <p class="eyebrow">Your profile</p>
+            <a href="/community#account" data-member-gate data-open-member-pane="profile">Edit</a>
+          </div>
+          <div id="communityRailProfileBody" class="rail-profile-body">
+            <p class="muted">Sign in to show your rider profile here.</p>
+          </div>
+        </section>
+
+        <section class="rail-card">
+          <div class="rail-card-head">
+            <p class="eyebrow">Riders to discover</p>
+            <a href="/journals" data-community-route>View all</a>
+          </div>
+          <div id="communityRailRiders" class="rail-riders">
+            <p class="muted">Loading riders…</p>
+          </div>
+        </section>
+
+        <section class="rail-card rail-code">
+          <p class="eyebrow">VYNDI COMMUNITY STANDARD</p>
+          <ul>
+            <li><b>Useful over frequent.</b><span>Share what helps another cyclist.</span></li>
+            <li><b>Glory over likes.</b><span>One native VYNDI reaction.</span></li>
+            <li><b>Governed membership.</b><span>Two matching admin decisions.</span></li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+
+    <section id="communityCreateView" class="community-create-view" hidden>
+        <div class="community-create-card dedicated-create-card">
+          <p class="eyebrow">COMMUNITIES</p><h1>Create your community</h1><p class="section-copy">Build a governed VYBES community for your club, team, training group, event, expedition or shared interest.</p>
+          <form id="communityCreateForm" class="community-create-form">
+            <label>Community name<input name="name" required minlength="2" maxlength="80" placeholder="e.g. Chennai Endurance Collective"></label>
+            <label>Type<select name="kind"><option value="club">Club</option><option value="team">Team</option><option value="training">Training group</option><option value="event">Event community</option><option value="expedition">Expedition</option><option value="interest">Interest group</option></select></label>
+            <label>Primary sport<select name="primarySport"><option value="cycling">Cycling</option><option value="running">Running</option><option value="triathlon">Triathlon</option><option value="swimming">Swimming</option><option value="multisport">Multisport</option></select></label>
+            <label>Visibility<select name="visibility"><option value="public">Public</option><option value="private">Private</option><option value="invite_only">Invite only</option><option value="unlisted">Unlisted</option></select></label>
+            <label>Membership<select name="membershipPolicy"><option value="open">Open</option><option value="request_to_join">Request to join</option><option value="invite_only">Invite only</option></select></label>
+            <label class="community-create-wide">About<textarea name="description" maxlength="500" placeholder="What brings this community together?"></textarea></label>
+            <button class="button primary" type="submit">Create community</button><span id="communityCreateStatus" role="status"></span>
+          </form>
+          <p class="muted">You become Community Owner with scoped admin rights. Official countries, regions and cities remain VYBES-governed.</p>
+        </div>
+
+    </section>
+
+
+    <section class="community-section public-destination" id="publicDestination" hidden>
+      <div class="destination-head">
+        <div>
+          <p class="eyebrow" id="destinationEyebrow">COMMUNITY</p>
+          <h2 id="destinationTitle">Cycling stories worth keeping.</h2>
+          <p id="destinationDescription" class="section-copy"></p>
+        </div>
+        <div id="destinationActions" class="destination-actions"></div>
+      </div>
+      <div id="destinationFeed" class="story-grid destination-story-stream" aria-live="polite"></div>
+      <div id="publicRiders" class="public-riders" hidden aria-live="polite"></div>
+    </section>
+    <section class="community-section route-view" id="routeView" hidden aria-live="polite"></section>
+
+    <section class="community-section purpose-grid" id="routes">
+      <article>
+        <p class="eyebrow">ROUTES</p>
+        <h3>Road knowledge, not just a GPX line.</h3>
+        <p>Route Guides are designed for surface condition, traffic, climbs, water, food, night riding, seasonal notes and rider updates. Privacy-zone processing for public GPX routes is the next route-specific release gate.</p>
+      </article>
+      <article id="knowledge">
+        <p class="eyebrow">KNOWLEDGE</p>
+        <h3>Endurance experience becomes reusable knowledge.</h3>
+        <p>Randonneuring, nutrition, lighting, maintenance, bike fit, route planning, travel and India-specific cycling lessons can live beyond a single ride.</p>
+      </article>
+      <article id="events">
+        <p class="eyebrow">EVENTS</p>
+        <h3>Build institutional memory around events.</h3>
+        <p>Event Stories can preserve preparation, route notes and lessons from editions such as brevets, PBP, LEL, K2K and regional endurance events.</p>
+      </article>
+    </section>
+
+    <section class="community-section forum-prompt" id="forumPrompt" hidden>
+      <div>
+        <p class="eyebrow">FORUM</p>
+        <h2>Start a discussion.</h2>
+        <p>Ask a focused cycling question or open a topic that benefits from rider experience. Replies stay attached to the topic so useful discussion remains readable later.</p>
+      </div>
+      <button id="startDiscussionButton" class="button primary" type="button">Start a discussion</button>
+    </section>
+
+    <section class="community-section account-section" id="account">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">MEMBERSHIP</p>
+          <h2>Your VYNDI account</h2>
+        </div>
+        <p class="section-copy">Sign in to your existing account or request membership to join the community.</p>
+      </div>
+
+      <div id="authGuest" class="auth-grid">
+        <div class="dashboard-tabs auth-tabs" role="tablist" aria-label="Account access">
+          <button class="dashboard-tab active" type="button" data-auth-tab="login" role="tab" aria-selected="true" aria-controls="loginForm">Sign in</button>
+          <button class="dashboard-tab" type="button" data-auth-tab="join" role="tab" aria-selected="false" aria-controls="joinForm">Request membership</button>
+        </div>
+        <form id="joinForm" class="panel form-panel" hidden>
+          <div class="panel-kicker"><span>JOIN</span><small>New rider request</small></div>
+          <h3>Join the community</h3>
+          <div class="field-grid">
+            <label>Display name<input name="displayName" required maxlength="80" autocomplete="name"></label>
+            <label>Rider handle<input name="handle" required maxlength="40" placeholder="your-rider-name" autocomplete="username"></label>
+            <label>Email<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+            <label>Password<input name="password" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label>
+            <label>City<input name="city" maxlength="80" autocomplete="address-level2"></label>
+            <label>State / region<input name="state" maxlength="80" autocomplete="address-level1"></label>
+            <label>Country code<input name="countryCode" required minlength="2" maxlength="2" placeholder="IN" autocomplete="country"></label>
+            <label class="wide">Cycling disciplines<input name="disciplines" placeholder="Road, Randonneuring, Touring"></label>
+            <label class="wide">Short cycling bio<textarea name="bio" rows="3" maxlength="600"></textarea></label>
+            <label class="wide">Why would you like to join?<textarea name="whyJoin" rows="4" required maxlength="1000"></textarea></label>
+            <label class="wide">What would you like to contribute?<textarea name="contribution" rows="4" required maxlength="1000"></textarea></label>
+          </div>
+          <p class="form-note">VYNDI is for cycling stories, routes, events and knowledge — not unrelated lifestyle posting or automatic daily-ride dumping.</p>
+          <button class="button primary" type="submit">Submit joining request</button>
+          <p class="form-status" id="joinStatus" role="status"></p>
+        </form>
+
+        <form id="loginForm" class="panel form-panel compact">
+          <div class="panel-kicker"><span>SIGN IN</span><small>Existing rider</small></div>
+          <h3>Back to your rides.</h3>
+          <label>Email<input name="email" type="email" required autocomplete="email"></label>
+          <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+          <button class="button secondary" type="submit">Sign in</button>
+          <button id="forgotPasswordButton" class="button quiet" type="button">Forgot password?</button>
+          <p class="form-status" id="loginStatus" role="status"></p>
+          <div class="governance-note">
+            <strong>Membership authority</strong>
+            <p>One administrator cannot admit a rider alone. The default rule is three active admins with two matching approvals.</p>
+          </div>
+        </form>
+      </div>
+
+      <form id="passwordRecoveryForm" class="panel form-panel compact" hidden>
+        <div class="panel-kicker"><span>ACCOUNT RECOVERY</span><small>Private admin-assisted recovery</small></div>
+        <h3>Forgot your password?</h3>
+        <p class="muted">Enter your registered email. Then contact an administrator you know. After verifying your identity, they can send you a private link to choose a new password. No automatic email is sent.</p>
+        <label>Registered email<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+        <button class="button primary" type="submit">Request recovery link</button>
+        <button id="recoveryBackToLogin" class="button quiet" type="button">Back to sign in</button>
+        <p class="form-status" id="passwordRecoveryStatus" role="status"></p>
+      </form>
+
+      <section id="passwordResetPanel" class="panel form-panel compact" hidden>
+        <div class="panel-kicker"><span>ACCOUNT RECOVERY</span><small>Single-use secure link</small></div>
+        <h3>Choose a new password</h3>
+        <p class="muted">This recovery link expires 10 minutes after it was generated.</p>
+        <form id="passwordResetForm">
+          <label>New password<input name="password" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label>
+          <label>Confirm new password<input name="confirmPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label>
+          <button class="button primary" type="submit">Reset password</button>
+        </form>
+        <p class="form-status" id="passwordResetStatus" role="status"></p>
+      </section>
+
+      <section id="memberDashboard" class="member-dashboard" hidden>
+        <div class="dashboard-head panel">
+          <div>
+            <p class="eyebrow">MY VYNDI</p>
+            <h3 id="memberName">Rider</h3>
+            <p id="memberStatus">Checking membership status…</p>
+          </div>
+          <div class="dashboard-actions">
+            <button id="editProfileButton" class="button secondary" type="button">Edit profile</button>
+            <a id="myJournalLink" class="button quiet" href="https://vyndi-ride-stories.vayushastr.workers.dev/community">View public profile</a>
+            <button id="logoutButton" class="button quiet" type="button">Sign out</button>
+          </div>
+        </div>
+
+        <div id="pinnedAnnouncements" class="pinned-announcements" hidden aria-live="polite"></div>
+
+        <div id="founderBootstrap" class="panel bootstrap-panel" hidden>
+          <p class="eyebrow">INITIAL GOVERNANCE SETUP</p>
+          <h3>Bootstrap the founding admin.</h3>
+          <p>Use only while the community has zero active administrators. Configure <code>VYNDI_COMMUNITY_BOOTSTRAP_SECRET</code> in Cloudflare first; the secret is sent once and is never stored by this page.</p>
+          <form id="bootstrapForm" class="inline-form">
+            <label>Bootstrap secret<input name="secret" type="password" required autocomplete="off"></label>
+            <button class="button primary" type="submit">Activate founder admin</button>
+          </form>
+          <p class="form-status" id="bootstrapStatus" role="status"></p>
+        </div>
+      </section>
+    </section>
+
+    <section class="community-section journal-section" id="journalStudio" hidden>
+      <div class="section-head dashboard-section-head">
+        <div>
+          <p class="eyebrow">MEMBER DASHBOARD</p>
+          <h2>Publish. Preview. Archive your cycling blog.</h2>
+        </div>
+        <p class="section-copy">Use VYNDI Blog Studio to create hosted cycling articles, add a controlled photo set, import earlier work, and manage your Ride Blog without leaving your workspace.</p>
+      </div>
+
+      <div class="dashboard-tabs member-dashboard-tabs" role="tablist" aria-label="Member dashboard">
+        <button type="button" class="dashboard-tab" data-member-tab="profile" role="tab" aria-selected="false">Profile</button>
+        <button type="button" class="dashboard-tab" data-member-tab="communities" role="tab" aria-selected="false">Communities</button>
+        <button type="button" class="dashboard-tab" data-member-tab="sources" role="tab" aria-selected="false">Connected Sources</button>
+        <button type="button" class="dashboard-tab active" data-member-tab="create" role="tab" aria-selected="true">Create</button>
+        <button type="button" class="dashboard-tab" data-member-tab="import" role="tab" aria-selected="false">Import</button>
+        <button type="button" class="dashboard-tab" data-member-tab="journal" role="tab" aria-selected="false">My Posts</button>
+      </div>
+
+      <div class="journal-grid dashboard-pane-grid">
+        <div class="profile-pane" data-member-pane="communities" hidden><section class="panel"><div class="panel-kicker"><span>MY COMMUNITIES</span><small>Governed spaces you own or help manage</small></div><h3>Build and manage your communities</h3><p class="muted">Community creation opens in its own workspace, separate from Stories and other content pages.</p><a class="button primary" href="/community/create" data-create-community-link data-app-route>Create community</a></section></div>
+        <div class="profile-pane" data-member-pane="sources" hidden>
+          <section class="panel connected-sources-panel">
+            <div class="panel-kicker"><span>ATHLETE PASSPORT</span><small>Provider-neutral activity evidence</small></div>
+            <h3>Connected Sources</h3>
+            <p class="muted">Bring your endurance history from the services and files you choose. VYBES normalizes activities into one Passport, keeps provenance, and avoids double-counting synchronized copies.</p><p class="passport-evidence-note"><strong>One VYNDI connection · every rider authorizes their own account.</strong> Riders never need Cloudflare access or VYNDI provider secrets.</p>
+            <div class="source-priority-card"><label for="activityPrimarySource"><strong>Primary source</strong></label><select id="activityPrimarySource" disabled><option value="">Import a source first</option></select><span>Choose the authoritative recording source. Matching copies remain provenance rather than duplicate activities.</span></div>
+            <input id="activityImportInput" class="sr-only" type="file" accept=".gpx,.tcx" aria-label="Import activity file">
+            <p id="connectedSourcesStatus" class="form-status" role="status">No activity source selected yet.</p>
+            <div class="connected-source-grid" aria-label="Supported activity sources">
+              <article class="connected-source-card"><strong>Garmin</strong><span>Activity API adapter</span><small data-source-state="garmin">OAuth approval required</small><button class="button quiet source-action" type="button" disabled>Awaiting OAuth</button></article>
+              <article class="connected-source-card"><strong>Strava</strong><span>OAuth activity adapter</span><small data-source-state="strava">Ready to connect</small><button class="button quiet source-action" type="button" data-provider-connect="strava">Connect Strava</button></article>
+              <article class="connected-source-card"><strong>Komoot</strong><span>Provider adapter reserved</span><small>Direct public API is not assumed</small><button class="button quiet source-action" type="button" disabled>Unavailable</button></article>
+              <article class="connected-source-card source-file"><strong>FIT</strong><span>Portable activity evidence</span><small data-source-state="fit">Binary parser not yet qualified</small><button class="button quiet source-action" type="button" disabled>FIT pending</button></article>
+              <article class="connected-source-card source-file"><strong>GPX</strong><span>Route / activity evidence</span><small data-source-state="gpx">Ready to import</small><button class="button secondary source-action" type="button" data-activity-import="gpx">Import GPX</button></article>
+              <article class="connected-source-card source-file"><strong>TCX</strong><span>Portable activity evidence</span><small data-source-state="tcx">Ready to import</small><button class="button secondary source-action" type="button" data-activity-import="tcx">Import TCX</button></article>
+            </div>
+            <div class="passport-principle"><strong>Your data can come from anywhere.</strong><span>Your endurance identity lives in VYBES.</span></div>
+          </section>
+        </div>
+        <div class="profile-pane passport-workspace" data-member-pane="profile" hidden>
+<section class="panel athlete-passport-panel passport-experience">
+            <div class="passport-visual-stage" data-passport-parallax aria-hidden="true"><div class="passport-rider-aura"></div><div class="passport-terrain-layer passport-terrain-far"></div><div class="passport-terrain-layer passport-terrain-near"></div><div class="passport-route-glow"></div></div><div class="passport-hero">
+              <div><div class="panel-kicker"><span>ATHLETE PASSPORT</span><small>Canonical endurance record</small></div><h3 id="passportRiderName">Your endurance record</h3><div class="passport-id-lockup"><span>VYNDI ATHLETE PASSPORT</span><strong id="passportPublicId">Issuing…</strong><small id="passportIssuedAt">Permanent rider identity</small></div><p id="passportIdentity" class="muted">Loading verified activity evidence…</p></div>
+              <div class="passport-hero-side"><span class="passport-badge" id="passportVerification">VERIFIED SOURCES</span><div id="passportHeroStats" class="passport-hero-stats"><div><span>ACTIVE</span><strong>—</strong></div><div><span>PRIMARY</span><strong>—</strong></div></div><div id="passportAchievementRail" class="passport-achievement-rail" aria-label="Top achievements"></div></div>
+            </div>
+            <div class="passport-performance-ribbon"><span>ENDURANCE IDENTITY</span><strong>THE ROAD, EARNED.</strong><small>Verified effort · terrain · distance · time</small></div>
+            <section id="passportStatCockpit" class="passport-stat-cockpit passportAnalyticsMatrix" aria-label="Endurance statistical cockpit">
+              <article class="passport-hero-metric"><span>ENDURANCE VOLUME</span><strong id="passportHeroMetric">—</strong><small>verified lifetime distance</small><div id="passportElevationProfile" class="passport-elevation-profile" aria-label="Elevation signature"></div></article>
+              <div id="passportMetricRail" class="passport-metric-rail" aria-label="Key endurance indicators"><div><span>ACTIVE YEARS</span><strong id="passportActiveYears">—</strong></div><div><span>LONG EFFORTS</span><strong id="passportLongEfforts">—</strong></div><div><span>CLIMB / 100 KM</span><strong id="passportClimbRate">—</strong></div><div><span>DISCIPLINES</span><strong id="passportDisciplineCount">—</strong></div></div>
+              <article class="passport-heatmap-card"><div class="passport-section-heading"><div><span>CONSISTENCY</span><h4>Activity rhythm</h4></div><small>evidence density</small></div><div id="passportActivityHeatmap" class="passport-activity-heatmap"></div></article>
+              <article class="passport-record-map"><div class="passport-section-heading"><div><span>RECORD CONSTELLATION</span><h4>Your standout efforts</h4></div></div><div id="passportRecordConstellation" class="passport-record-constellation"></div></article>
+            </section>
+            <div class="passport-kpi-grid" aria-label="Athlete Passport totals">
+              <article><strong id="passportActivities">—</strong><span>Activities</span></article>
+              <article><strong id="passportDistance">—</strong><span>Distance</span></article>
+              <article><strong id="passportElevation">—</strong><span>Elevation</span></article>
+              <article><strong id="passportDuration">—</strong><span>Moving time</span></article>
+            </div>
+            <section id="passportRecordsDeck" class="passport-records-section passport-records-deck"><div class="passport-section-heading"><div><span>PERSONAL RECORDS</span><h4>Single-activity records</h4></div><small>Multi-day events excluded</small></div><div id="passportDisciplineRecords" class="passport-discipline-records"><p class="muted">Calculating records…</p></div><p id="passportAltitudeStatus" class="passport-evidence-note"></p></section>
+            <section class="passport-records-section passport-endurance-hall"><div class="passport-section-heading"><div><span>ENDURANCE / EXPEDITION</span><h4>Endurance Hall · journeys that define the rider</h4></div><small>Multi-day & exceptional distance</small></div><div id="passportEnduranceHall" class="passport-endurance-hall-track"><div id="passportEventRecords" class="passport-event-records"></div></div></section>
+            <section class="passport-visual-intelligence" aria-label="Athlete visual intelligence">
+              <article class="passport-visual-card passport-journey-card"><div class="passport-section-heading"><div><span>PERFORMANCE JOURNEY</span><h4>Years on the road</h4></div><small>Distance · elevation · activity</small></div><div id="passportJourneyChart" class="passport-journey-chart"></div></article>
+              <article class="passport-visual-card passport-mix-card"><div class="passport-section-heading"><div><span>DISCIPLINE MIX</span><h4>Your movement signature</h4></div></div><div id="passportDisciplineMix" class="passport-discipline-mix"></div></article>
+              <article class="passport-visual-card passport-calibre-card"><div class="passport-section-heading"><div><span>METTLE & CALIBRE</span><h4>Five transparent dimensions</h4></div><small>No overall score</small></div><div id="passportCalibreVisual" class="passport-calibre-visual"></div></article>
+            </section>
+            <div class="passport-story-divider"><span>RIDER SIGNATURE</span><strong>What the road says about you</strong></div><div class="passport-intelligence-grid">
+              <section class="passport-insight-card"><div class="panel-kicker"><span>ROAD DNA</span><small>Your evidence pattern</small></div><div id="passportRoadDNA"></div></section>
+              <section class="passport-insight-card"><div class="panel-kicker"><span>METTLE & CALIBRE</span><small>Transparent dimensions · no overall score</small></div><div id="passportCalibre"></div></section>
+              <section class="passport-insight-card"><div class="panel-kicker"><span>ACHIEVEMENTS</span><small>Automatically evidenced milestones</small></div><div id="passportAchievements"></div></section>
+              <section id="passportCompactLegacy" class="passport-insight-card passport-legacy-card passport-compact-legacy"><div class="panel-kicker"><span>ROAD LEGACY</span><small>Your endurance timeline</small></div><div id="passportLegacyTimeline" class="passport-legacy-timeline"><div id="passportLegacy"></div></div></section>
+            </div>
+            <div class="passport-verify-row"><a id="passportVerifyLink" class="button secondary" href="#" target="_blank" rel="noopener">Verify Passport</a><button id="passportShareButton" class="button quiet" type="button">Share Passport</button></div>
+            <details class="passport-proof-vault"><summary><span>PROOF VAULT</span><strong>Evidence & recent endurance history</strong><small>Open verified source detail</small></summary><div class="passport-evidence-grid">
+              <section><h4>Evidence coverage</h4><div id="passportSources" class="passport-source-list"><p class="muted">Loading sources…</p></div></section>
+              <section><h4>Recent endurance history</h4><div id="passportRecent" class="passport-recent-list"><p class="muted">Loading activities…</p></div></section>
+            </div>
+            </div></details><p id="passportStatus" class="form-status" role="status"></p>
+          </section>
+          <form id="profileForm" class="panel form-panel">
+            <div class="panel-kicker"><span>PROFILE</span><small>Public rider identity</small></div>
+            <div class="profile-editor-head">
+              <div class="profile-photo-preview-wrap">
+                <img id="profilePhotoPreview" class="profile-photo" alt="Profile preview" hidden>
+                <span id="profilePhotoFallback" class="profile-photo-fallback">VR</span>
+              </div>
+              <div>
+                <h3>Edit rider profile</h3>
+                <p class="muted">This information is visible to other VYNDI members and public profile visitors.</p>
+              </div>
+            </div>
+            <div class="field-grid">
+              <label>Display name<input name="displayName" required maxlength="80"></label>
+              <label>Profile photo<input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp"></label>
+              <label>City<input name="city" maxlength="80"></label>
+              <label>State / region<input name="state" maxlength="80"></label>
+              <label class="wide">Cycling disciplines<input name="disciplines" placeholder="Road, Randonneuring, Touring"></label>
+              <label class="wide">Cycling bio<textarea name="bio" rows="4" maxlength="600"></textarea></label>
+              <label>Strava URL<input name="stravaUrl" type="url" placeholder="https://www.strava.com/athletes/..."></label>
+              <label>Instagram URL<input name="instagramUrl" type="url" placeholder="https://www.instagram.com/..."></label>
+              <label class="wide">Facebook URL<input name="facebookUrl" type="url" placeholder="https://www.facebook.com/..."></label>
+            </div>
+            <button class="button primary" type="submit">Save profile</button>
+            <p class="form-status" id="profileStatus" role="status"></p>
+          </form>
+
+          <section class="panel shared-links-panel">
+            <div class="panel-kicker"><span>SHARED LINKS</span><small>Controlled categories only</small></div>
+            <h3>Share useful rider resources</h3>
+            <p class="muted">For now VYNDI accepts only blog articles, study material and event links.</p>
+            <form id="resourceLinkForm" class="form-panel">
+              <div class="field-grid">
+                <label>Category
+                  <select name="category" required>
+                    <option value="blog">Blog</option>
+                    <option value="study_material">Study material</option>
+                    <option value="event">Event</option>
+                  </select>
+                </label>
+                <label>Title<input name="title" required maxlength="120"></label>
+                <label class="wide">URL<input name="url" type="url" required placeholder="https://..."></label>
+                <label class="wide">Short note<textarea name="description" rows="2" maxlength="400"></textarea></label>
+              </div>
+              <button class="button secondary" type="submit">Share link</button>
+              <p class="form-status" id="resourceLinkStatus" role="status"></p>
+            </form>
+            <div id="profileResourceLinks" class="shared-resource-list" aria-live="polite"></div>
+          </section>
+        </div>
+
+        <form id="newPostForm" class="panel form-panel blog-studio" data-member-pane="create">
+          <div class="panel-kicker"><span>BLOG STUDIO</span><small>Hosted cycling publication</small></div>
+          <div class="blog-studio-head">
+            <div>
+              <h3 id="articleFormTitle">Write for the road ahead.</h3>
+              <p class="form-intro">Create a durable article with safe formatting, one cover image and up to three compressed inline photos.</p>
+            </div>
+            <button id="articleCancelEdit" class="button quiet" type="button" hidden>Cancel edit</button>
+          </div>
+          <div class="field-grid">
+            <label>Content type
+              <select name="type">
+                <option value="blog_article">Blog Article</option>
+                <option value="community_post">Community Post</option>
+                <option value="ride_story">Ride Story</option>
+                <option value="route_guide">Route Guide</option>
+                <option value="knowledge">Cycling Knowledge</option>
+                <option value="event_story">Event Story</option>
+                <option value="discussion">Focused Discussion</option>
+              </select>
+            </label>
+            <label>Sport
+              <select name="sport" required>
+                <option value="cycling">Cycling</option><option value="running">Running / Marathon</option><option value="ultra_running">Ultra Running</option><option value="triathlon">Triathlon</option><option value="duathlon">Duathlon</option><option value="swimming">Swimming</option><option value="trail_hiking">Trail / Hiking</option><option value="adventure">Adventure / Expedition</option>
+              </select>
+            </label>
+            <label>Title<input name="title" required maxlength="160"></label>
+            <label class="wide">Short introduction<textarea name="excerpt" rows="3" maxlength="500"></textarea></label>
+          </div>
+
+          <div id="articleFormatToolbar" class="article-format-toolbar" role="toolbar" aria-label="Article formatting">
+            <button type="button" data-article-format="heading">Heading</button>
+            <button type="button" data-article-format="bold"><strong>Bold</strong></button>
+            <button type="button" data-article-format="italic"><em>Italic</em></button>
+            <button type="button" data-article-format="quote">Quote</button>
+            <button type="button" data-article-format="bullet">List</button>
+            <button type="button" data-article-format="link">Link</button>
+          </div>
+          <label>Story / article
+            <textarea name="body" id="articleBody" rows="16" required maxlength="120000" placeholder="Write the experience, route intelligence or knowledge another rider can use. Use the formatting controls above for headings, emphasis, lists, quotes and links."></textarea>
+          </label>
+
+          <div class="article-media-fields">
+            <label>Cover photo
+              <input name="coverPhoto" type="file" accept="image/jpeg,image/png,image/webp">
+              <small>JPEG, PNG or WebP. Compressed in your browser before upload.</small>
+            </label>
+            <label>Inline photos
+              <input name="articlePhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+              <small>Maximum 3 photos. Add captions after selecting.</small>
+            </label>
+          </div>
+          <div id="articlePhotoList" class="article-photo-staging" aria-live="polite"></div>
+
+          <div class="article-editor-actions">
+            <button id="articlePreviewButton" class="button secondary" type="button">Preview article</button>
+            <button id="articleSaveButton" class="button primary" type="submit">Save blog entry</button>
+          </div>
+          <section id="articlePreview" class="article-preview" hidden aria-live="polite"></section>
+
+          <label class="check"><input name="enduranceRelevanceConfirmed" type="checkbox" required> <span>This contributes a relevant endurance-sport story, route, event or useful knowledge and is not a routine daily activity update.</span></label>
+          <label class="check"><input name="publish" type="checkbox"> <span>Submit for publication now. Leave unchecked to save as a draft.</span></label>
+          <p class="form-status" id="newPostStatus" role="status"></p>
+        </form>
+
+        <form id="importBlogForm" class="panel form-panel" data-member-pane="import" hidden>
+          <div class="panel-kicker"><span>IMPORT</span><small>Legacy cycling archive</small></div>
+          <h3>Import Earlier Blog</h3>
+          <p class="form-intro">Bring earlier cycling writing into your VYNDI Ride Blog without pretending it was newly published.</p>
+          <label>Content type
+            <select name="type">
+              <option value="ride_story">Ride Story</option>
+              <option value="route_guide">Route Guide</option>
+              <option value="knowledge">Cycling Knowledge</option>
+              <option value="event_story">Event Story</option>
+            </select>
+          </label>
+          <label>Original title<input name="title" required maxlength="160"></label>
+          <label>Original publication date<input name="originalPublishedAt" type="date"></label>
+          <label>Original source URL<input name="sourceUrl" type="url" placeholder="https://your-old-blog.example/story"></label>
+          <label>Original article<textarea name="body" rows="12" required maxlength="120000"></textarea></label>
+          <label class="check"><input name="ownershipConfirmed" type="checkbox" required> <span>I wrote this content or have permission to republish it on VYNDI Ride Stories.</span></label>
+          <label class="check"><input name="cyclingRelevanceConfirmed" type="checkbox" required> <span>This article is cycling-focused and eligible for later publication.</span></label>
+          <button class="button secondary" type="submit">Import as draft</button>
+          <p class="form-status" id="importStatus" role="status"></p>
+        </form>
+      </div>
+
+      <div class="panel my-posts-panel" data-member-pane="journal" hidden>
+        <div class="panel-kicker"><span>ARCHIVE</span><small>My posts</small></div>
+        <div id="myPosts" class="my-posts"><p class="muted">Your drafts and published stories will appear here.</p></div>
+      </div>
+    </section>
+
+    <section class="community-section admin-section" id="adminPanel" hidden>
+      <div class="section-head dashboard-section-head">
+        <div>
+          <p class="eyebrow">ADMIN DASHBOARD</p>
+          <h2>Community control centre.</h2>
+        </div>
+        <p class="section-copy">Manage people, membership quorum, editorial review and moderation from one governed workspace.</p>
+      </div>
+
+      <div class="dashboard-tabs admin-dashboard-tabs" role="tablist" aria-label="Admin dashboard">
+        <button type="button" class="dashboard-tab active" data-admin-tab="people" role="tab" aria-selected="true">People</button>
+        <button type="button" class="dashboard-tab" data-admin-tab="requests" role="tab" aria-selected="false">Membership</button>
+        <button type="button" class="dashboard-tab" data-admin-tab="roles" role="tab" aria-selected="false">Admin roles</button>
+        <button type="button" class="dashboard-tab" data-admin-tab="editorial" role="tab" aria-selected="false">Editorial</button>
+        <button type="button" class="dashboard-tab" data-admin-tab="announcements" role="tab" aria-selected="false">Announcements</button>
+        <button type="button" class="dashboard-tab" data-admin-tab="moderation" role="tab" aria-selected="false">Moderation</button>
+      </div>
+
+      <div id="initialAdminSetup" class="panel" hidden>
+        <div class="panel-kicker"><span>ADMIN SETUP</span><small>Founder only · until three admins</small></div>
+        <h3>Establish the initial governance team.</h3>
+        <p>Each candidate must create an account first. During initial setup only, the founder can activate the second and third administrators. Once three admins are active, this shortcut closes.</p>
+        <form id="promoteAdminForm" class="inline-form">
+          <label>Candidate email<input name="email" type="email" required></label>
+          <label>Role
+            <select name="role">
+              <option value="community_admin">Community Admin</option>
+              <option value="content_admin">Content Admin</option>
+              <option value="route_curator">Route Curator</option>
+            </select>
+          </label>
+          <button class="button primary" type="submit">Add initial admin</button>
+        </form>
+        <p class="form-status" id="promoteStatus" role="status"></p>
+      </div>
+
+      <div class="panel people-panel" data-admin-pane="people">
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>PEOPLE</span><small>Members & administrators</small></div>
+            <h3>Community people</h3>
+            <p class="muted">See every registered rider, membership state and administrator role in one place.</p>
+          </div>
+          <button id="refreshPeople" class="button quiet" type="button">Refresh</button>
+        </div>
+
+        <div id="peopleSummary" class="people-summary" aria-live="polite">
+          <article><b>—</b><span>Total people</span></article>
+          <article><b>—</b><span>Active members</span></article>
+          <article><b>—</b><span>Pending review</span></article>
+          <article><b>—</b><span>Active admins</span></article>
+        </div>
+
+        <div class="people-toolbar">
+          <label>Show
+            <select id="peopleFilter">
+              <option value="all">All people</option>
+              <option value="admins">Admins only</option>
+              <option value="active">Active members</option>
+              <option value="pending">Pending / review</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <label>Find rider
+            <input id="peopleSearch" type="search" placeholder="Name, handle or email">
+          </label>
+        </div>
+
+        <div id="communityPeople" class="people-grid">
+          <p class="muted">Loading community people…</p>
+        </div>
+      </div>
+
+      <div class="panel" data-admin-pane="requests" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>REQUESTS</span><small>Joining queue</small></div>
+            <h3>Membership requests</h3>
+          </div>
+          <button id="refreshMemberships" class="button quiet" type="button">Refresh</button>
+        </div>
+        <div id="membershipQueue" class="membership-queue"><p class="muted">No requests loaded.</p></div>
+      </div>
+
+      <div class="panel" data-admin-pane="roles" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>ADMIN ROLES</span><small>Two-admin governed promotion</small></div>
+            <h3>Nominate an administrator</h3>
+            <p class="muted">The candidate must already be an active member. Your nomination counts as the first approval; a different administrator must provide the second.</p>
+          </div>
+          <button id="refreshAdminNominations" class="button quiet" type="button">Refresh</button>
+        </div>
+        <form id="adminNominationForm" class="inline-form">
+          <label>Active member email<input name="email" type="email" required></label>
+          <label>Role
+            <select name="role">
+              <option value="community_admin">Community Admin</option>
+              <option value="content_admin">Content Admin</option>
+              <option value="route_curator">Route Curator</option>
+            </select>
+          </label>
+          <button class="button primary" type="submit">Nominate admin</button>
+        </form>
+        <p class="form-status" id="adminNominationStatus" role="status"></p>
+        <div id="adminNominationQueue" class="membership-queue" aria-live="polite">
+          <p class="muted">No administrator nominations loaded.</p>
+        </div>
+        <hr>
+        <div class="panel-kicker"><span>ACCOUNT RECOVERY</span><small>Private single-use link · expires in 10 minutes</small></div>
+        <h3>Generate password recovery link</h3>
+        <p class="muted">No email service is used. Generate the link and send it privately to the member. Administrators never see or choose the new password.</p>
+        <p class="muted">Verify the rider's identity through a contact you already trust before sharing a link. A recovery request alone is not proof of identity.</p>
+        <div class="admin-toolbar">
+          <h3>Recovery requests</h3>
+          <button id="refreshPasswordRecovery" class="button quiet" type="button">Refresh recovery requests</button>
+        </div>
+        <div id="passwordRecoveryQueue" class="membership-queue" aria-live="polite"></div>
+        <form id="passwordResetLinkForm" class="inline-form">
+          <label>Active member email<input name="email" type="email" required></label>
+          <button class="button secondary" type="submit">Generate 10-minute link</button>
+        </form>
+        <div id="passwordResetLinkResult" class="form-status" role="status"></div>
+      </div>
+
+      <div class="panel" data-admin-pane="editorial" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>EDITORIAL</span><small>New contributor review</small></div>
+            <h3>Posts awaiting review</h3>
+          </div>
+          <button id="refreshPostReviews" class="button quiet" type="button">Refresh</button>
+        </div>
+        <div id="postReviewQueue" class="membership-queue"><p class="muted">No posts loaded.</p></div>
+      </div>
+
+      <div class="panel announcement-admin-panel" data-admin-pane="announcements" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>ANNOUNCEMENTS</span><small>Governed community notices</small></div>
+            <h3>Founder messages & community announcements</h3>
+            <p class="muted">Founder Messages are reserved for the founder. Other active administrators can publish Community Announcements.</p>
+          </div>
+          <button id="refreshAnnouncements" class="button quiet" type="button">Refresh</button>
+        </div>
+
+        <form id="announcementForm" class="form-panel announcement-form">
+          <div class="field-grid">
+            <label>Announcement type
+              <select name="announcementType" id="announcementType">
+                <option value="community_announcement">Community Announcement</option>
+                <option value="founder_message">Founder Message</option>
+              </select>
+            </label>
+            <label>Audience
+              <select name="audience">
+                <option value="all">Everyone</option>
+                <option value="members">Members</option>
+                <option value="admins">Admins only</option>
+              </select>
+            </label>
+            <label class="wide">Title<input name="title" required maxlength="160"></label>
+            <label class="wide">Short introduction<textarea name="excerpt" rows="3" maxlength="500"></textarea></label>
+            <label class="wide">Message<textarea name="body" rows="12" required maxlength="120000"></textarea></label>
+          </div>
+          <div class="announcement-options">
+            <label class="check"><input name="isPinned" type="checkbox" checked> <span>Pin this message to member dashboards.</span></label>
+            <label class="check"><input name="publish" type="checkbox" checked> <span>Publish now. Uncheck to save as a draft.</span></label>
+          </div>
+          <div class="announcement-actions">
+            <button class="button primary" type="submit">Publish announcement</button>
+            <button id="loadFounderWelcome" class="button secondary" type="button">Load Founder Welcome #001</button>
+          </div>
+          <p class="form-status" id="announcementStatus" role="status"></p>
+        </form>
+
+        <div id="announcementQueue" class="announcement-queue" aria-live="polite">
+          <p class="muted">No announcements loaded.</p>
+        </div>
+      </div>
+
+      <div class="panel" data-admin-pane="moderation" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <div class="panel-kicker"><span>MODERATION</span><small>Reports & content control</small></div>
+            <h3>Community moderation</h3>
+            <p class="muted">Review member reports. Dismiss false reports, hide reported content, or suspend a reported account when appropriate.</p>
+          </div>
+          <button id="refreshModeration" class="button quiet" type="button">Refresh</button>
+        </div>
+        <div id="moderationQueue" class="membership-queue"><p class="muted">No reports loaded.</p></div>
+      </div>
+    </section>
+
+    <section class="community-section governance-section" id="riders">
+      <div class="governance-copy">
+        <p class="eyebrow">COMMUNITY STANDARD</p>
+        <h2>Quality before volume.</h2>
+        <p>The purpose is not to recreate Strava or Facebook. A VYNDI publication should preserve a significant cycling experience, improve a route, teach something useful, document an event or support a focused cycling discussion.</p>
+      </div>
+      <div class="governance-rules">
+        <article><b>2-of-3</b><span>joining approval quorum</span></article>
+        <article><b>3</b><span>minimum active admins</span></article>
+        <article><b>DRAFT</b><span>legacy imports arrive safely first</span></article>
+        <article><b>AUDIT</b><span>admin decisions remain traceable</span></article>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <div id="mobileSearchSheet" class="mobile-sheet mobile-search-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobileSearchTitle">
+    <div class="mobile-sheet-panel">
+      <div class="mobile-sheet-head">
+        <div><span class="mobile-sheet-kicker">VYNDI</span><strong id="mobileSearchTitle">Search the road</strong></div>
+        <button id="mobileSearchClose" class="mobile-sheet-close" type="button" aria-label="Close search">×</button>
+      </div>
+      <label class="sr-only" for="mobileCommunitySearch">Search community</label>
+      <div class="mobile-search-field">
+        <svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#search"></use></svg>
+        <input id="mobileCommunitySearch" type="search" autocomplete="off" inputmode="search" placeholder="Stories, riders, routes, knowledge…">
+      </div>
+      <p class="mobile-sheet-hint">Search the current VYNDI view.</p>
+    </div>
+  </div>
+
+  <div id="mobileCreateSheet" class="mobile-sheet mobile-create-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobileCreateTitle">
+    <div class="mobile-sheet-panel">
+      <div class="mobile-sheet-head"><div><span class="mobile-sheet-kicker">CREATE</span><strong id="mobileCreateTitle">Add to your road</strong></div><button id="mobileCreateClose" class="mobile-sheet-close" type="button" aria-label="Close create menu">×</button></div>
+      <nav class="mobile-create-grid" aria-label="Create in VYBES">
+        <a href="/community#account" data-member-gate data-open-member-pane="create" data-mobile-create="story">Ride Story</a>
+        <a href="/community#account" data-member-gate data-open-member-pane="create" data-mobile-create="route">Route</a>
+        <a href="/community#account" data-member-gate data-open-member-pane="create" data-mobile-create="knowledge">Knowledge</a>
+        <a href="/community#account" data-member-gate data-open-member-pane="create" data-mobile-create="event">Event</a>
+        <a href="/community/create" data-app-route data-mobile-create="community">Community</a>
+      </nav>
+    </div>
+  </div>
+
+  <div id="mobileMoreSheet" class="mobile-sheet mobile-more-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobileMoreTitle">
+    <div class="mobile-sheet-panel">
+      <div class="mobile-sheet-head">
+        <div><span class="mobile-sheet-kicker">EXPLORE</span><strong id="mobileMoreTitle">More from VYNDI</strong></div>
+        <button id="mobileMoreClose" class="mobile-sheet-close" type="button" aria-label="Close more menu">×</button>
+      </div>
+      <div class="mobile-more-section"><span>DISCOVER</span><nav class="mobile-more-grid" aria-label="Discover VYBES">
+        <a href="/routes" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#route"></use></svg><span>Routes</span></a>
+        <a href="/knowledge" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#knowledge"></use></svg><span>Knowledge</span></a>
+        <a href="/events" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#calendar"></use></svg><span>Events</span></a>
+        <a href="/forum" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#chat"></use></svg><span>Forum</span></a>
+      </nav></div>
+      <div class="mobile-more-section"><span>MY VYBES</span><nav class="mobile-more-grid">
+        <a href="https://vyndi-ride-stories.vayushastr.workers.dev/community" data-community-route><span>My Circles</span></a>
+        <a href="/community#account" data-member-gate><span>Athlete Passport</span></a>
+        <button class="mobile-pwa-install" type="button" data-pwa-install hidden><span>Install VYBES</span></button>
+        <p class="mobile-pwa-ios" data-pwa-ios hidden>iPhone/iPad: Safari → Share → Add to Home Screen.</p>
+      </nav></div>
+      <div class="mobile-more-section"><span>ADMIN</span><nav class="mobile-more-grid">
+        <a id="mobileAdminLink" href="/admin" data-app-route hidden><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#shield"></use></svg><span>Admin</span></a>
+      </nav></div>
+    </div>
+  </div>
+
+  <div class="mobile-road-pulse" aria-label="Road Pulse"><strong>ROAD PULSE</strong><span>Roads · stories · routes · Circles</span></div>
+
+  <button class="mobile-create-fab" id="mobileCreateToggle" type="button" aria-label="Create in VYBES" aria-controls="mobileCreateSheet" aria-expanded="false" href="/community#account" data-member-gate data-open-member-pane="create" aria-label="Create post">
+    <svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#plus"></use></svg>
+  </button>
+
+  <nav class="mobile-bottom-nav" aria-label="Mobile VYNDI navigation">
+    <a href="https://vyndi-ride-stories.vayushastr.workers.dev/community" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#feed"></use></svg><span>Home</span></a>
+    <a href="/stories" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#story"></use></svg><span>Stories</span></a>
+    <a href="/journals" data-community-route><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#riders"></use></svg><span>Riders</span></a>
+    <a href="/community#account" data-member-gate><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#user"></use></svg><span>My VYNDI</span></a>
+    <button id="mobileMoreToggle" type="button" aria-label="More destinations" aria-controls="mobileMoreSheet" aria-expanded="false"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/vyndi-icons.svg#more"></use></svg><span>More</span></button>
+  </nav>
+
+  <footer class="community-footer">
+    <a class="community-brand" href="https://vyndi-ride-stories.vayushastr.workers.dev/community">
+      <img src="/assets/vayu-official.png" alt="Vāyú Shastr official logo">
+      <span>Vybes<small>VYNDI Ride Stories Community</small></span>
+    </a>
+    <p>Stories, routes and knowledge for cyclists. Vāyú Shastr Pvt Ltd.</p>
+    <div><a href="/">Ride Stories</a><a href="/apps/web/">Terrain Medal</a><a href="mailto:info@vayushastr.com">Contact</a></div>
+  </footer>
+
+  <script type="module" src="/community.js?v=20261001-vybes-brand-1"></script>
+  <script src="/pwa-install.js?v=20261001-pwa-1" defer></script>
+
+    </body>
+</html>

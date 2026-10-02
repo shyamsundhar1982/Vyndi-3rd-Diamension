@@ -1,0 +1,142 @@
+/* VYBES Premium Revamp Layer */
+:root {
+  --vy-bg: #0A0C10;
+  --vy-elevated: #12151C;
+  --vy-card: #161A22;
+  --vy-card-hover: #1C212B;
+  --vy-border: #2A303C;
+  --vy-border-strong: #3A4250;
+  --vy-orange: #FF6B00;
+  --vy-orange-hover: #FF8533;
+  --vy-bronze: #C9A227;
+  --vy-gold: #E8C547;
+  --vy-text: #E8EAED;
+  --vy-muted: #9AA3B2;
+  --vy-radius: 14px;
+  --vy-shadow: 0 8px 32px rgba(0,0,0,.4);
+  --vy-glow: 0 0 28px rgba(255,107,0,.22);
+}
+.story-card, article.story-card, .feed-card {
+  background: var(--vy-card) !important;
+  border: 1px solid var(--vy-border) !important;
+  border-radius: var(--vy-radius) !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease !important;
+}
+.story-card:hover, article.story-card:hover {
+  background: var(--vy-card-hover) !important;
+  border-color: var(--vy-border-strong) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--vy-shadow);
+}
+.story-card.featured, .story-card[data-featured="true"] {
+  border-left: 3px solid var(--vy-bronze) !important;
+}
+.passport-experience, .athlete-passport, #passportRoot, [data-passport] {
+  background: linear-gradient(180deg, rgba(255,107,0,.06) 0%, transparent 120px), var(--vy-elevated) !important;
+  border: 1px solid var(--vy-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--vy-shadow);
+  overflow: hidden;
+}
+.passport-hero h3, .passport-experience .passport-hero h3, .passport-distance-value {
+  background: linear-gradient(90deg, #fff 10%, #ffb366 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em;
+}
+.passport-kpi-grid article, .passport-performance-ribbon article, .passport-visual-card {
+  background: var(--vy-card) !important;
+  border: 1px solid var(--vy-border) !important;
+  border-radius: 14px !important;
+}
+.passport-achievement-rail article, .passport-record-constellation article, .passport-badge {
+  border: 1.5px solid color-mix(in srgb, var(--vy-bronze) 55%, transparent) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(145deg, #1e2530, #121820) !important;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.passport-achievement-rail article:hover, .passport-record-constellation article:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(201,162,39,.22);
+}
+.passport-insight-card, .passport-story-divider, .road-dna {
+  border-left: 3px solid var(--vy-bronze) !important;
+}
+.sidebar-nav a[aria-current="page"], .sidebar-nav a.active {
+  background: rgba(255,107,0,.1) !important;
+  color: var(--vy-orange) !important;
+  position: relative;
+}
+.sidebar-nav a[aria-current="page"]::before, .sidebar-nav a.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  background: var(--vy-orange);
+  border-radius: 0 3px 3px 0;
+}
+.button.primary, button.primary, .btn-primary {
+  background: var(--vy-orange) !important;
+  color: #111 !important;
+  box-shadow: var(--vy-glow);
+  border: none !important;
+  font-weight: 600 !important;
+}
+.button.primary:hover, button.primary:hover {
+  background: var(--vy-orange-hover) !important;
+  transform: translateY(-1px);
+}
+.vybes-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 60;
+  background: rgba(10,12,16,.94);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--vy-border);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  justify-content: space-around;
+  align-items: center;
+}
+.vybes-bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  min-width: 52px;
+  color: var(--vy-muted);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+}
+.vybes-bottom-nav a svg {
+  width: 22px; height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+}
+.vybes-bottom-nav a[aria-current="page"], .vybes-bottom-nav a.active {
+  color: var(--vy-orange);
+}
+@media (max-width: 960px) {
+  .vybes-bottom-nav { display: flex; }
+  .community-main-content, .community-social-shell, body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+.studio-panel, .member-dashboard .panel, .dashboard-pane-grid .panel {
+  border-radius: 16px !important;
+  border: 1px solid var(--vy-border) !important;
+  background: var(--vy-card) !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--vy-orange) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,107,0,.15);
+}
+.glory-button:hover, .action.glory:hover {
+  color: var(--vy-gold) !important;
+}

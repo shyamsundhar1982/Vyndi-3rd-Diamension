@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Road — My Glory · Terrain Medal · Powered by VYNDI Ride Stories</title>
+  <meta name="description" content="My Road — My Glory Terrain Medal, powered by VYNDI Ride Stories — raise your real route into a physical terrain memento."><link rel="canonical" href="https://vyndi-ride-stories.vayushastr.workers.dev/terrain-medal">
+  <meta name="theme-color" content="#030504">
+  <link rel="icon" href="assets/vayu-official.png" type="image/png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="terrain-medal.css?v=20261002-glb-visible-1"><link rel="stylesheet" href="my-road-my-glory-theme.css?v=20261001-ui-audit-4">
+  <link rel="stylesheet" href="/vyndi-typography.css?v=20261001-readable-2">
+</head>
+<body class="vayu-corporate terrain-medal-app" data-readable="true">
+  <header class="studio-header">
+    <a href="index.html" class="brand product-brand" aria-label="My Road My Glory home"><img src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span class="brand-copy">MY ROAD — MY GLORY<small>Powered by VYNDI Ride Stories</small></span></a>
+    <nav class="studio-nav" aria-label="Terrain Medal navigation"><a class="back" href="/#finish">← Merchandise</a><a href="index.html#ride-story">My Story</a><a href="https://vyndi-ride-stories.vayushastr.workers.dev/community">Community</a></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">MY ROAD — MY GLORY / TERRAIN MEDAL</p>
+      <h1>Raise your road.<br><em>Keep your glory.</em></h1>
+      <p>Powered by VYNDI Ride Stories. Turn your real route and terrain into a physical record of the road you rode, with production settings preserved through export.</p>
+    </section>
+
+    <section class="workspace">
+      <form class="controls" id="medalForm">
+        <fieldset class="global-discovery"><legend>00 · Global event & terrain</legend>
+          <p class="hint">Search any public geography first, with or without a GPX. Event and participant discovery can then add factual metadata when public sources expose it.</p>
+          <label>Continent<select id="geoContinent"></select></label>
+          <div class="pair"><label>Country<input id="geoCountry" placeholder="e.g. India, France, Australia"></label><label>State / region<input id="geoRegion" placeholder="e.g. Tamil Nadu, Brittany"></label></div>
+          <div class="pair"><label>City / area<input id="geoCity" placeholder="e.g. Ooty, Brest, Lake Tahoe"></label><label>Terrain environment<select id="terrainEnvironment"><option value="auto">Auto / mixed</option><option value="land">Land</option><option value="coastal">Coastal</option><option value="water">Water / lake / sea</option><option value="mountain">Mountain</option><option value="desert">Desert</option><option value="urban">Urban</option></select></label></div>
+          <button type="button" class="discovery-action" id="geoSearchButton">Search global geography</button>
+          <p class="hint discovery-status" id="geoSearchStatus">Choose a continent/country/state/city or type any named area.</p>
+          <div class="discovery-results" id="geoResults" aria-live="polite"></div>
+
+          <div class="discovery-divider"></div>
+          <div class="pair"><label>Find event<input id="eventWebSearch" type="search" placeholder="UTMB, Boston Marathon, Paris-Brest-Paris…"></label><label>Sport<select id="eventWebCategory"><option value="all">Any sport</option><option value="cycling">Cycling</option><option value="marathon">Marathon / road running</option><option value="ultra">Ultra running</option><option value="triathlon">Triathlon</option><option value="trail">Trail / XC</option><option value="swimming">Open-water / swimming</option><option value="rowing">Rowing / paddling</option><option value="sailing">Sailing / regatta</option><option value="motorsport">Motorsport / rally</option><option value="winter">Winter / snow</option><option value="adventure">Hiking / adventure</option><option value="other">Other</option></select></label></div>
+          <button type="button" class="discovery-action" id="eventWebSearchButton">Search public event sources</button>
+          <p class="hint discovery-status" id="eventWebStatus">Uses the current geography filters plus Wikidata/Wikipedia discovery. Confirm the exact edition before production.</p>
+          <div class="discovery-results" id="eventWebResults" aria-live="polite"></div>
+
+        </fieldset>
+
+        <fieldset><legend>01 · Event and rider</legend>
+          <label>Saved event<select id="eventSelect"></select></label>
+          <label>Event name<input id="eventName" maxlength="54"></label>
+          <div class="pair"><label>Event date<input id="eventDate" type="date"></label><label>Event location<input id="eventLocation" maxlength="64" placeholder="City, state/region, country"></label></div>
+          <div class="pair"><label>Participant<input id="participant" maxlength="42" placeholder="Participant / rider name"></label><label>Bib / rider no.<input id="bib" maxlength="24" placeholder="Bib / rider no."></label></div>
+          <div class="participant-lookup">
+            <p class="hint participant-sequence"><strong>Rider lookup:</strong> type the name and/or bib → Find participant → choose the correct result row.</p>
+            <label>Official / public results source<input id="publicResultUrl" type="url" placeholder="Loaded automatically for supported events, or paste a public results URL"></label>
+            <button type="button" class="discovery-action" id="importPublicResult">Find participant</button>
+            <p class="hint discovery-status" id="publicResultStatus">Your name and bib stay editable until you choose a matching rider result.</p>
+            <div class="discovery-results participant-matches" id="participantMatches" aria-live="polite"></div>
+          </div>
+          <label>Distance<input id="distance" maxlength="24"></label>
+          <div class="pair"><label>Start detail<input id="startDetail" maxlength="40" placeholder="Time / checkpoint"></label><label>Finish / completion<input id="finishDetail" maxlength="40" placeholder="Time / completion"></label></div>
+          <div class="pair"><label>Elapsed / official time<input id="elapsedTime" maxlength="28"></label><label>Status<input id="resultStatus" maxlength="24" placeholder="Finished / DNF / etc."></label></div>
+          <label>Placing / rank<input id="placing" maxlength="18"></label>
+        </fieldset>
+
+        <fieldset><legend>02 · Map and terrain</legend>
+          <label>Saved map<select id="mapSelect"></select></label>
+          <label class="file">GPX route(s)<input id="gpxInput" type="file" multiple accept=".gpx,application/gpx+xml,application/xml,text/xml"><span id="gpxState">Choose one or more GPX files</span></label>
+          <label>Map framing<select id="framingSelect"><option value="event-focus">Event focus</option><option value="regional-context">Regional context</option><option value="view-crop">Current zoom crop</option></select></label>
+          <div class="pair"><label>Terrain extent<select id="terrainExtentMode"><option value="auto">Auto · percentage fit</option><option value="tight">Tight · 1 km buffer</option><option value="normal">Normal · 5 km buffer</option><option value="wide">Wide · 15 km buffer</option><option value="custom">Custom route buffer</option></select></label><label>Route buffer (km)<input id="routeBufferKm" type="number" min="0.1" max="250" step="0.5" value="5"></label></div>
+          <label>Printable margin <output id="printMarginOut">18%</output><input id="printMargin" type="range" min="5" max="50" step="1" value="18"></label>
+          <div class="frame-actions"><button type="button" id="autoFitRoute">Auto-fit GPX</button><button type="button" id="useViewAsPrint">Use current zoom as print area</button><button type="button" id="resetMapContext">Reset to regional context</button></div>
+          <p class="hint print-area-state" id="printAreaState">Upload a GPX to define the printable geography.</p>
+          <div class="pair"><label>Elevation exaggeration <output id="exaggerationOut">5×</output><input id="exaggeration" type="range" min="1" max="10" step="0.5" value="5"></label><label>Maximum relief <output id="reliefOut">4.0 mm</output><input id="reliefLimit" type="range" min="1" max="8" step="0.25" value="4"></label></div>
+          <label>Sea surface<select id="waterMode"><option value="procedural-waves">Procedural waves · lightweight</option><option value="flat">Flat water</option><option value="none">No water</option></select></label>
+          <div class="pair"><label>Wave relief <output id="waveHeightOut">0.30 mm</output><input id="waveHeight" type="range" min="0.1" max="0.5" step="0.05" value="0.3"></label><label>Wave spacing <output id="wavelengthOut">2.6 mm</output><input id="wavelength" type="range" min="1.6" max="5" step="0.2" value="2.6"></label></div>
+          <p class="hint" id="terrainSource">Terrain source</p>
+        </fieldset>
+
+        <fieldset><legend>03 · Medal and production</legend>
+          <div class="segmented"><label><input type="radio" name="diameter" value="3"><span>3″ · 76.2 mm</span></label><label><input type="radio" name="diameter" value="4" checked><span>4″ · 101.6 mm</span></label></div>
+          <label>Printer / production profile<select id="printerSelect"></select></label>
+          <div class="pair"><label>Physical width override (mm)<input id="modelWidthMm" type="number" min="0" max="600" step="1" value="0" placeholder="0 = selected medal size"></label><label>Base thickness (mm)<input id="base" type="number" min="1.5" max="10" step="0.1" value="3.2"></label></div>
+          <div class="pair"><label>Route style<select id="routeStyle"><option value="raised">Raised</option><option value="engraved">Engraved</option><option value="inlay">Flush inlay</option><option value="color">Colour only</option><option value="none">No route</option></select></label><label>Route width (mm)<input id="routeWidth" type="number" min="0.3" max="5" step="0.1" value="1.2"></label></div>
+          <label>Route height / depth (mm)<input id="routeRise" type="number" min="0.2" max="3" step="0.1" value="1"></label>
+          <p class="hint production-note"><span id="printerProfileNote">Select a 3D production profile to generate a watertight print model.</span> <a id="printerProfileSource" href="#" target="_blank" rel="noopener">Manufacturer specification ↗</a> · minimum feature and emboss values are VYNDI production recommendations.</p>
+        </fieldset>
+
+        <details class="advanced-controls"><summary>Advanced fabrication · logo, labels, layers and DEM</summary>
+        <fieldset class="fabrication-extras"><legend>04 · Fabrication extras</legend>
+          <label>Medal / map shape<select id="shapeSelect"><option value="circle">Circle</option><option value="geographic">Selected country / region outline</option><option value="square">Square</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="heart">Heart</option></select></label>
+          <p class="hint" id="outlineStatus" aria-live="polite">Search and select a country or region above, then choose its outline. Islands remain separate pieces.</p>
+          <div class="pair"><label>Ellipse aspect<input id="shapeAspect" type="number" min="0.6" max="2.2" step="0.05" value="1.35"></label><label>Bottom engraving depth (mm)<input id="bottomEngraveDepth" type="number" min="0" max="1.2" step="0.05" value="0.35"></label></div>
+
+          <div class="fabrication-option"><label class="checkline"><input id="contourEnabled" type="checkbox"> Printable contour emboss</label><div class="pair"><label>Contour interval (relief mm)<input id="contourInterval" type="number" min="0.2" max="4" step="0.1" value="1"></label><label>Contour rise (mm)<input id="contourRise" type="number" min="0.05" max="0.8" step="0.05" value="0.2"></label></div></div>
+
+          <div class="fabrication-option"><label class="checkline"><input id="magnetEnabled" type="checkbox"> Bottom magnet recesses</label><div class="triple"><label>Magnet Ø (mm)<input id="magnetDiameter" type="number" min="3" max="20" step="0.5" value="8"></label><label>Depth (mm)<input id="magnetDepth" type="number" min="0.5" max="4" step="0.1" value="2"></label><label>Spacing (mm)<input id="magnetSpacing" type="number" min="10" max="60" step="1" value="30"></label></div></div>
+
+          <div class="fabrication-option"><label class="checkline"><input id="hangingLoopEnabled" type="checkbox"> Integrated hanging loop</label><div class="pair"><label>Loop inner Ø (mm)<input id="loopInnerDiameter" type="number" min="3" max="15" step="0.5" value="6"></label><label>Loop wall (mm)<input id="loopWall" type="number" min="1.5" max="6" step="0.25" value="3"></label></div></div>
+
+          <label>Bottom mark / engraving<input id="bottomMark" maxlength="54" placeholder="Optional personal engraving"></label>
+          <p class="hint">Every generated Terrain Medal permanently includes the governed provenance mark and © 2026 VYNDI RIDE STORIES on the underside.</p>
+          <div class="pair"><label>SVG / logo emboss<input id="logoInput" type="file" accept=".svg,image/svg+xml,image/png,image/webp"></label><label>Logo rise (mm)<input id="logoRise" type="number" min="0.05" max="1.5" step="0.05" value="0.35"></label></div>
+          <div class="fabrication-option">
+            <label class="checkline"><input id="officialLogoEnabled" type="checkbox"> Official Vāyú logo on the map</label>
+            <div class="pair"><label>Left / right (%)<input id="officialLogoX" type="range" min="-90" max="90" step="1" value="0"></label><label>Down / up (%)<input id="officialLogoY" type="range" min="-90" max="90" step="1" value="0"></label></div>
+            <div class="pair"><label>Logo width (mm)<input id="officialLogoWidth" type="number" min="5" max="35" step="0.5" value="16"></label><label>Rotation (°)<input id="officialLogoRotation" type="range" min="-180" max="180" step="5" value="0"></label></div>
+            <button type="button" id="findLogoSpace">Find empty space for logo</button>
+            <p class="hint" id="officialLogoStatus" aria-live="polite">Optional front logo uses the official artwork. Move, resize and rotate it within the selected map.</p>
+          </div>
+          <div class="pair"><label>Heightmap image<input id="heightmapInput" type="file" accept="image/png,image/jpeg,image/webp"></label><label>Heightmap strength (mm)<input id="heightmapStrength" type="number" min="0" max="5" step="0.1" value="1"></label></div>
+
+          <label class="checkline"><input id="standEnabled" type="checkbox"> Generate separate display stand STL</label>
+          <div class="fabrication-option"><label class="checkline"><input id="tileEnabled" type="checkbox"> Large-format tiled map plan</label><div class="triple"><label>Max tile width (mm)<input id="tileMaxWidth" type="number" min="60" max="500" step="5" value="200"></label><label>Max tile height (mm)<input id="tileMaxHeight" type="number" min="60" max="500" step="5" value="200"></label><label>Target XY mesh step (mm)<input id="meshTargetXy" type="number" min="0.15" max="2" step="0.05" value="0.50"></label></div><div class="triple"><label>Tile joint<select id="tileJointType"><option value="dovetail">Dovetail key</option><option value="pin">Alignment puck / socket</option><option value="flat">Flat seam</option></select></label><label>Puck / socket Ø (mm)<input id="tileJointDiameter" type="number" min="4" max="20" step="0.5" value="8"></label><label>Socket depth (mm)<input id="tileJointDepth" type="number" min="0.8" max="4" step="0.1" value="2"></label></div><label>Joint clearance (mm)<input id="tileJointClearance" type="number" min="0.05" max="0.8" step="0.05" value="0.2"></label></div>
+
+          <div class="fabrication-divider"></div>
+          <strong class="subhead">Printable place labels</strong>
+          <div class="pair">
+            <label>Place labels<select id="placeLabelMode"><option value="none">None</option><option value="major" selected>Major only · recommended</option><option value="selected">Selected only</option><option value="all">All · diagnostic</option></select></label>
+            <div class="place-selection-control"><span class="field-label">Selected places</span><div id="placeSelectionList" class="place-selection-list" aria-live="polite"><small>Load a map to choose places.</small></div></div>
+          </div>
+          <p class="hint">Major only is the governed print default. Selected only prints only the checked locations. All is retained for diagnostic use and remains collision-limited.</p>
+
+          <div class="fabrication-divider"></div>
+          <strong class="subhead">Printable map layers & 3MF colors</strong>
+          <div class="triple">
+            <label class="checkline"><input id="trailsEnabled" type="checkbox" checked> Trails</label>
+            <label class="checkline"><input id="railwaysEnabled" type="checkbox" checked> Railways</label>
+            <label class="checkline"><input id="buildingsEnabled" type="checkbox"> Buildings</label>
+          </div>
+          <div class="layer-palette">
+            <label>Terrain<input id="terrainColor" type="color" value="#343a3e"></label>
+            <label>Water<input id="waterColor" type="color" value="#2f9bc1"></label>
+            <label>Route<input id="routeColor" type="color" value="#ff5c35"></label>
+            <label>Roads<input id="roadsColor" type="color" value="#e7ece9"></label>
+            <label>Labels<input id="labelsColor" type="color" value="#b8f229"></label>
+            <label>Trails<input id="trailsColor" type="color" value="#d29b49"></label>
+            <label>Railways<input id="railwaysColor" type="color" value="#a58cff"></label>
+            <label>Buildings<input id="buildingsColor" type="color" value="#d8d1c4"></label>
+          </div>
+
+          <div class="fabrication-divider"></div>
+          <label class="file">Local Arc-ASCII DEM<input id="localDemInput" type="file" accept=".asc,.txt,text/plain"><span>Optional local terrain grid</span></label>
+          <label class="file">Local GeoTIFF DEM<input id="geoTiffInput" type="file" accept=".tif,.tiff,image/tiff"><span>Professional GeoTIFF / projected DEM</span></label>
+          <div class="triple"><label>GeoTIFF CRS / WKT override<input id="geoTiffCrs" placeholder="e.g. EPSG:32643 · leave blank for embedded CRS"></label><label class="checkline"><input id="demFillNoData" type="checkbox" checked> Fill NoData holes</label><label>Smoothing radius (cells)<input id="demSmoothRadius" type="number" min="0" max="4" step="1" value="0"></label></div>
+          <label>Elevation source<select id="elevationSource"><option value="terrarium">AWS Terrarium · no key</option><option value="local">Local Arc-ASCII DEM</option><option value="geotiff">Local GeoTIFF DEM</option><option value="opentopography">OpenTopography · high-resolution override</option></select></label>
+          <div class="pair"><label>Route elevation source<select id="routeElevationMode"><option value="dem">DEM only</option><option value="gpx">GPX elevation where available</option><option value="blend">Blend GPX + DEM</option></select></label><label>GPX blend <output id="routeElevationBlendOut">50%</output><input id="routeElevationBlend" type="range" min="0" max="1" step="0.05" value="0.5"></label></div>
+          <div class="pair"><label>OpenTopography dataset<select id="openTopoDataset"><option value="COP30">Copernicus 30 m (COP30)</option><option value="NASADEM">NASADEM 30 m</option><option value="SRTM_GL1">SRTM GL1 30 m</option><option value="EU_DTM">Europe DTM 30 m</option><option value="AW3D30">ALOS World 3D 30 m</option><option value="COP90">Copernicus 90 m</option><option value="GEBCOIceTopo">GEBCO ice/topography 500 m</option></select></label><label>API key<input id="openTopoKey" type="password" autocomplete="off" placeholder="Not stored"></label></div>
+          <button type="button" class="discovery-action" id="loadHighResDem">Test & load OpenTopography DEM</button>
+          <p class="hint" id="fabricationStatus">Fabrication extras are applied only to generated STL/3MF. OpenTopography keys are sent only with the requested DEM call and are not stored. Personal/commercial use must follow OpenTopography API terms; commercial software integration may require an Enterprise API key.</p>
+        </fieldset>
+        </details>
+
+        <div class="status-card" id="statusCard"><strong id="statusTitle">READY FOR CONFIGURATION</strong><p id="statusText">The preview uses representative relief until an authoritative DEM mesh is generated.</p></div>
+        <div class="production-card">
+          <strong>PRINT MODEL</strong>
+          <p id="productionStatus">Not generated. Terrain, GPX, major roads, governed place labels and event text will be converted into physical relief.</p>
+          <div class="actions production-actions"><button type="button" class="primary" id="generatePrintModel">Generate print model</button><button type="button" id="download3mf" disabled>3MF</button><button type="button" id="downloadStl" disabled>STL</button><button type="button" id="downloadObj" disabled>OBJ + MTL ZIP</button><button type="button" id="downloadGlb" disabled>GLB</button><button type="button" id="downloadValidationBundle">Validation ZIP</button><button type="button" id="downloadStandStl" disabled>Stand STL</button><button type="button" id="downloadTilePlan" disabled>Tiled map ZIP</button><button type="button" class="primary" id="downloadPrintPackage" disabled>Print package ZIP</button></div>
+          <div class="authenticity-card">
+            <div><strong>VYNDI AUTHENTICITY RECEIPT</strong><p id="authenticityStatus">Generate a print model, then issue a signed receipt to prove that its export manifest came from the canonical VYNDI service.</p></div>
+            <div class="actions authenticity-actions"><button type="button" id="issueAuthenticity" disabled>Issue signed receipt</button><button type="button" id="downloadAuthenticity" disabled>Receipt JSON</button><a id="verifyAuthenticityLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Verify authenticity ↗</a></div>
+          </div>
+        </div>
+
+        <section id="generatedModelPreview" class="glb-viewer-panel" aria-labelledby="glbViewerTitle">
+          <div class="glb-viewer-heading">
+            <strong id="glbViewerTitle">GLB visual / AR inspection</strong>
+            <span id="glbViewerStatus">Generate a print model to inspect the exact exported GLB.</span>
+          </div>
+          <model-viewer id="glbViewer" camera-controls touch-action="pan-y" ar ar-modes="webxr scene-viewer quick-look" shadow-intensity="0.8" exposure="1.05" camera-orbit="0deg 65deg auto" interaction-prompt="auto" reveal="auto" loading="eager" alt="VYNDI Terrain Medal GLB production model"></model-viewer>
+        </section>
+        <div class="actions"><a class="preview-jump" href="#generatedModelPreview">Inspect generated model ↓</a><button type="button" id="resetView">Reset view</button><button type="button" id="downloadJob">Export production JSON</button></div>
+      </form>
+
+      <section class="preview-panel">
+        <div class="preview-toolbar"><span><i></i> LIVE 3D CONCEPT PREVIEW</span><span id="dimensions">Ø 101.6 × 8.2 mm</span></div>
+        <canvas id="medalCanvas" width="1100" height="850" aria-label="Interactive three-dimensional terrain medal preview"></canvas>
+        <div class="preview-help">Drag to orbit · Wheel/pinch to inspect · Zoom does not change print geography until committed · OpenFreeMap © OpenMapTiles Data from OpenStreetMap</div>
+        <div class="legend"><span><i class="terrain"></i>Terrain</span><span><i class="water"></i>Procedural sea</span><span><i class="route"></i>GPX route</span><span><i class="text"></i>Event text</span></div>
+
+      </section>
+    </section>
+  </main>
+  <footer class="studio-footer">
+    <div class="footer-product"><a class="brand product-brand" href="index.html"><img src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span class="brand-copy">MY ROAD — MY GLORY<small>Powered by VYNDI Ride Stories</small></span></a><div><a href="/#finish">Merchandise</a> · <a href="https://vyndi-ride-stories.vayushastr.workers.dev/community">Community</a></div></div>
+    <div class="parent-attribution"><a href="https://www.vayushastr.com/" target="_blank" rel="noopener"><img src="assets/vayu-official.png" alt="Vāyú Shastr Pvt Ltd logo"><span>Vāyú Shastr Pvt Ltd</span></a><small>© 2026 Vāyú Shastr Pvt Ltd · Parent company of VYNDI Ride Stories.<br>Official service: <strong>vyndi-ride-stories.vayushastr.workers.dev</strong> · Security: <a href="mailto:info@vayushastr.com">info@vayushastr.com</a></small></div>
+  </footer>
+  <script type="module" src="terrain-medal.js?v=34"></script>
+</body>
+</html>
+

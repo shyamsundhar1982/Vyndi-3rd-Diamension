@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Road — My Glory · Powered by VYNDI Ride Stories</title>
+  <meta name="description" content="My Road — My Glory, powered by VYNDI Ride Stories — turn your route, ride and achievement into a lasting memento."><link rel="canonical" href="https://vyndi-ride-stories.vayushastr.workers.dev/">
+  <meta name="theme-color" content="#030504">
+  <meta name="vyndi-payment-url" content="">
+  <meta name="vyndi-event-api-url" content="/api/events/search">
+  <meta name="vyndi-map-tile-url" content="https://tile.openstreetmap.org/{z}/{x}/{y}.png">
+  <meta name="vyndi-map-attribution" content="© OpenStreetMap contributors">
+  <meta property="og:title" content="My Road — My Glory · Powered by VYNDI Ride Stories">
+  <meta property="og:description" content="Your road. Your effort. Your glory — made physical by VYNDI Ride Stories.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vyndi-ride-stories.vayushastr.workers.dev/">
+  <meta property="og:image" content="https://vyndi-ride-stories.vayushastr.workers.dev/assets/vayu-official.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="My Road — My Glory · Powered by VYNDI Ride Stories">
+  <meta name="twitter:description" content="Your road. Your effort. Your glory — made physical by VYNDI Ride Stories.">
+  <meta name="twitter:image" content="https://vyndi-ride-stories.vayushastr.workers.dev/assets/vayu-official.png">
+  <link rel="icon" href="assets/vayu-official.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260920-studio-actions-4"><link rel="stylesheet" href="my-road-my-glory-theme.css?v=20261001-social-ui-2">
+  <link rel="stylesheet" href="/vyndi-typography.css?v=20261001-readable-2">
+</head>
+<body class="vayu-corporate ride-stories-app" data-readable="true">
+<div id="v3d-bridge" style="position:sticky;top:0;z-index:1000;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(90deg,#1a1208,#24180e);border-bottom:1px solid #4a3a22;color:#e7d3b0;font:13px system-ui,sans-serif"><div><strong style="color:#ffb347">VYNDI 3rd Diamension</strong> · Official merch from Ride Stories · <span style="color:#9a8b7c">My Road — My Glory</span></div><a href="/apps/web/" style="background:linear-gradient(180deg,#ffb347,#c47a1a);color:#1a1008;padding:8px 14px;border-radius:999px;font-weight:700;text-decoration:none">Terrain Medal Workbench →</a></div>
+
+  <header class="site-header" id="siteHeader">
+    <a class="brand product-brand" href="#top" aria-label="My Road My Glory home"><img class="brand-emblem" src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span class="brand-copy">MY ROAD — MY GLORY<small>Powered by VYNDI Ride Stories</small></span></a>
+    <nav aria-label="Main navigation"><a href="#ride-story">My Story</a><a href="#event-finder">Find an Event</a><a href="#finish">Finish &amp; Order</a><a href="/apps/web/">Terrain Medals</a><a href="https://vyndi-ride-stories.vayushastr.workers.dev/community">Community</a></nav>
+    <div class="header-actions"><button class="cart-button" id="cartButton" type="button" aria-controls="cartDrawer" aria-expanded="false"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#bag"></use></svg>Cart <span id="cartCount">0</span></button><a class="header-cta" href="#ride-story">Create My Glory</a></div>
+  </header>
+
+  <main id="top">
+    <nav class="experience-rail" aria-label="Page shortcuts">
+      <a href="#ride-story" aria-label="My Story" data-rail-label="Story"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#route"></use></svg></a>
+      <a href="#stories" aria-label="Creator" data-rail-label="Create"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#plus"></use></svg></a>
+      <a href="#event-finder" aria-label="Find an Event" data-rail-label="Events"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#calendar"></use></svg></a>
+      <a href="/apps/web/" aria-label="Terrain Medals" data-rail-label="Terrain"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#mountain"></use></svg></a>
+      <a href="#finish" aria-label="Finish and order" data-rail-label="Finish"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#bag"></use></svg></a>
+      <a href="https://vyndi-ride-stories.vayushastr.workers.dev/community" aria-label="Community" data-rail-label="Community"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#riders"></use></svg></a>
+    </nav>
+    <section class="hero immersive" aria-label="My Road My Glory ride memories">
+      <video class="hero-video parallax-media" autoplay muted loop playsinline preload="metadata" poster="https://images.pexels.com/photos/12747768/pexels-photo-12747768.jpeg?auto=compress&cs=tinysrgb&w=2400" aria-label="Cyclists travelling through a mountain landscape"><source src="https://videos.pexels.com/video-files/5566125/5566125-hd_1920_1080_30fps.mp4" type="video/mp4"></video>
+      <div class="hero-shade"></div><div class="hero-grain"></div><div class="hero-route" aria-hidden="true"><span></span></div>
+      <div class="hero-content" data-depth="0.16"><p class="eyebrow">MY ROAD — MY GLORY</p><h1>The road was yours.<br>The glory is yours to keep.</h1><p>Every climb, checkpoint, finish line and hard-earned kilometre leaves a story. VYNDI Ride Stories turns that real journey into something you can see, hold, frame and remember.</p><div class="hero-actions"><a class="primary-button" href="#ride-story">Create My Ride Story</a><a class="ghost-button" href="#stories">Open the Creator</a></div></div>
+      <div class="hero-specs" data-depth="0.08"><span><b>ROUTE</b> your real GPX</span><span><b>TERRAIN</b> your road in relief</span><span><b>MOMENT</b> photo · bib · medal</span><span><b>GLORY</b> made physical</span></div>
+      <a class="scroll-cue" href="#ride-story">Follow your road <i></i></a>
+    </section>
+
+    <section class="ride-story-feature" id="ride-story" aria-labelledby="rideStoryTitle">
+      <div class="ride-story-sticky">
+        <video class="ride-story-film" id="rideStoryFilm" autoplay muted loop playsinline preload="metadata" poster="https://images.pexels.com/photos/12747768/pexels-photo-12747768.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=2400" aria-label="Endurance cyclists moving through open roads">
+          <source src="https://videos.pexels.com/video-files/5566125/5566125-hd_1920_1080_30fps.mp4" type="video/mp4">
+        </video>
+        <div class="ride-story-shade" aria-hidden="true"></div>
+        <div class="ride-story-grain" aria-hidden="true"></div>
+        <div class="ride-story-depth ride-story-depth-a" aria-hidden="true">RIDE</div>
+        <div class="ride-story-depth ride-story-depth-b" aria-hidden="true">REMEMBER</div>
+        <div class="ride-story-emblem" aria-hidden="true"><img src="assets/vayu-official.png" alt=""></div>
+        <svg class="ride-story-route" viewBox="0 0 600 1000" preserveAspectRatio="none" aria-hidden="true">
+          <path id="rideStoryRoute" pathLength="1" d="M505 8C412 126 544 222 396 334S114 458 218 587s268 118 126 236S144 921 72 992"/>
+        </svg>
+        <div class="ride-story-road" aria-hidden="true"><i></i><i></i><i></i></div>
+
+        <div class="ride-story-copy">
+          <p class="eyebrow">MY ROAD — MY GLORY / POWERED BY VYNDI RIDE STORIES</p>
+
+          <article class="ride-story-beat active" data-story-beat="0">
+            <p class="story-step">01 / MY ROAD</p>
+            <h2 id="rideStoryTitle">Every kilometre<br><em>earns its place.</em></h2>
+            <p class="ride-story-summary">Your ride is more than a line on a map. It is the early start, the climb you nearly gave up on, the checkpoint you reached, the weather you crossed and the finish you earned. My Road — My Glory turns those real details into a personal VYNDI Ride Story built from your GPX, photographs, bib, brevet and medal.</p><button class="beat-narration" type="button" data-narrate-beat="0">Hear the VYNDI story</button>
+          </article>
+
+          <article class="ride-story-beat" data-story-beat="1">
+            <p class="story-step">02 / ROUTE</p>
+            <h2>Your GPX becomes<br><em>the signature.</em></h2>
+            <p>Export a GPX from Strava, Garmin, Wahoo or another ride app. VYNDI reads the route locally, preserves its shape, distance and character, and turns the line into artwork.</p>
+            <button class="beat-narration" type="button" data-narrate-beat="1">Hear this moment</button>
+            <div class="memento-flow" aria-label="Ride Memento creation steps">
+              <span><b>1</b>Choose ride</span><span><b>2</b>Load GPX</span><span><b>3</b>Personalise</span><span><b>4</b>Keep the memento</span>
+            </div>
+          </article>
+
+          <article class="ride-story-beat ride-story-config" data-story-beat="2">
+            <p class="story-step">03 / PERSONALISE</p>
+            <h2>Make it unmistakably<br><em>your ride.</em></h2>
+            <p class="ride-story-summary creator-authority-copy">All product choices now live in one creator below. Hover an option to preview it, then select it only when you want it applied.</p><a class="creator-authority-link" href="#stories">Open the single creator <span>↓</span></a><div class="memento-options legacy-memento-controls" hidden aria-hidden="true">
+              <div class="memento-option-wide">
+                <strong>Memento format</strong>
+                <button type="button" class="memento-chip active" data-memento-style="route">Route print</button>
+                <button type="button" class="memento-chip" data-memento-style="photo">Route + photo</button>
+                <button type="button" class="memento-chip" data-memento-style="medal">Route + medal / brevet</button>
+                <button type="button" class="memento-chip" data-memento-style="photo-medal">Route + photo + medal</button>
+                <button type="button" class="memento-chip" data-memento-style="bib">Route + bib</button>
+                <button type="button" class="memento-chip" data-memento-style="complete">Route + photo + medal + bib</button>
+                <button type="button" class="memento-chip" data-memento-style="double-photo">Route + double photo</button>
+                <button type="button" class="memento-chip" data-memento-style="double-medal">Route + double medal</button>
+                <button type="button" class="memento-chip" data-memento-style="bespoke">Bespoke</button>
+              </div>
+              <div>
+                <strong>Frame</strong>
+                <button type="button" class="memento-chip active" data-frame="black">Black</button>
+                <button type="button" class="memento-chip" data-frame="white">White</button>
+                <button type="button" class="memento-chip" data-frame="oak">Oak</button>
+              </div>
+              <div>
+                <strong>Mount</strong>
+                <button type="button" class="memento-chip active" data-mount="warm">White</button>
+                <button type="button" class="memento-chip" data-mount="charcoal">Black</button>
+              </div>
+              <div>
+                <strong>Size / orientation</strong>
+                <button type="button" class="memento-chip active" data-size="a4">A4 portrait</button>
+                <button type="button" class="memento-chip" data-size="a3">A3 portrait</button>
+                <button type="button" class="memento-chip" data-size="15x10">15 × 10 landscape</button>
+                <button type="button" class="memento-chip" data-size="20x10">20 × 10 landscape</button>
+              </div>
+              <div>
+                <strong>Route colour</strong>
+                <button type="button" class="memento-swatch active" data-route-colour="#ffb000" style="--swatch:#ffb000" aria-label="VYNDI orange"></button>
+                <button type="button" class="memento-swatch" data-route-colour="#ff5c35" style="--swatch:#ff5c35" aria-label="Breakaway orange"></button>
+                <button type="button" class="memento-swatch" data-route-colour="#35d0ba" style="--swatch:#35d0ba" aria-label="Monsoon teal"></button>
+                <label class="memento-custom-colour">Any colour <input id="mementoColour" type="color" value="#ffb000" aria-label="Choose any route colour"></label>
+              </div>
+              <p class="memento-bespoke-note">Need another combination or object in the frame? Choose <b>Bespoke</b> and describe it in your personal line.</p><button class="beat-narration" type="button" data-narrate-beat="2">Hear this moment</button>
+            </div>
+          </article>
+
+          <article class="ride-story-beat ride-story-create" data-story-beat="3">
+            <p class="story-step">04 / CREATE</p>
+            <h2>Turn the day into<br><em>a Ride Memento.</em></h2>
+            <p>Three lines of personal text, your route colour, your preferred frame and mount, with an optional ride photo or medal/brevet presentation. No order is placed yet—this is your live concept preview.</p>
+            <div class="memento-inputs legacy-memento-controls" hidden aria-hidden="true">
+              <label>Ride title<input id="mementoTitle" type="text" maxlength="38" value="K2K · 4,230 KM"></label>
+              <label>Ride detail<input id="mementoDetail" type="text" maxlength="54" value="Kashmir to Kanyakumari · November 2025"></label>
+              <label>Personal line / bespoke note<input id="mementoLine" type="text" maxlength="78" value="One road. One memory."></label>
+              <label class="memento-file">GPX<input id="mementoGpxInput" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"><span id="mementoGpxState">Choose GPX</span></label>
+              <label class="memento-file">Photo 1<input id="mementoPhotoInput" type="file" accept="image/*"><span id="mementoPhotoState">Optional photo</span></label>
+              <label class="memento-file">Photo 2<input id="mementoPhoto2Input" type="file" accept="image/*"><span id="mementoPhoto2State">Optional second photo</span></label>
+              <label class="memento-file">Medal / brevet 1<input id="mementoMedalInput" type="file" accept="image/*"><span id="mementoMedalState">Optional medal image</span></label>
+              <label class="memento-file">Medal / brevet 2<input id="mementoMedal2Input" type="file" accept="image/*"><span id="mementoMedal2State">Optional second medal</span></label>
+              <label class="memento-file">Bib / brevet card<input id="mementoBibInput" type="file" accept="image/*"><span id="mementoBibState">Optional bib / card</span></label>
+            </div>
+            <div class="ride-story-actions">
+              <button class="beat-narration" type="button" data-narrate-beat="3">Hear this moment</button>
+              <button class="story-narration" id="storyNarrationButton" type="button" aria-pressed="false">
+                <span class="story-sound" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span id="storyNarrationLabel">Listen to the ride</span>
+              </button>
+              <a href="#stories">Open full Ride Memento studio <span>↓</span></a>
+            </div>
+          </article>
+        </div>
+
+        <div class="memento-preview-wrap" id="mementoPreviewWrap" aria-label="Live Ride Memento preview">
+          <div class="memento-frame frame-black" id="mementoFrame">
+            <div class="memento-mount mount-warm" id="mementoMount">
+              <div class="memento-print">
+                <div class="memento-brand memento-brand-logo-only"><img src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span>Powered by VYNDI Ride Stories</span></div>
+                <div class="memento-media-grid" id="mementoMediaGrid" hidden>
+                  <div class="memento-photo" id="mementoPhoto" hidden></div>
+                  <div class="memento-photo memento-photo-two" id="mementoPhoto2" hidden></div>
+                  <div class="memento-bib" id="mementoBib" hidden><span>BIB / BREVET</span></div>
+                </div>
+                <svg viewBox="0 0 500 560" role="img" aria-label="Ride route memento preview">
+                  <g class="memento-grid" aria-hidden="true"><path d="M35 90H465M35 190H465M35 290H465M35 390H465M35 490H465M110 35V525M210 35V525M310 35V525M410 35V525"/></g>
+                  <polyline id="mementoRouteShadow" points="88,455 111,404 153,384 146,338 189,314 171,272 216,238 264,251 295,198 349,217 381,166 421,131 407,97"/>
+                  <polyline id="mementoRouteLine" points="88,455 111,404 153,384 146,338 189,314 171,272 216,238 264,251 295,198 349,217 381,166 421,131 407,97"/>
+                  <circle id="mementoRouteStart" cx="88" cy="455" r="7"/><circle id="mementoRouteEnd" cx="407" cy="97" r="7"/>
+                </svg>
+                <div class="memento-copy"><h3 id="mementoPreviewTitle">K2K · 4,230 KM</h3><p id="mementoPreviewDetail">Kashmir to Kanyakumari · November 2025</p><small id="mementoPreviewLine">One road. One memory.</small></div>
+                <div class="memento-medal" id="mementoMedal" hidden><span>MEDAL<br>01</span></div>
+                <div class="memento-medal memento-medal-two" id="mementoMedal2" hidden><span>MEDAL<br>02</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="memento-preview-label"><span class="live-dot"></span>LIVE MEMENTO PREVIEW</div>
+        </div>
+
+        <div class="ride-story-meter" aria-hidden="true">
+          <span>01</span><b><i id="rideStoryProgress"></i></b><span>04</span>
+        </div>
+        <div class="ride-story-caption">SCROLL / RIDER → ROAD → MEMORY</div>
+      </div>
+    </section>
+
+    <section class="studio parallax-section" id="stories">
+      <div class="studio-copy" data-parallax-copy>
+        <p class="eyebrow">CREATE YOUR RIDE MEMENTO</p>
+        <h2>Load the road.<br>Shape the memory.</h2>
+        <div class="upload-box" id="dropZone">
+          <input id="gpxInput" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden>
+          <button class="upload-button" id="uploadButton" type="button"><span class="upload-icon" aria-hidden="true">↥</span><span><strong>Upload a GPX</strong><small>Strava, Garmin, Wahoo or any ride app</small></span></button>
+          <span class="file-state" id="fileState">Your route never leaves this device</span>
+        </div>
+
+        <div class="studio-selector-grid" id="studioSelectors">
+          <details class="studio-select" data-studio-dropdown="layout">
+            <summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#layout"></use></svg></span><span><small>Layout</small><strong data-studio-selected-label>Route map</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-studio-layout="route" data-choice-value="route" data-choice-label="Route map" data-preview-kind="layout-route" data-preview-title="Route map" data-preview-description="The road is the hero.">▱ <span><strong>Route map</strong><small>Map-led</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="photo" data-choice-value="photo" data-choice-label="Map + photo" data-preview-kind="layout-photo" data-preview-title="Map + photo" data-preview-description="Route plus one ride photograph.">◫ <span><strong>Map + photo</strong><small>One visual memory</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="medal" data-choice-value="medal" data-choice-label="Map + medal / brevet" data-preview-kind="layout-medal" data-preview-title="Map + medal / brevet" data-preview-description="Keep the road and achievement together.">◉ <span><strong>Map + medal / brevet</strong><small>Achievement-led</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="photo-medal" data-choice-value="photo-medal" data-choice-label="Map + photo + medal" data-preview-kind="layout-photo-medal" data-preview-title="Map + photo + medal" data-preview-description="Route, rider and achievement.">▦ <span><strong>Map + photo + medal</strong><small>Three-part story</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="complete" data-choice-value="complete" data-choice-label="Complete event story" data-preview-kind="layout-complete" data-preview-title="Complete event story" data-preview-description="Route, photo, medal and bib.">▥ <span><strong>Complete event story</strong><small>Full memory</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="double-photo" data-choice-value="double-photo" data-choice-label="Map + double photo" data-preview-kind="layout-double-photo" data-preview-title="Map + double photo" data-preview-description="Two ride photographs around the route.">▤ <span><strong>Map + double photo</strong><small>Two moments</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-layout="double-medal" data-choice-value="double-medal" data-choice-label="Map + double medal" data-preview-kind="layout-double-medal" data-preview-title="Map + double medal" data-preview-description="Two achievements around the route.">◎ <span><strong>Map + double medal</strong><small>Two achievements</small></span></button>
+            </div>
+          </details>
+
+          <details class="studio-select" data-studio-dropdown="map">
+            <summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#route"></use></svg></span><span><small>Map</small><strong data-studio-selected-label>Real streets</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-map-style="standard" data-choice-value="standard" data-choice-label="Real streets" data-preview-kind="map-standard" data-preview-title="Real streets" data-preview-description="Natural geographic map context.">⌁ <span><strong>Real streets</strong><small>Natural context</small></span></button>
+              <button class="studio-select-option" type="button" data-map-style="paper" data-choice-value="paper" data-choice-label="Paper streets" data-preview-kind="map-paper" data-preview-title="Paper streets" data-preview-description="Warm archival map treatment.">▧ <span><strong>Paper streets</strong><small>Archival</small></span></button>
+              <button class="studio-select-option" type="button" data-map-style="graphite" data-choice-value="graphite" data-choice-label="Graphite streets" data-preview-kind="map-graphite" data-preview-title="Graphite streets" data-preview-description="Technical monochrome map.">◩ <span><strong>Graphite streets</strong><small>Technical</small></span></button>
+              <button class="studio-select-option" type="button" data-map-style="night" data-choice-value="night" data-choice-label="Night streets" data-preview-kind="map-night" data-preview-title="Night streets" data-preview-description="Dark map with luminous route contrast.">◐ <span><strong>Night streets</strong><small>Dark luminous</small></span></button>
+            </div>
+          </details>
+
+          <details class="studio-select" data-studio-dropdown="frame">
+            <summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#frame"></use></svg></span><span><small>Frame</small><strong data-studio-selected-label>Black frame</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-studio-frame="black" data-choice-value="black" data-choice-label="Black frame" data-preview-kind="frame-black" data-preview-title="Black frame" data-preview-description="Deep gallery black.">■ <span><strong>Black frame</strong><small>Gallery contrast</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-frame="white" data-choice-value="white" data-choice-label="White frame" data-preview-kind="frame-white" data-preview-title="White frame" data-preview-description="Bright minimal framing.">□ <span><strong>White frame</strong><small>Clean minimal</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-frame="oak" data-choice-value="oak" data-choice-label="Oak frame" data-preview-kind="frame-oak" data-preview-title="Oak frame" data-preview-description="Warm natural wood treatment.">▰ <span><strong>Oak frame</strong><small>Warm natural</small></span></button>
+            </div>
+          </details>
+
+          <details class="studio-select" data-studio-dropdown="mount">
+            <summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#frame"></use></svg></span><span><small>Mount</small><strong data-studio-selected-label>White mount</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-studio-mount="white" data-choice-value="white" data-choice-label="White mount" data-preview-kind="mount-white" data-preview-title="White mount" data-preview-description="Bright museum-style separation.">□ <span><strong>White mount</strong><small>Museum spacing</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-mount="black" data-choice-value="black" data-choice-label="Black mount" data-preview-kind="mount-black" data-preview-title="Black mount" data-preview-description="Dark dramatic separation.">■ <span><strong>Black mount</strong><small>Dramatic</small></span></button>
+            </div>
+          </details>
+
+          <details class="studio-select" data-studio-dropdown="format">
+            <summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#format"></use></svg></span><span><small>Format</small><strong data-studio-selected-label>Portrait</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-studio-size="portrait" data-choice-value="portrait" data-choice-label="Portrait" data-preview-kind="format-portrait" data-preview-title="Portrait" data-preview-description="Vertical wall format.">▯ <span><strong>Portrait</strong><small>Vertical</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-size="landscape" data-choice-value="landscape" data-choice-label="Landscape" data-preview-kind="format-landscape" data-preview-title="Landscape" data-preview-description="Wide story format.">▭ <span><strong>Landscape</strong><small>Wide</small></span></button>
+            </div>
+          </details>
+
+          <details class="studio-select" data-studio-dropdown="colour">
+            <summary><span class="studio-select-icon studio-colour-dot"></span><span><small>Route colour</small><strong data-studio-selected-label>VYNDI Orange</strong></span><span>⌄</span></summary>
+            <div class="studio-select-menu">
+              <button class="studio-select-option active" type="button" data-studio-colour="#ff7a1a" data-choice-value="#ff7a1a" data-choice-label="VYNDI Orange" data-preview-kind="colour" data-preview-colour="#ff7a1a" data-preview-title="VYNDI Orange" data-preview-description="Signature energy."><i class="option-swatch" style="--option-swatch:#ff7a1a"></i><span><strong>VYNDI Orange</strong><small>Signature</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-colour="#ff365d" data-choice-value="#ff365d" data-choice-label="Breakaway" data-preview-kind="colour" data-preview-colour="#ff365d" data-preview-title="Breakaway" data-preview-description="Fast red-pink accent."><i class="option-swatch" style="--option-swatch:#ff365d"></i><span><strong>Breakaway</strong><small>Red-pink</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-colour="#35d0ba" data-choice-value="#35d0ba" data-choice-label="Monsoon" data-preview-kind="colour" data-preview-colour="#35d0ba" data-preview-title="Monsoon" data-preview-description="Cool teal accent."><i class="option-swatch" style="--option-swatch:#35d0ba"></i><span><strong>Monsoon</strong><small>Cool teal</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-colour="#8b5cf6" data-choice-value="#8b5cf6" data-choice-label="Highland" data-preview-kind="colour" data-preview-colour="#8b5cf6" data-preview-title="Highland" data-preview-description="Premium violet accent."><i class="option-swatch" style="--option-swatch:#8b5cf6"></i><span><strong>Highland</strong><small>Violet</small></span></button>
+              <button class="studio-select-option" type="button" data-studio-colour="#f1c75b" data-choice-value="#f1c75b" data-choice-label="Glory Gold" data-preview-kind="colour" data-preview-colour="#f1c75b" data-preview-title="Glory Gold" data-preview-description="Warm milestone accent."><i class="option-swatch" style="--option-swatch:#f1c75b"></i><span><strong>Glory Gold</strong><small>Milestone</small></span></button>
+            </div>
+          </details>
+        </div>
+
+        <div class="ride-fields">
+          <label>Ride title<input id="rideTitle" type="text" maxlength="38" value="K2K · 4,230 KM"></label>
+          <label>Ride detail<input id="rideDetail" type="text" maxlength="52" value="Kashmir to Kanyakumari · November 2025"></label>
+        </div>
+
+        <details class="studio-media-drawer"><summary class="studio-select-trigger"><span class="studio-select-icon"><svg class="vyndi-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/vyndi-icons.svg#plus"></use></svg></span><span><strong>Add ride media</strong><small>Photos · medals / brevets · bib · event mark</small></span><span>⌄</span></summary>
+          <div class="studio-media-inputs">
+          <label>Ride photo 1<input id="studioPhotoInput" type="file" accept="image/*"><span id="studioPhotoState">Optional</span></label>
+          <label>Ride photo 2<input id="studioPhoto2Input" type="file" accept="image/*"><span id="studioPhoto2State">Optional</span></label>
+          <label>Medal / brevet 1<input id="studioMedalInput" type="file" accept="image/*"><span id="studioMedalState">Optional</span></label>
+          <label>Medal / brevet 2<input id="studioMedal2Input" type="file" accept="image/*"><span id="studioMedal2State">Optional</span></label>
+          <label>Bib / brevet card<input id="studioBibInput" type="file" accept="image/*"><span id="studioBibState">Optional</span></label><label>Event mark / logo<input id="studioEventMarkInput" type="file" accept="image/*"><span id="studioEventMarkState">Only if you have permission</span></label>
+          </div>
+        </details>
+        <div class="studio-actions"><button class="primary-button" id="addConfiguredToCart" type="button">Add configured memento to cart</button><button class="text-button" id="saveConfigButton" type="button">Save current configuration</button><button class="text-button" id="downloadButton" type="button">Download current artwork ↓</button><button class="text-button" id="studioHowButton" type="button" aria-expanded="false" aria-controls="studioHowPanel">How VYNDI Memento works</button></div>
+        <div class="studio-how-panel" id="studioHowPanel" hidden>
+          <div><span>01</span><strong>Load your ride</strong><p>Upload the GPX. VYNDI places the real route on its geographic map and keeps the route registered to that map.</p></div>
+          <div><span>02</span><strong>Add the event</strong><p>Search and select the event you rode, confirm the edition, and choose the approved event mark or the VYNDI event signature.</p></div>
+          <div><span>03</span><strong>Build the memory</strong><p>Add ride photos, medal or brevet images, bib/card and choose the physical layout that matches the story.</p></div>
+          <div><span>04</span><strong>Finish the piece</strong><p>Choose map treatment, route colour, frame, mount, portrait or landscape and verify the live preview.</p></div>
+          <div><span>05</span><strong>Save or order</strong><p>Save the current configuration, download the current artwork, or add the configured memento to cart for order review.</p></div>
+        </div>
+        <small class="studio-map-note">GPX and uploaded media stay in this browser. Map tiles are requested from OpenStreetMap. © OpenStreetMap contributors.</small>
+      </div>
+
+      <div class="studio-hover-preview" id="studioHoverPreview" hidden aria-live="polite">
+        <div class="hover-preview-top"><span>OPTION PREVIEW</span><b>Hover only · not selected</b></div>
+        <div class="hover-preview-visual"><div class="hover-preview-frame"><div class="hover-preview-mount"><div class="hover-preview-map"><i></i><i></i><i></i></div><div class="hover-preview-media"></div></div></div></div>
+        <strong id="studioHoverPreviewTitle">Preview</strong><p id="studioHoverPreviewDescription"></p>
+      </div>
+
+      <div class="art-stage" data-parallax-visual aria-label="Live framed route memento preview">
+        <div class="frame tilt-card studio-frame layout-route" id="studioFrame" data-tilt>
+          <div class="mount">
+            <div class="print" id="printSurface">
+              <div class="print-brandmark"><img src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span>VYNDI RIDE STORIES</span></div><div class="studio-event-signature" id="studioEventSignature" hidden><div class="studio-event-mark" id="studioEventMark">V</div><div><strong id="studioEventName">Selected Event</strong><small id="studioEventMeta">Edition details</small></div></div>
+              <div class="studio-art-grid">
+                <div class="studio-map-panel">
+                  <div class="studio-map map-standard" id="studioMap" aria-label="Geographic map preview"><iframe class="studio-map-embed" id="studioMapEmbed" title="OpenStreetMap route context" loading="eager" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe><div class="studio-map-tiles" id="studioMapTiles" aria-hidden="true"></div></div><div class="studio-map-empty" id="studioMapEmpty">Upload GPX to place your ride on the map</div><div class="studio-map-loading" id="studioMapLoading" hidden>Loading geographic map…</div><div class="studio-map-attribution" id="studioMapAttribution">© OpenStreetMap contributors</div>
+                  <svg id="routeSvg" class="studio-route-fallback" viewBox="0 0 500 520" preserveAspectRatio="none" role="img" aria-labelledby="routeTitle routeDesc"><title id="routeTitle">Cycling route artwork preview</title><desc id="routeDesc">A stylized route line representing the selected ride</desc><polyline id="routeShadow" points="88,415 111,364 153,344 146,298 189,274 171,232 216,198 264,211 295,158 349,177 381,126 421,91 407,57"/><polyline id="routeLine" points="88,415 111,364 153,344 146,298 189,274 171,232 216,198 264,211 295,158 349,177 381,126 421,91 407,57"/><circle id="routeStart" cx="88" cy="415" r="7"/><circle id="routeEnd" cx="407" cy="57" r="7"/></svg>
+                </div>
+                <div class="studio-media-panel" id="studioMediaPanel" hidden>
+                  <div class="studio-media studio-photo-preview" id="studioPhotoPreview"><span>RIDE PHOTO 01</span></div>
+                  <div class="studio-media studio-photo-preview" id="studioPhoto2Preview"><span>RIDE PHOTO 02</span></div>
+                  <div class="studio-media studio-medal-preview" id="studioMedalPreview"><span>MEDAL / BREVET 01</span></div>
+                  <div class="studio-media studio-medal-preview" id="studioMedal2Preview"><span>MEDAL / BREVET 02</span></div>
+                  <div class="studio-media studio-bib-preview" id="studioBibPreview"><span>BIB / CARD</span></div>
+                </div>
+              </div>
+              <div class="print-copy"><h3 id="previewTitle">K2K · 4,230 KM</h3><p id="previewDetail">Kashmir to Kanyakumari · November 2025</p></div>
+              <div class="print-footer print-footer-clean" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-note"><span class="live-dot"></span>Live, local preview · real map context</div>
+      </div>
+      <div class="studio-integrated-flow">
+        <div class="studio-workflow-strip" aria-label="Ride Memento workflow">
+          <article><span>01</span><div><strong>Choose the ride</strong><small>Upload your GPX and confirm the real road.</small></div></article>
+          <article><span>02</span><div><strong>Build the composition</strong><small>Select layout, media and map treatment.</small></div></article>
+          <article><span>03</span><div><strong>Personalise it</strong><small>Set frame, mount, format, colour and ride text.</small></div></article>
+          <article><span>04</span><div><strong>Finish the memento</strong><small>Confirm the event, review the live piece and order.</small></div></article>
+        </div>
+        <div class="studio-event-panel" id="event-finder">
+              <div class="event-finder-head reveal" data-parallax-copy>
+                <p class="eyebrow">GLOBAL EVENT FINDER</p>
+                <h2>Find the event.<br>Make the memory yours.</h2>
+                <p>Search named events around the world, select the edition you rode, and send the event identity into the VYNDI Ride Memento creator. VYNDI uses event metadata to create an original treatment; official logos or artwork are only included when you upload material you have permission to use.</p>
+              </div>
+        
+              <div class="event-search-shell" data-parallax-visual>
+                <div class="event-search-controls">
+                  <label class="event-search-main">Event name<input id="eventSearchInput" type="search" placeholder="e.g. Boston Marathon, Paris-Brest-Paris, UTMB, Ironman Kona"></label>
+                  <label>Sport / category<select id="eventCategoryFilter"><option value="all">Any sport</option><option value="cycling">Cycling</option><option value="marathon">Marathon / road running</option><option value="ultra">Ultra running</option><option value="triathlon">Triathlon</option><option value="trail">Trail / XC</option><option value="swimming">Open-water / swimming</option><option value="rowing">Rowing / paddling</option><option value="sailing">Sailing / regatta</option><option value="motorsport">Motorsport / rally</option><option value="winter">Winter / snow</option><option value="adventure">Hiking / adventure</option><option value="other">Other event</option></select></label>
+                  <label>City / country<input id="eventLocationFilter" type="text" placeholder="Optional"></label>
+                  <label>Sort<select id="eventSort"><option value="relevance">Relevance</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option></select></label>
+                  <button class="primary-button" id="eventSearchButton" type="button">Search the world</button>
+                </div>
+        
+                <div class="event-category-nav" role="group" aria-label="Browse event categories">
+                  <button type="button" class="active" data-event-category="all">All events</button>
+                  <button type="button" data-event-category="cycling">Cycling</button>
+                  <button type="button" data-event-category="marathon">Marathon</button>
+                  <button type="button" data-event-category="triathlon">Triathlon</button>
+                  <button type="button" data-event-category="ultra">Ultra</button>
+                  <button type="button" data-event-category="trail">Trail / XC</button><button type="button" data-event-category="swimming">Water</button><button type="button" data-event-category="motorsport">Motorsport</button><button type="button" data-event-category="winter">Winter</button>
+                </div>
+        
+                <div class="event-popular">
+                  <span>Try:</span>
+                  <button type="button" data-event-query="Boston Marathon">Boston Marathon</button>
+                  <button type="button" data-event-query="London Marathon">London Marathon</button>
+                  <button type="button" data-event-query="Paris-Brest-Paris">Paris-Brest-Paris</button>
+                  <button type="button" data-event-query="Tour de France">Tour de France</button>
+                  <button type="button" data-event-query="UTMB">UTMB</button>
+                  <button type="button" data-event-query="Ironman World Championship">IRONMAN World Championship</button>
+                </div>
+        
+                <div class="event-search-status" id="eventSearchStatus">Search uses a live global knowledge source. Confirm the specific event edition, date and location before ordering.</div>
+                <div class="event-results" id="eventResults" aria-live="polite"></div>
+        
+                <aside class="selected-event-panel" id="selectedEventPanel" hidden>
+                  <div class="selected-event-identity">
+                    <div class="selected-event-mark" id="selectedEventMark">V</div>
+                    <div><p class="eyebrow">SELECTED EVENT</p><h3 id="selectedEventName">Event name</h3><p id="selectedEventDescription"></p></div>
+                  </div>
+                  <div class="selected-event-edition">
+                    <label>Edition date<input id="selectedEventDate" type="date"></label>
+                    <label>City / location<input id="selectedEventLocation" type="text" placeholder="Confirm location"></label>
+                    <label>Distance / category<input id="selectedEventDistance" type="text" placeholder="e.g. 200 km brevet, marathon, full distance"></label>
+                    <label class="event-route-request"><input id="selectedEventRouteRequest" type="checkbox"> I need VYNDI to help source/verify an event route before production.</label>
+                  </div>
+        
+                  <div class="event-logo-workflow" id="eventLogoWorkflow">
+                    <div class="event-logo-head">
+                      <div>
+                        <p class="eyebrow">EVENT MARK</p>
+                        <h4>Choose how the event is represented.</h4>
+                      </div>
+                      <span id="eventLogoStatus">VYNDI signature selected</span>
+                    </div>
+        
+                    <div class="event-logo-candidate" id="eventLogoCandidate" hidden>
+                      <div class="event-logo-preview"><img id="eventLogoCandidateImage" alt="Discovered event logo candidate"></div>
+                      <div>
+                        <strong id="eventLogoCandidateTitle">Official mark candidate found</strong>
+                        <p id="eventLogoCandidateMeta"></p>
+                        <a id="eventLogoCandidateSource" href="#" target="_blank" rel="noopener">View source / licence ↗</a>
+                      </div>
+                    </div>
+        
+                    <div class="event-logo-options" role="radiogroup" aria-label="Event mark choice">
+                      <label><input type="radio" name="eventLogoMode" value="signature" checked> <span><b>VYNDI signature</b><small>Original initials treatment generated from event metadata.</small></span></label>
+                      <label id="eventLogoDiscoveredOption" class="disabled"><input type="radio" name="eventLogoMode" value="discovered" disabled> <span><b>Use discovered event mark</b><small>Available only when a candidate and licence/source record are found.</small></span></label>
+                      <label><input type="radio" name="eventLogoMode" value="upload"> <span><b>Upload authorised mark</b><small>Use a logo you are permitted to reproduce in this memento.</small></span></label>
+                    </div>
+        
+                    <label class="event-logo-permission" id="eventLogoPermissionWrap" hidden><input id="eventLogoPermission" type="checkbox"> I confirm I have the right, licence, or other permission required to reproduce the selected event mark in this memento.</label>
+        
+                    <label class="event-logo-upload" id="eventLogoUploadWrap" hidden>Authorised event mark<input id="selectedEventLogoUpload" type="file" accept="image/*"><span id="selectedEventLogoUploadState">Choose image</span></label>
+                  </div>
+        
+                  <div class="selected-event-actions">
+                    <button class="primary-button" id="useSelectedEvent" type="button">Use this event in my memento</button>
+                    <button class="ghost-button" id="clearSelectedEvent" type="button">Clear</button>
+                  </div>
+                  <small>Event names and factual details may be referenced. A discovered or uploaded mark enters the memento only after an explicit rights confirmation; otherwise VYNDI uses its own event signature.</small>
+                </aside>
+        
+                <div class="event-faq">
+                  <details><summary>What if VYNDI finds the event but not my exact edition?</summary><p>Select the event, then confirm your edition date, location and distance. The production brief records those confirmed details separately from the discovery source.</p></details>
+                  <details><summary>What if I do not have the event GPX?</summary><p>You can still create the event treatment and request route verification. VYNDI should not claim an organiser route as exact until it has been verified for the relevant edition.</p></details>
+                  <details><summary>Can VYNDI use the official event logo or poster?</summary><p>Only when the customer or VYNDI Ride Stories has permission to use that material. Otherwise VYNDI creates an original event signature from factual event metadata.</p></details>
+                </div>
+        
+                <details class="custom-event">
+                  <summary>Can’t find it? Create an event request</summary>
+                  <form id="customEventForm">
+                    <div class="custom-event-grid">
+                      <label>Event name<input id="customEventName" type="text" required></label>
+                      <label>Sport / category<select id="customEventCategory"><option value="cycling">Cycling</option><option value="marathon">Marathon / road running</option><option value="ultra">Ultra running</option><option value="triathlon">Triathlon</option><option value="trail">Trail / XC</option><option value="swimming">Open-water / swimming</option><option value="rowing">Rowing / paddling</option><option value="sailing">Sailing / regatta</option><option value="motorsport">Motorsport / rally</option><option value="winter">Winter / snow</option><option value="adventure">Hiking / adventure</option><option value="other">Other</option></select></label>
+                      <label>Edition date<input id="customEventDate" type="date"></label>
+                      <label>City / country<input id="customEventLocation" type="text" required></label>
+                      <label>Distance / format<input id="customEventDistance" type="text"></label>
+                      <label>Event website (optional)<input id="customEventWebsite" type="url" placeholder="https://"></label>
+                    </div>
+                    <button class="primary-button" type="submit">Create this event in VYNDI</button>
+                  </form>
+                </details>
+              </div>
+            </div>
+      </div>
+      <!-- /integrated-studio -->
+    </section>
+
+<section class="finish-section section" id="finish">
+      <div class="finish-order-card">
+        <p class="eyebrow">FINISH + ORDER</p><h2>One creator.<br>One final piece.</h2>
+        <p>The live creator above is the single source for layout, map, frame, mount, format and route colour. Hover to preview; select only when you want the choice committed.</p>
+        <div class="finish-icon-steps"><span><b>◉</b><strong>Preview</strong><small>Hover first</small></span><span><b>✓</b><strong>Select</strong><small>Commit once</small></span><span><b>↓</b><strong>Save</strong><small>Keep config</small></span><span><b>▣</b><strong>Order</strong><small>Review cart</small></span></div>
+        <div class="finish-actions"><a class="primary-button" href="#stories">Review live creator</a><button class="ghost-button" id="finishCartButton" type="button">Open cart</button><button class="ghost-button" id="bespokeButton" type="button">Start bespoke request</button></div>
+        <small>Commercial pricing remains unpublished until the approved price list is released.</small>
+      </div>
+      <div class="finish-community-card">
+        <div class="finish-community-head"><span class="finish-community-icon">◎</span><div><p class="eyebrow">CONNECT WITH VYNDI</p><h2>Ride long.<br>Build together.</h2></div></div>
+        <p>Continue into the rider community without starting another page flow.</p><a class="ghost-button" href="https://vyndi-ride-stories.vayushastr.workers.dev/community">Open VYNDI Community</a>
+        <div class="community-channels" aria-label="Official VYNDI community channels">
+          <a class="community-channel instagram" href="https://www.instagram.com/vyndirides/" target="_blank" rel="noopener noreferrer"><img class="community-channel-icon" src="assets/instagram.svg" alt=""><span><small>Official Instagram</small><strong>@VYNDIRIDES</strong><em>Follow ↗</em></span></a>
+          <a class="community-channel strava" id="stravaJoin" href="https://www.strava.com/clubs/2350325" target="_blank" rel="noopener noreferrer"><img class="community-channel-icon" src="assets/strava.svg" alt=""><span><small>Cycling club</small><strong>VYNDI Endurance India</strong><em>View ↗</em></span></a>
+          <a class="community-channel email" href="mailto:info@vayushastr.com"><img class="community-channel-icon" src="assets/email.svg" alt=""><span><small>Official email</small><strong>info@vayushastr.com</strong><em>Email ↗</em></span></a>
+        </div>
+      </div>
+    <p class="community-mark-note">Instagram and Strava marks belong to their respective owners.</p>
+    </section>
+  </main>
+  <footer><div class="footer-product"><a class="brand footer-brand product-brand" href="#top"><img class="brand-emblem" src="assets/vayu-official.png" alt="Vāyú Shastr official logo"><span class="brand-copy">MY ROAD — MY GLORY<small>Powered by VYNDI Ride Stories</small></span></a><p>Your road, your memory, your glory — made physical.</p><div><a href="#finish">Finish &amp; Order</a><a href="/apps/web/">Terrain Medal</a><a href="#ride-story">My Story</a><a class="footer-social-link" href="https://www.instagram.com/vyndirides/" target="_blank" rel="noopener noreferrer"><img src="assets/instagram.svg" alt="">Instagram</a><a class="footer-social-link" href="https://www.strava.com/clubs/2350325" target="_blank" rel="noopener noreferrer"><img src="assets/strava.svg" alt="">View on Strava</a><a class="footer-social-link" href="mailto:info@vayushastr.com"><img src="assets/email.svg" alt="">info@vayushastr.com</a></div></div><div class="parent-attribution"><a href="https://www.vayushastr.com/" target="_blank" rel="noopener"><img src="assets/vayu-official.png" alt="Vāyú Shastr Pvt Ltd logo"><span>Vāyú Shastr Pvt Ltd</span></a><small>© 2026 Vāyú Shastr Pvt Ltd · Parent company of VYNDI Ride Stories.<br>Official service: <strong>vyndi-ride-stories.vayushastr.workers.dev</strong> · Security: <a href="mailto:info@vayushastr.com">info@vayushastr.com</a></small></div></footer>
+  
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true" aria-label="Ride Memento cart">
+    <div class="cart-head"><div><p class="eyebrow">YOUR CART</p><h2>Ride Mementos</h2></div><button class="cart-close" id="cartClose" type="button" aria-label="Close cart">×</button></div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-empty" id="cartEmpty">Your cart is empty. Configure your memento in the live creator.</div>
+    <div class="cart-summary"><span>Commercial total</span><strong id="cartTotal">Price list pending</strong></div>
+    <button class="primary-button cart-checkout" id="checkoutButton" type="button">Review order &amp; checkout</button>
+    <small>Online payment activates only after an approved merchant checkout is connected.</small>
+  </aside>
+  <div class="cart-scrim" id="cartScrim" hidden></div>
+
+  <dialog class="checkout-dialog" id="checkoutDialog">
+    <form method="dialog" id="checkoutForm">
+      <button class="dialog-close" id="checkoutClose" type="button" aria-label="Close">×</button>
+      <p class="eyebrow">VYNDI CHECKOUT</p>
+      <h2>Review the order.</h2>
+      <div class="checkout-lines" id="checkoutLines"></div>
+      <div class="checkout-grid">
+        <label>Name<input id="checkoutName" type="text" required autocomplete="name"></label>
+        <label>Email<input id="checkoutEmail" type="email" required autocomplete="email"></label>
+        <label>Phone<input id="checkoutPhone" type="tel" required autocomplete="tel"></label>
+        <label>PIN code<input id="checkoutPincode" type="text" required inputmode="numeric" maxlength="10"></label>
+        <label class="checkout-wide">Shipping address<textarea id="checkoutAddress" required rows="3"></textarea></label>
+      </div>
+      <div class="checkout-notice"><strong>Payment gateway connection required</strong><p>The cart and order capture are ready. A real charge will only be enabled after an approved Razorpay/Stripe/other merchant checkout URL is configured.</p></div>
+      <div class="checkout-actions">
+        <button class="primary-button" id="saveOrderRequest" value="default">Save order request</button>
+        <button class="ghost-button" id="payOnlineButton" type="button" disabled>Pay online — gateway not connected</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script src="app.js?v=20261001-ui-audit-4"></script>
+</body>
+</html>
