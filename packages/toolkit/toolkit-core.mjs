@@ -791,7 +791,7 @@ export function planProfessionalPlaceLabels({places=[],mode="major",selectedName
   else if(mode==="major")candidates=candidates.filter(p=>smallGeo?p.class==="city":p.class==="city"||p.class==="town");
   const physicalLimit=smallGeo?Math.max(2,Math.min(4,Math.floor(Number(modelWidthMm)/19))):mediumGeo?Math.min(8,maxLabels):maxLabels;
   const limit=Math.max(0,Math.min(maxLabels,physicalLimit)),occupied=[],plan=[];
-  const collision=radius*(smallGeo?.30:mediumGeo?.24:.18);
+  const collision=radius*(smallGeo ? .30 : (mediumGeo ? .24 : .18));
   for(const place of candidates){
     if(plan.length>=limit)break;
     const nx=Number(place.x),ny=Number(place.y);
@@ -800,7 +800,7 @@ export function planProfessionalPlaceLabels({places=[],mode="major",selectedName
     const x=nx*radius,y=ny*radius;
     if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<collision))continue;
     const cellMm=smallGeo?Math.max(.48,radius/110):place.class==="city"?Math.max(.56,radius/92):place.class==="town"?Math.max(.52,radius/104):Math.max(.48,radius/116);
-    plan.push({place,x,y,cellMm,maxWidthMm:radius*(smallGeo?.34:mediumGeo?.38:.42),riseMm:smallGeo?.34:.38,minCellMm:smallGeo?.48:.5});
+    plan.push({place,x,y,cellMm,maxWidthMm:radius*(smallGeo ? .34 : (mediumGeo ? .38 : .42)),riseMm:smallGeo ? .34 : .38,minCellMm:smallGeo ? .48 : .5});
     occupied.push({x,y});
   }
   return plan;
