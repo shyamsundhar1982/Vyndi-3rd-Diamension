@@ -552,7 +552,9 @@ document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener
   $("sourceRideStage").classList.toggle("active",view==="source-ride");
   $("liveStage").classList.toggle("active",view==="live");
   $("productionStage").classList.toggle("active",view==="production");
-  $("cameraTools").hidden=view==="source-trail"||view==="source-ride";
+  const sourceView=view==="source-trail"||view==="source-ride";
+  $("cameraTools").hidden=sourceView;
+  document.querySelector(".studio")?.classList.toggle("source-focus",sourceView);
   $("viewState").textContent=view==="source-trail"?"SOURCE · TRAILRELIEF":view==="source-ride"?"SOURCE · RIDE STORIES":view==="production"?"V3D PRODUCTION":"V3D LIVE";
   if(view==="source-trail")pushRouteToSource("trailrelief");
   if(view==="source-ride")pushRouteToSource("ride-stories");
