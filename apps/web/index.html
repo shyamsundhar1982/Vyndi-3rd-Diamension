@@ -310,6 +310,16 @@
         <div class="industry-block">
           <strong>6 · Ops</strong>
           <button type="button" id="orderSheetBtn">Order sheet CSV+JSON</button>
+
+        <div class="industry-block">
+          <strong>QR reverse + batch + PDF</strong>
+          <label>QR URL / result link<input id="qrReverseUrl" type="url" placeholder="https://results.example/athlete"></label>
+          <label class="check"><input id="qrOnReverse" type="checkbox" checked> Engrave QR code on reverse</label>
+          <button type="button" id="downloadPdfOrder">PDF order form</button>
+          <button type="button" id="batchSharedRun">Batch (shared terrain)</button>
+          <p id="batchSharedStatus" class="hint"></p>
+        </div>
+
           <label>White-label brand<input id="whiteLabelBrand" type="text" placeholder="Race organiser mark"></label>
           <button type="button" id="applyWhiteLabel">Apply reverse mark</button>
         </div>
