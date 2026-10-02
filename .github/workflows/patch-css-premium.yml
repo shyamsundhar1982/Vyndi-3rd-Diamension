@@ -1,0 +1,20 @@
+name: Patch premium button CSS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/patch_css_premium.py"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_css_premium.py
+      - run: |
+          git config user.name "vyndi-premium"
+          git config user.email "vyndi-premium@users.noreply.github.com"
+          git add apps/web/styles.css
+          git diff --cached --quiet || git commit -m "Style PREMIUM preset buttons"
+          git push
