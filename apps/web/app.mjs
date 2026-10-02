@@ -11,7 +11,7 @@ const $=id=>document.getElementById(id);
 const state={
   route:null,routes:[],palette:{...DEFAULT_TERRAIN_PALETTE,rim:"#23201d",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4"},
   production:null,glbUrl:null,previewUrl:null,previewTimer:null,previewGeneration:0,
-  liveDemSampler:null,liveDemPromise:null,liveDemInfo:null,demFile:null,arcFile:null,
+  liveDemSampler:null,liveDemPromise:null,liveDemInfo:null,demFile:null,arcFile:null,openTopoSampler:null,openTopoInfo:null,
   landcover:[],logoImage:null,heightmapImage:null,geoOutline:null,geoMeta:null,
   authenticity:null
 };
@@ -86,7 +86,7 @@ function syncMedalSize(){
 }
 function syncDemSource(){
   const source=$("demSource").value;
-  $("geoTiffRow").hidden=source!=="geotiff";$("arcRow").hidden=source!=="arc";
+  $("geoTiffRow").hidden=source!=="geotiff";$("arcRow").hidden=source!=="arc";$("openTopoRow").hidden=source!=="opentopography";
   if(source==="terrarium")$("demStatus").textContent="AWS Terrarium · no key · automatic during generation.";
 }
 function gpxPreviewSampler(points=[]){
@@ -229,6 +229,16 @@ function demoRoute(){
   resetGenerated("Demo loaded · production model not generated.");updateRibbon();$("generate").disabled=false;$("downloadJob").disabled=false;
   void generateLivePreview();void loadLandcover();
 }
+async function loadOpenTopography(bounds){
+  const apiKey=clean($("openTopoKey").value);if(!apiKey)throw new Error("OpenTopography API key is required for this optional source.");
+  $("demStatus").textContent="Requesting "+$("openTopoDataset").value+" from OpenTopography…";
+  const response=await fetch("/api/terrain/opentopography",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({dataset:$("openTopoDataset").value,apiKey,bounds})});
+  if(!response.ok){let message="OpenTopography returned "+response.status;try{message=(await response.json()).error||message}catch{}throw new Error(message)}
+  const text=await response.text(),file=new File([text],"opentopography.asc",{type:"text/plain"}),raster=await loadArcAsciiFile(file);
+  state.openTopoSampler=raster.sample;state.openTopoInfo={dataset:$("openTopoDataset").value,grid:raster.grid};
+  $("demStatus").textContent="OpenTopography ready · "+$("openTopoDataset").value+" · "+raster.grid.ncols+"×"+raster.grid.nrows;
+  return raster.sample;
+}
 async function resolveDem(config,bounds){
   if(config.dem.source==="terrarium"){
     $("demStatus").textContent="Loading AWS Terrarium elevation…";const terrain=await loadTerrariumSampler(bounds,{preferredZoom:11,tileBudget:48});
@@ -238,6 +248,7 @@ async function resolveDem(config,bounds){
     if(!state.demFile)throw new Error("Choose a GeoTIFF DEM.");$("demStatus").textContent="Reading GeoTIFF…";
     const raster=await loadGeoTiffFile(state.demFile,{fillNoData:true,smoothingRadius:0});$("demStatus").textContent="GeoTIFF ready · "+raster.width+"×"+raster.height+" · "+raster.sourceCrs;return raster.sampleLatLon;
   }
+  if(config.dem.source==="opentopography")return state.openTopoSampler||loadOpenTopography(bounds);
   if(!state.arcFile)throw new Error("Choose an Arc-ASCII DEM.");$("demStatus").textContent="Reading Arc-ASCII…";
   const raster=await loadArcAsciiFile(state.arcFile);$("demStatus").textContent="Arc-ASCII ready · "+raster.grid.ncols+"×"+raster.grid.nrows;return raster.sample;
 }
@@ -327,7 +338,8 @@ $("logoInput").addEventListener("change",async event=>{const file=event.target.f
 $("heightmapInput").addEventListener("change",async event=>{const file=event.target.files?.[0];state.heightmapImage=file?await readImageData(file):null;resetGenerated();schedulePreview(0)});
 $("geoTiffInput").addEventListener("change",event=>{state.demFile=event.target.files?.[0]||null;$("demStatus").textContent=state.demFile?"GeoTIFF selected · "+state.demFile.name:"Choose a GeoTIFF DEM.";resetGenerated()});
 $("arcInput").addEventListener("change",event=>{state.arcFile=event.target.files?.[0]||null;$("demStatus").textContent=state.arcFile?"Arc-ASCII selected · "+state.arcFile.name:"Choose an Arc-ASCII DEM.";resetGenerated()});
-$("demSource").addEventListener("change",()=>{syncDemSource();resetGenerated()});
+$("demSource").addEventListener("change",()=>{state.openTopoSampler=null;state.openTopoInfo=null;syncDemSource();resetGenerated()});
+$("loadHighResDem").addEventListener("click",async()=>{if(!state.route)return void($("demStatus").textContent="Load a GPX route first.");try{const config=currentConfig(),bounds=productionBounds(state.route.bounds||previewBounds(state.route.points),config.shape);await loadOpenTopography(bounds);resetGenerated("OpenTopography DEM loaded · generate production model.")}catch(error){$("demStatus").textContent=error.message||String(error)}});
 $("medalSize").addEventListener("change",()=>{syncMedalSize();resetGenerated();schedulePreview()});
 $("printerProfile").addEventListener("change",()=>{syncPrinterProfile();resetGenerated()});
 
