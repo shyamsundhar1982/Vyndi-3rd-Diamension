@@ -164,7 +164,7 @@ function currentConfig(){
     },
     contours:{enabled:$("contourEnabled").checked,intervalMm:finite($("contourInterval").value,1),widthMm:.08,riseMm:finite($("contourRise").value,.2)},
     placeLabels:{mode:$("placeLabelMode").value,selectedNames:[],maxCount:$("placeLabelMode").value==="all"?60:18},
-    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
+    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,rimTextLayout:$("visualPreset").value==="premium-medal"?"expedition":"standard",bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
     customization:{...readOverrides(),location:$("eventLocation").value,bib:$("bib").value,status:$("resultStatus").value,start:$("startDetail").value,finish:$("finishDetail").value,placing:$("placing").value},
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{
