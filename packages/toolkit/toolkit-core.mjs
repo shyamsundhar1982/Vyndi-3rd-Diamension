@@ -813,7 +813,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(c.shape.kind==="geographic")return insidePolygons(nx,ny,outlinePolygons);
     return pointInsideShape(nx,ny,c.shape.kind,{aspect:c.shape.aspect});
   };
-  const rimWidthMm=Math.max(0,Math.min(projection.radius*.34,Number(c.fabrication.rimWidthMm)||0));
+  // TrailRelief's 12 mm rim is ~13% of a 180 mm object's radius; preserve that proportion on smaller medals.
+  const rimWidthMm=Math.max(0,Math.min(projection.radius*.14,Number(c.fabrication.rimWidthMm)||0));
   const rimHeightMm=Math.max(0,Number(c.fabrication.rimHeightMm)||0);
   const rimScale=Math.max(.45,1-rimWidthMm/projection.radius);
   const contentInsideNormalized=(nx,ny)=>{
