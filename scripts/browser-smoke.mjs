@@ -51,9 +51,12 @@ try{
   await page.click("#engineTrailRelief");
   await page.waitForFunction(()=>document.querySelector("#sourceEngineFrame")?.getAttribute("src")==="engines/trailrelief/index.html",null,{timeout:10000});
   const sourceFrame=page.frameLocator("#sourceEngineFrame");
-  await sourceFrame.locator("canvas").first().waitFor({state:"visible",timeout:30000});
   const trailTitle=await sourceFrame.locator("body").evaluate(()=>document.title);
   if(trailTitle!=="TrailRelief")throw new Error("TrailRelief source engine did not load its original document.");
+  const demoButton=sourceFrame.getByRole("button",{name:/Demo/i}).first();
+  await demoButton.waitFor({state:"visible",timeout:30000});
+  await demoButton.click();
+  await sourceFrame.locator("canvas").first().waitFor({state:"visible",timeout:60000});
 
   await page.click("#engineVyndi");
   await page.waitForFunction(()=>document.querySelector("#sourceEngineFrame")?.getAttribute("src")==="engines/vyndi-medal/terrain-medal.html",null,{timeout:10000});
