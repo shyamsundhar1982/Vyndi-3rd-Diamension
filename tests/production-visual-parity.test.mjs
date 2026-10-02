@@ -18,7 +18,7 @@ test("production palette carries terrain classes and fabrication overlays",()=>{
     logo:"#ffee33",text:"#ffee33"
   }});
   assert.deepEqual(materials.map(m=>m.name),[
-    "Land","Forest","Mountain","Snow","Water","Route","Roads","Trails","Railways","Buildings","Logo","Text"
+    "Land","Forest","Mountain","Snow","Water","Route","Roads","Trails","Railways","Buildings","Logo","Text","Rim"
   ]);
   assert.equal(materials[1].color,"#228833FF");
   assert.equal(materials[4].color,"#2288aaFF");
@@ -99,7 +99,7 @@ test("generated production object contains terrain bands, route and text materia
   assert.ok(regions.has(3),"snow material missing");
   assert.ok(regions.has(5),"route material missing");
   assert.ok(regions.has(11),"text material missing");
-  assert.equal(model.materials.length,12);
+  assert.equal(model.materials.length,13);
 });
 
 
