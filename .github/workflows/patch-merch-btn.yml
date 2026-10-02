@@ -1,0 +1,20 @@
+name: Patch merch button
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/patch_merch_btn.py"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_merch_btn.py
+      - run: |
+          git config user.name "vyndi-ui"
+          git config user.email "vyndi-ui@users.noreply.github.com"
+          git add apps/web/index.html
+          git diff --cached --quiet || git commit -m "Workbench Merchandise opens Ride Stories merch"
+          git push
