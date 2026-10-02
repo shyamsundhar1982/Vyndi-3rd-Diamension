@@ -36,7 +36,11 @@ try{
     const status=document.querySelector("#livePreviewStatus")?.textContent||"";
     return Boolean(viewer?.src)&&status.includes("LIVE 3D READY");
   },null,{timeout:60000});
-  await page.waitForTimeout(800);
+  await page.waitForFunction(()=>{
+    const viewer=document.querySelector("#liveModelViewer");
+    return viewer?.loaded===true && viewer?.modelIsVisible===true;
+  },null,{timeout:30000});
+  await page.waitForTimeout(1000);
   await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
   await page.click("#openAdvanced");
   await page.waitForFunction(()=>document.querySelector("#advancedDrawer")?.classList.contains("open"));
