@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VYNDI Merchandise — Terrain Medals &amp; Ride Memory</title>
+  <meta name="description" content="VYNDI Merchandise Memory — 3D terrain medals from real rides, Ride Stories, signed authenticity. Open the production workbench.">
+  <meta name="theme-color" content="#0c0a08">
+  <style>
+    :root{
+      --bg:#0c0a08;--panel:#16120f;--edge:#3d3228;--gold:#d4a24a;--gold-soft:#f0d9a8;
+      --ink:#e7d3b0;--muted:#9a8b7c;--orange:#ff9f2f;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+    a{color:var(--gold-soft);text-decoration:none}
+    a:hover{color:#fff}
+    .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+    header.site{
+      position:sticky;top:0;z-index:10;
+      background:linear-gradient(180deg,#1c1612ee,#120f0cee);
+      border-bottom:1px solid var(--edge);
+      backdrop-filter:blur(10px);
+    }
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em}
+    .mark{
+      width:36px;height:36px;border-radius:10px;
+      background:linear-gradient(145deg,#ffb347,#c47a1a);
+      box-shadow:0 0 20px #ff9f2f55;display:grid;place-items:center;color:#1a1008;font-size:12px;
+    }
+    .nav-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .nav-links a, .btn{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;
+      border:1px solid var(--edge);font-size:12px;font-weight:600;color:var(--ink);background:#1a1510;
+    }
+    .btn-primary{
+      background:linear-gradient(180deg,#ffb347,#c47a1a);color:#1a1008;border:none;
+      box-shadow:0 8px 24px #0008,0 0 0 1px #ff9f2f44;
+    }
+    .btn-primary:hover{filter:brightness(1.06);color:#1a1008}
+    .hero{
+      padding:56px 0 40px;
+      background:
+        radial-gradient(ellipse at 70% 20%,#2a1c1244 0%,transparent 55%),
+        radial-gradient(ellipse at 20% 80%,#1a281844 0%,transparent 50%);
+    }
+    .hero-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:32px;align-items:center}
+    @media(max-width:800px){.hero-grid{grid-template-columns:1fr}}
+    .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+    h1{font-size:clamp(28px,5vw,44px);line-height:1.15;margin:0 0 14px;color:#fff}
+    h1 span{color:var(--gold-soft)}
+    .lead{color:var(--muted);font-size:16px;margin:0 0 22px;max-width:36em}
+    .hero-cta{display:flex;gap:10px;flex-wrap:wrap}
+    .medal-preview{
+      aspect-ratio:1;border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 45%,#1e4a7a 0%,#0d2840 45%,#0a1520 70%),
+        #0a1520;
+      border:8px solid #4a4a4a;
+      box-shadow:0 24px 60px #000a, inset 0 0 40px #0006;
+      position:relative;overflow:hidden;
+    }
+    .medal-preview::before{
+      content:"";position:absolute;inset:12%;border-radius:50%;
+      background:linear-gradient(160deg,#3d7a4a 0%,#2a5a32 40%,#1a3a22 100%);
+      clip-path:polygon(48% 8%, 72% 18%, 88% 42%, 82% 72%, 55% 92%, 28% 78%, 12% 48%, 22% 22%);
+      opacity:.95;
+    }
+    .medal-preview::after{
+      content:"609 KM";position:absolute;bottom:14%;left:0;right:0;text-align:center;
+      font-size:11px;letter-spacing:.2em;color:#c8d8e8;font-weight:700;
+    }
+    section{padding:36px 0}
+    h2{font-size:22px;margin:0 0 8px;color:var(--gold-soft)}
+    .sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media(max-width:800px){.cards{grid-template-columns:1fr}}
+    .card{
+      background:linear-gradient(180deg,#1a1510,#120f0c);
+      border:1px solid var(--edge);border-radius:12px;padding:18px 16px;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .card h3{margin:0;font-size:15px;color:#fff}
+    .card p{margin:0;font-size:13px;color:var(--muted);flex:1}
+    .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+    .card .btn{align-self:flex-start;margin-top:8px}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:800px){.split{grid-template-columns:1fr}}
+    .panel{
+      background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:20px;
+    }
+    .panel ul{margin:8px 0 0 18px;padding:0;color:var(--muted);font-size:13px}
+    footer{
+      border-top:1px solid var(--edge);padding:28px 0 40px;color:var(--muted);font-size:12px;
+    }
+    footer .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .strip{
+      display:flex;gap:10px;flex-wrap:wrap;padding:12px 0;margin-top:8px;
+    }
+    .chip{font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--edge);color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header class="site">
+    <div class="wrap nav">
+      <div class="brand">
+        <div class="mark">V3D</div>
+        <div>
+          <div>VYNDI MERCHANDISE</div>
+          <div style="font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.06em">MEMORY · RIDE STORIES · 3RD DIAMENSION</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="#products">Products</a>
+        <a href="#stories">Ride Stories</a>
+        <a href="#memory">Memory</a>
+        <a class="btn-primary btn" href="/apps/web/">Open Terrain Medal Workbench</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Vāyú Shastr · VYNDI 3rd Diamension</p>
+        <h1>Merchandise from <span>real rides</span> — not stock maps.</h1>
+        <p class="lead">
+          Terrain medals with elevated DEM, continuous GPX routes, inscribed rim text, and signed authenticity.
+          Ride Stories as the narrative surface. Merchandise Memory so every athlete setup is recoverable.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/apps/web/">Design a terrain medal</a>
+          <a class="btn" href="/apps/web/">Workbench</a>
+        </div>
+        <div class="strip">
+          <span class="chip">3MF · STL · OBJ · GLB</span>
+          <span class="chip">Bambu · FDM · Resin · SLS</span>
+          <span class="chip">Geo medallion · Rim TTF · QR reverse</span>
+        </div>
+      </div>
+      <div class="medal-preview" aria-hidden="true" title="Terrain medal preview"></div>
+    </div>
+  </section>
+
+  <section id="products">
+    <div class="wrap">
+      <h2>Merchandise line</h2>
+      <p class="sub">From the VYNDI Merchandise Memory + Ride Stories product system — production-ready in the 3rd Diamension workbench.</p>
+      <div class="cards">
+        <article class="card">
+          <span class="tag">Flagship</span>
+          <h3>3D Terrain Medal</h3>
+          <p>GPX + DEM elevation, raised route, geo or classic shapes, rim event &amp; athlete text, coastline emboss, export for any slicer.</p>
+          <a class="btn btn-primary" href="/apps/web/">Open workbench</a>
+        </article>
+        <article class="card">
+          <span class="tag">Narrative</span>
+          <h3>Ride Stories package</h3>
+          <p>Chapters, photos, expedition log — second surface for the order pack and QR-linked race reports. Built into the studio Industry panel.</p>
+          <a class="btn" href="/apps/web/">Add stories in studio</a>
+        </article>
+        <article class="card">
+          <span class="tag">Ops</span>
+          <h3>Event batch medals</h3>
+          <p>One shared terrain, many athletes via CSV. PDF order forms, printer package JSON, signed authenticity receipts.</p>
+          <a class="btn" href="/apps/web/">Batch in workbench</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="stories">
+    <div class="wrap split">
+      <div class="panel">
+        <h2>Ride Stories</h2>
+        <p class="sub">The ride is the product. Stories turn a medal into a chapter.</p>
+        <ul>
+          <li>Multi-chapter titles, body, optional photo URLs</li>
+          <li>Stories PDF for fulfilment and sponsors</li>
+          <li>Pair with reverse QR to results / report pages</li>
+        </ul>
+      </div>
+      <div class="panel" id="memory">
+        <h2>Merchandise Memory</h2>
+        <p class="sub">Robust session memory for production shops.</p>
+        <ul>
+          <li>Save / restore event, shape, printer, font, places, QR</li>
+          <li>Browser-local memory v2 for repeat athletes</li>
+          <li>Shared-terrain batch without reloading DEM/GPX</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap panel" style="text-align:center;padding:28px">
+      <h2 style="margin-bottom:10px">Ready to produce</h2>
+      <p class="sub" style="margin-bottom:16px">Landing is merchandise. The workbench is where medals are built.</p>
+      <a class="btn btn-primary" href="/apps/web/">Enter Terrain Medal Workbench →</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap row">
+      <div>
+        <strong style="color:var(--gold-soft)">VYNDI 3rd Diamension</strong><br>
+        TrailRelief lineage · Merchandise Memory · Ride Stories
+      </div>
+      <div>
+        <a href="/apps/web/">Workbench</a> ·
+        <a href="/health">Health</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
