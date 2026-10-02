@@ -109,6 +109,8 @@
         <label>Medal size<select id="medalSize"><option value="custom">Custom</option><option value="76.2">3″ · 76.2 mm</option><option value="101.6">4″ · 101.6 mm</option><option value="180">TrailRelief 180 mm</option></select></label>
         <div class="pair"><label>Model width mm<input id="modelWidth" type="number" min="60" max="600" step="1" value="180"></label><label>Base mm<input id="baseMm" type="number" min=".8" max="10" step=".1" value="3"></label></div>
         <div class="pair"><label>Rim width mm<input id="rimWidthMm" type="number" min="0" max="40" step=".5" value="12"></label><label>Rim height mm<input id="rimHeightMm" type="number" min="0" max="20" step=".5" value="5"></label></div>
+        <label>Surface lettering<select id="surfaceLettering"><option value="auto" selected>Auto clean</option><option value="full">Full event / rider / stats</option><option value="none">No top lettering</option></select></label>
+        <p class="hint">Auto clean protects compact geographic medals from unreadable top-surface text while retaining event metadata in the job and authenticity record.</p>
         <div class="option-card">
           <label class="check"><input id="contourEnabled" type="checkbox"> Printable contour emboss</label>
           <div class="pair"><label>Interval mm<input id="contourInterval" type="number" min=".2" max="5" step=".1" value="1"></label><label>Rise mm<input id="contourRise" type="number" min=".05" max="1" step=".05" value=".2"></label></div>
@@ -165,6 +167,12 @@
 
     <section class="viewport">
       <div class="view-tabs"><button class="active" data-view="live">LIVE</button><button data-view="production" disabled>PRODUCTION</button><span id="viewState">LIVE 3D</span></div>
+      <div class="camera-tools" aria-label="3D camera controls">
+        <button id="cameraIso" type="button" title="Professional three-quarter view">3D</button>
+        <button id="cameraTop" type="button" title="Orthographic-style top inspection">TOP</button>
+        <button id="cameraFit" type="button" title="Fit model to viewport">FIT</button>
+        <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
+      </div>
       <div id="liveStage" class="stage active">
         <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>
