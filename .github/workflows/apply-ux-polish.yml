@@ -1,0 +1,26 @@
+name: Apply workbench UX polish
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/ux_polish.css"
+      - "scripts/patch_ux_index.py"
+      - "scripts/patch_ux_css.py"
+      - "scripts/patch_ux_app.py"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_ux_index.py
+      - run: python3 scripts/patch_ux_css.py
+      - run: python3 scripts/patch_ux_app.py
+      - run: node --check apps/web/app.mjs
+      - run: |
+          git config user.name "vyndi-ux"
+          git config user.email "vyndi-ux@users.noreply.github.com"
+          git add apps/web/index.html apps/web/styles.css apps/web/app.mjs
+          git diff --cached --quiet || git commit -m "Workbench UX: 5-step flow, clearer generate path, responsive"
+          git push
