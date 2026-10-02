@@ -43,6 +43,7 @@ import {
 } from "../engine/fabrication-extras-core.mjs";
 import {
   projectGeographicOutline,
+  filterPrintableOutlinePolygons,
   insidePolygons,
   maskPolygons,
   findEmptyLogoPlacement
@@ -77,6 +78,12 @@ export function normalizeCustomization(input={}){
   };
 }
 
+export function premiumRimTextCopy(customization={}){
+  const meta=normalizeCustomization(customization);
+  const elevation=meta.elevation?(meta.elevation.trim().startsWith("+")?meta.elevation:"+"+meta.elevation):"";
+  return {event:meta.event,stats:[meta.distance,elevation,meta.duration].filter(Boolean).join(" - ")};
+}
+
 export function productionDisplayTitle(routeTitle="",customization={}){
   const meta=normalizeCustomization(customization),parts=[];
   const add=value=>{
@@ -102,7 +109,7 @@ export function defaultAdvancedConfig(){
     surface:{forestRaiseMm:.4,waterDepthMm:.6,waterMode:"procedural-waves",waveHeightMm:.3,waveSpacingMm:2.6},
     contours:{enabled:false,intervalMm:1,widthMm:.08,riseMm:.2},
     placeLabels:{mode:"major",selectedNames:[],maxCount:18},
-    production:{printerProfile:"bambu-p1s",medalSize:"custom",bottomMark:"",bottomEngraveDepthMm:.35},
+    production:{printerProfile:"bambu-p1s",medalSize:"custom",surfaceLettering:"auto",rimTextLayout:"standard",bottomMark:"",bottomEngraveDepthMm:.35},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
@@ -124,6 +131,36 @@ function deepMerge(base,patch){
     else out[key]=value;
   }
   return out;
+}
+
+export function surfaceLetteringAllowed({shapeKind="circle",modelWidthMm=180,mode="auto"}={}){
+  const policy=String(mode||"auto");
+  if(policy==="none")return false;
+  if(policy==="full")return true;
+  return !(shapeKind==="geographic"&&Number(modelWidthMm)<140);
+}
+
+export function professionalHangerPlacement({outlinePolygons=null,extents=null,radiusMm=50,innerRadiusMm=3,wallMm=3,baseMm=3}={}){
+  const radius=Math.max(1,Number(radiusMm)||50),inner=Math.max(1,Number(innerRadiusMm)||3),wall=Math.max(1,Number(wallMm)||3),outer=inner+wall;
+  let anchorX=0,anchorY=Number(extents?.maxY)||radius;
+  if(Array.isArray(outlinePolygons)&&outlinePolygons.length){
+    const ranked=outlinePolygons.map(rings=>{
+      const ring=rings?.[0]||[];let signed=0;
+      for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];signed+=a.x*b.y-b.x*a.y}
+      return {rings,area:Math.abs(signed)/2};
+    }).sort((a,b)=>b.area-a.area);
+    const ring=ranked[0]?.rings?.[0]||[];
+    let top=null;
+    for(const p of ring)if(!top||p.y>top.y)top=p;
+    if(top){anchorX=top.x*radius;anchorY=top.y*radius}
+  }
+  const overlap=Math.max(wall*1.15,outer*.34),centerY=anchorY+outer*.64;
+  const bridgeHalf=Math.max(wall*.72,1.4);
+  return {
+    anchorX,anchorY,centerX:anchorX,centerY,innerRadiusMm:inner,outerRadiusMm:outer,
+    heightMm:Math.max(.8,Number(baseMm)||3)+1.5,
+    bridge:{minX:anchorX-bridgeHalf,maxX:anchorX+bridgeHalf,minY:anchorY-overlap,maxY:centerY-inner*.35}
+  };
 }
 
 export function normalizeAdvancedConfig(config={}){
@@ -198,8 +235,15 @@ export function expandBoundsKm(bounds,distanceKm=0){
 }
 
 export function productionBounds(route,shape={}){
-  if(shape?.kind==="geographic"&&shape?.outlineGeometry){
-    return expandBounds(geometryBounds(shape.outlineGeometry),.015);
+  if((shape?.kind==="geographic"||shape?.kind==="geo-medallion")&&shape?.outlineGeometry){
+    const geo=geometryBounds(shape.outlineGeometry);
+    if(shape.kind==="geographic")return expandBounds(geo,.015);
+    const base=expandBounds(geo,.12),midLat=(base.minLat+base.maxLat)/2,midLon=(base.minLon+base.maxLon)/2;
+    const lonScale=Math.max(.08,Math.cos(midLat*Math.PI/180)),geoWidth=(base.maxLon-base.minLon)*lonScale,geoHeight=base.maxLat-base.minLat,extent=Math.max(geoWidth,geoHeight)*1.08;
+    return {
+      minLat:Math.max(-85,midLat-extent/2),maxLat:Math.min(85,midLat+extent/2),
+      minLon:Math.max(-180,midLon-extent/(2*lonScale)),maxLon:Math.min(180,midLon+extent/(2*lonScale))
+    };
   }
   const requestedKm=Math.max(0,Number(shape?.routeBufferKm)||0);
   const padded=requestedKm?expandBoundsKm(route,requestedKm):route;
@@ -232,19 +276,19 @@ function opaqueHex(value,fallback){
 export function productionMaterials(config={}){
   const colors={...defaultAdvancedConfig().colors,...(config.colors||{})};
   return [
-    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a")},
-    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a")},
-    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378")},
-    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8")},
-    {name:"Water",color:opaqueHex(colors.water,"#2f86a6")},
-    {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f")},
-    {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5")},
-    {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a")},
-    {name:"Railways",color:opaqueHex(colors.railways,"#7e8791")},
-    {name:"Buildings",color:opaqueHex(colors.buildings,"#d8d1c4")},
-    {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e")},
-    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")},
-    {name:"Rim",color:opaqueHex(colors.rim,"#23201d")}
+    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a"),roughness:.82},
+    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a"),roughness:.86},
+    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378"),roughness:.78},
+    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8"),roughness:.62},
+    {name:"Water",color:opaqueHex(colors.water,"#2f86a6"),roughness:.42,metallic:.05},
+    {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f"),roughness:.38},
+    {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5"),roughness:.8},
+    {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a"),roughness:.82},
+    {name:"Railways",color:opaqueHex(colors.railways,"#7e8791"),roughness:.7,metallic:.08},
+    {name:"Buildings",color:opaqueHex(colors.buildings,"#d8d1c4"),roughness:.74},
+    {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e"),roughness:.42,metallic:.16},
+    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e"),roughness:.4,metallic:.18},
+    {name:"Rim",color:opaqueHex(colors.rim,"#23201d"),roughness:.34,metallic:.08}
   ];
 }
 
@@ -650,14 +694,15 @@ const GLYPH_5X7={
   "8":["01110","10001","10001","01110","10001","10001","01110"],"9":["01110","10001","10001","01111","00001","00001","01110"],
   "-":["00000","00000","00000","11111","00000","00000","00000"],"/":["00001","00010","00100","01000","10000","00000","00000"],
   ".":["00000","00000","00000","00000","00000","00110","00110"],":":["00000","00110","00110","00000","00110","00110","00000"],
+  "+":["00000","00100","00100","11111","00100","00100","00000"],",":["00000","00000","00000","00000","00110","00100","01000"],
   " ":["00000","00000","00000","00000","00000","00000","00000"]
 };
 
-function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0,inside=()=>true}={}){
-  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,minCellMm=.55,riseMm=.8,terrainTopMm=()=>0,inside=()=>true}={}){
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   if(!value)return [];
   const nominalWidth=value.length*6-1;
-  const cell=Math.max(.55,Math.min(cellMm,maxWidth/Math.max(1,nominalWidth)));
+  const cell=Math.max(Math.max(.3,Number(minCellMm)||.55),Math.min(cellMm,maxWidth/Math.max(1,nominalWidth)));
   const totalWidth=nominalWidth*cell,startX=centerX-totalWidth/2,meshes=[];
   for(let ci=0;ci<value.length;ci++){
     const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
@@ -682,7 +727,7 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
 
 
 function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,flipRadial=false,maxArcRad=2.7,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0}={}){
-  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   const outer=Math.max(1,Number(radiusMm)||0),rim=Math.max(0,Number(rimWidthMm)||0);
   if(!value||rim<2||outer<=rim)return [];
   const arcRadius=outer-rim/2,nominalWidth=value.length*6-1;
@@ -714,7 +759,7 @@ function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,fli
   return meshes;
 }
 
-export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape=""}={}){
+export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape="",layout="standard"}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
   const meta=normalizeCustomization(customization);
   const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
@@ -724,6 +769,18 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
   const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
   if(shape==="circle"&&Number(rimWidthMm)>=2){
+    if(layout==="expedition"){
+      const copy=premiumRimTextCopy(meta);
+      if(copy.event)meshes.push(...curvedRimTextMeshes(copy.event,{
+        radiusMm:radius,rimWidthMm,centerAngle:Math.PI,maxArcRad:2.18,cellMm:baseCell*.82,
+        riseMm:Math.max(.42,riseMm*.88),terrainTopMm
+      }));
+      if(copy.stats)meshes.push(...curvedRimTextMeshes(copy.stats,{
+        radiusMm:radius,rimWidthMm,centerAngle:-Math.PI/4,flipRadial:true,maxArcRad:2.0,cellMm:baseCell*.72,
+        riseMm:Math.max(.34,riseMm*.74),terrainTopMm
+      }));
+      return meshes;
+    }
     if(meta.event)meshes.push(...curvedRimTextMeshes(meta.event,{
       radiusMm:radius,rimWidthMm,centerAngle:Math.PI/2,maxArcRad:2.65,cellMm:baseCell,
       riseMm:Math.max(.45,riseMm),terrainTopMm
@@ -750,25 +807,41 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   return meshes;
 }
 
-export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[]}={}){
-  if(mode==="none"||!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
-  const radius=projection.radius,meshes=[],occupied=[],selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
-  let places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
-  if(mode==="selected")places=places.filter(p=>selected.has(String(p.name).toLowerCase()));
-  else if(mode==="major")places=places.filter(p=>p.class==="city"||p.class==="town");
-  places=places.slice(0,Math.max(0,maxLabels));
-  for(const place of places){
+export function planProfessionalPlaceLabels({places=[],mode="major",selectedNames=[],maxLabels=18,shapeKind="route-fit",modelWidthMm=180,radius=90,insideNormalized=()=>true}={}){
+  if(mode==="none")return [];
+  const selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
+  let candidates=(places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
+  const smallGeo=shapeKind==="geographic"&&Number(modelWidthMm)<120;
+  const mediumGeo=shapeKind==="geographic"&&Number(modelWidthMm)<180;
+  if(mode==="selected")candidates=candidates.filter(p=>selected.has(String(p.name).toLowerCase()));
+  else if(mode==="major")candidates=candidates.filter(p=>smallGeo?p.class==="city":p.class==="city"||p.class==="town");
+  const physicalLimit=smallGeo?Math.max(2,Math.min(4,Math.floor(Number(modelWidthMm)/19))):mediumGeo?Math.min(8,maxLabels):maxLabels;
+  const limit=Math.max(0,Math.min(maxLabels,physicalLimit)),occupied=[],plan=[];
+  const collision=radius*(smallGeo ? .30 : (mediumGeo ? .24 : .18));
+  for(const place of candidates){
+    if(plan.length>=limit)break;
     const nx=Number(place.x),ny=Number(place.y);
     if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
-    if(ny>.56||ny<-.56)continue;
+    if(shapeKind!=="geographic"&&(ny>.56||ny<-.56))continue;
     const x=nx*radius,y=ny*radius;
-    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<radius*.18))continue;
-    const cell=place.class==="city"?Math.max(.62,radius/82):place.class==="town"?Math.max(.56,radius/94):Math.max(.50,radius/108);
-    const labels=textLineMeshes(String(place.name),{
-      centerX:x,centerY:y,maxWidth:radius*.42,cellMm:cell,riseMm:.38,
+    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<collision))continue;
+    const cellMm=smallGeo?Math.max(.48,radius/110):place.class==="city"?Math.max(.56,radius/92):place.class==="town"?Math.max(.52,radius/104):Math.max(.48,radius/116);
+    plan.push({place,x,y,cellMm,maxWidthMm:radius*(smallGeo ? .34 : (mediumGeo ? .38 : .42)),riseMm:smallGeo ? .34 : .38,minCellMm:smallGeo ? .48 : .5});
+    occupied.push({x,y});
+  }
+  return plan;
+}
+
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[],shapeKind="route-fit",modelWidthMm=180,plan=null}={}){
+  if(mode==="none"||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[];
+  const planned=plan||planProfessionalPlaceLabels({places:cartography?.places||[],mode,selectedNames,maxLabels,shapeKind,modelWidthMm,radius,insideNormalized});
+  for(const item of planned){
+    const labels=textLineMeshes(String(item.place.name),{
+      centerX:item.x,centerY:item.y,maxWidth:item.maxWidthMm,cellMm:item.cellMm,minCellMm:item.minCellMm,riseMm:item.riseMm,
       terrainTopMm,inside:(px,py)=>insideNormalized(px/radius,py/radius)
     });
-    if(labels.length){meshes.push(...labels);occupied.push({x,y});}
+    meshes.push(...labels);
   }
   return meshes;
 }
@@ -793,7 +866,7 @@ function modelExtents(config,projection,outlinePolygons){
 }
 
 function bottomTextDepthAt(x,y,config,extents){
-  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   const depth=Math.max(0,Math.min(Math.max(.05,Number(config?.fabrication?.baseMm)||3)-.2,Number(config?.production?.bottomEngraveDepthMm)||0));
   if(!value||depth<=0||!extents)return 0;
   const width=Math.max(1,extents.maxX-extents.minX),maxWidth=width*.72,nominal=Math.max(1,value.length*6-1);
@@ -877,15 +950,23 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
+  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
   const geometry=outlineGeometry||c.shape.outlineGeometry;
-  if(c.shape.kind==="geographic"&&!geometry)throw new Error("Geographic shape requires a GeoJSON Polygon or MultiPolygon.");
+  const geographicMode=c.shape.kind==="geographic"||c.shape.kind==="geo-medallion";
+  const medallionMode=c.shape.kind==="geo-medallion";
+  if(geographicMode&&!geometry)throw new Error("Geographic terrain requires a GeoJSON Polygon or MultiPolygon.");
   const shapeForBounds={...c.shape,outlineGeometry:geometry};
   const bounds=productionBounds(routeBounds(points),shapeForBounds),projection=makeProjection(bounds,c.fabrication.modelWidthMm);
-  let outlinePolygons=null;
-  if(c.shape.kind==="geographic")outlinePolygons=projectGeographicOutline(geometry,bounds,2);
+  let outlinePolygons=null,outlineFilter={kept:[],removed:[],metrics:{kept:[],removed:[]}};
+  if(geographicMode){
+    const projected=projectGeographicOutline(geometry,bounds,2);
+    outlineFilter=filterPrintableOutlinePolygons(projected,{radiusMm:projection.radius,minSpanMm:Math.max(1.2,profile.minFeatureMm*1.5),minAreaMm2:Math.max(1.4,profile.minFeatureMm*profile.minFeatureMm*2.2),maxComponents:24});
+    outlinePolygons=outlineFilter.kept;
+  }
   const insideNormalized=(nx,ny)=>{
     if(c.shape.kind==="route-fit")return Math.abs(nx*projection.radius)<=projection.widthMm/2+.001&&Math.abs(ny*projection.radius)<=projection.heightMm/2+.001;
     if(c.shape.kind==="geographic")return insidePolygons(nx,ny,outlinePolygons);
+    if(medallionMode)return pointInsideShape(nx,ny,"circle",{aspect:1});
     return pointInsideShape(nx,ny,c.shape.kind,{aspect:c.shape.aspect});
   };
   // TrailRelief's 12 mm rim is ~13% of a 180 mm object's radius; preserve that proportion on smaller medals.
@@ -902,7 +983,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     return pointInsideShape(nx/rimScale,ny/rimScale,c.shape.kind,{aspect:c.shape.aspect});
   };
   const isRimNormalized=(nx,ny)=>rimWidthMm>0&&insideNormalized(nx,ny)&&!contentInsideNormalized(nx,ny);
-  const range=sampleRange(demSampler,bounds,contentInsideNormalized);
+  const landInsideNormalized=(nx,ny)=>medallionMode?insidePolygons(nx,ny,outlinePolygons):contentInsideNormalized(nx,ny);
+  const range=sampleRange(demSampler,bounds,(nx,ny)=>contentInsideNormalized(nx,ny)&&landInsideNormalized(nx,ny));
   const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const heightmapSampler=heightmapImage?rasterSampler(heightmapImage,{channel:"luminance"}):null;
   const routeChannelAt=buildRouteChannelField(points,projection,c);
@@ -914,6 +996,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(!insideNormalized(nx,ny))return 0;
     if(isRimNormalized(nx,ny))return rimHeightMm;
     if(!contentInsideNormalized(nx,ny))return 0;
+    if(medallionMode&&!landInsideNormalized(nx,ny)){
+      if(c.surface.waterMode==="none")return 0;
+      const spacing=Math.max(.6,Number(c.surface.waveSpacingMm)||2.8),amp=Math.max(0,Number(c.surface.waveHeightMm)||.12);
+      const x=nx*projection.radius,y=ny*projection.radius;
+      const wave=c.surface.waterMode==="procedural-waves"?amp*(.48*Math.sin((x+y*.28)/spacing*Math.PI*2)+.22*Math.sin((y-x*.16)/spacing*Math.PI*2.7)):0;
+      return Math.max(.08,.22+wave);
+    }
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     if(!Number.isFinite(elevation))return 0;
     const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
@@ -938,6 +1027,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
   const terrainRegionNormalized=(nx,ny)=>{
     if(isRimNormalized(nx,ny))return 12;
+    if(medallionMode&&!landInsideNormalized(nx,ny))return 4;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
     return material===4&&c.surface.waterMode==="none"?0:material;
@@ -970,25 +1060,35 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18),mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames});
-  const textMeshes=buildPersonalizationMeshes({
+  const requestedLabelCount=Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18);
+  const labelInsideNormalized=medallionMode?(nx,ny)=>contentInsideNormalized(nx,ny)&&landInsideNormalized(nx,ny):contentInsideNormalized;
+  const placePlan=planProfessionalPlaceLabels({places:cartography?.places||[],mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,maxLabels:requestedLabelCount,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,radius:projection.radius,insideNormalized:labelInsideNormalized});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:labelInsideNormalized,maxLabels:requestedLabelCount,mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,plan:placePlan});
+  const allowSurfaceLettering=surfaceLetteringAllowed({shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,mode:c.production.surfaceLettering});
+  const textMeshes=allowSurfaceLettering?buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
-    rimWidthMm:c.fabrication.rimWidthMm,shape:c.shape.kind
-  });
+    rimWidthMm:c.fabrication.rimWidthMm,shape:medallionMode?"circle":c.shape.kind,layout:c.production.rimTextLayout
+  }):[];
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
+  let hangerPlacement=null;
   if(c.fabrication.hangerEnabled){
-    const inner=Math.max(1,(Number(c.fabrication.hangerInnerDiameterMm)||6)/2),wall=Math.max(1,Number(c.fabrication.hangerWallMm)||3),outer=inner+wall,centerY=extents.maxY+outer*.55;
-    meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
+    hangerPlacement=professionalHangerPlacement({outlinePolygons:c.shape.kind==="geographic"?outlinePolygons:null,extents,radiusMm:projection.radius,innerRadiusMm:(Number(c.fabrication.hangerInnerDiameterMm)||6)/2,wallMm:Number(c.fabrication.hangerWallMm)||3,baseMm:c.fabrication.baseMm});
+    const b=hangerPlacement.bridge;
+    meshes.push(buildExtrudedPolygonMesh({
+      points:[{x:b.minX,y:b.minY},{x:b.maxX,y:b.minY},{x:b.maxX,y:b.maxY},{x:b.minX,y:b.maxY}],
+      baseZAt:()=>0,heightMm:hangerPlacement.heightMm,region:12
+    }));
+    meshes.push(buildAnnulusMesh({outerRadiusMm:hangerPlacement.outerRadiusMm,innerRadiusMm:hangerPlacement.innerRadiusMm,heightMm:hangerPlacement.heightMm,centerX:hangerPlacement.centerX,centerY:hangerPlacement.centerY,segments:64}));
   }
   const mesh=mergeMeshes(meshes),validation=validateMesh(mesh);
   if(!validation.watertight)throw new Error("Generated production mesh is not watertight (boundary "+validation.boundaryEdges+", non-manifold "+validation.nonManifoldEdges+").");
   const materials=productionMaterials(c);
   const stl=encodeBinaryStl(mesh,{name:title}),threeMf=encode3mf(mesh,{title,materials}),mtl=encodeMtl(materials),obj=encodeObj(mesh,{name:title,materials,mtlFile:"model.mtl"}),glb=encodeGlb(mesh,{title,materials});
   const objBundle=encodeArtifactZip([{name:"model.obj",data:obj},{name:"model.mtl",data:mtl}]);
-  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
   const coupon=buildPrintValidationCoupon({technology:profile.technology,nozzleMm:profile.nozzleMm,minFeatureMm:profile.minFeatureMm,minEmbossMm:profile.minEmbossMm});
-  const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),config:c};
+  const quality={outlineComponentsRemoved:outlineFilter.removed.length,outlineComponentsKept:outlineFilter.kept.length,placeLabelsPlanned:placePlan.length,placeLabelsRequested:requestedLabelCount,surfaceLetteringSuppressed:!allowSurfaceLettering,hangerAnchored:Boolean(hangerPlacement),geographicMedallion:medallionMode,printerProfile:profile.label};
+  const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),quality,config:c};
   const validationBundle=encodeArtifactZip([
     {name:"validation.json",data:JSON.stringify(manifest,null,2)},
     {name:"print-validation-coupon.stl",data:encodeBinaryStl(coupon.mesh,{name:"TrailRelief validation coupon"})},
@@ -1005,7 +1105,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     standStl=encodeBinaryStl(stand,{name:"TrailRelief display stand"});
   }
   const workload=classifyTerrainWorkload({estimatedVertices:mesh.vertices.length,deviceMemoryGb:Number(globalThis.navigator?.deviceMemory||8)});
-  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,config:c};
+  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,quality,config:c};
   const packageFiles=[
     {name:"model.3mf",data:threeMf},{name:"model.stl",data:stl},{name:"model.glb",data:glb},
     {name:"model-obj.zip",data:objBundle},{name:"validation.zip",data:validationBundle},
@@ -1014,5 +1114,5 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   if(standStl)packageFiles.push({name:"display-stand.stl",data:standStl});
   if(tileBundle)packageFiles.push({name:"tiled-map.zip",data:tileBundle});
   const printPackage=encodeArtifactZip(packageFiles);
-  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,workload};
+  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,quality,hangerPlacement,workload};
 }

@@ -301,27 +301,42 @@ function align4(value){return (value+3)&~3}
 function writeU32(view,offset,value){view.setUint32(offset,value>>>0,true)}
 export function encodeGlb(mesh,options={}){
   const vertices=mesh?.vertices||[],triangles=mesh?.triangles||[],materials=(options.materials?.length?options.materials:[{name:"Terrain",color:"#808080FF"}]);
-  const encoder=new TextEncoder(),positionBytes=vertices.length*12,regions=new Map();
+  const encoder=new TextEncoder(),positionBytes=vertices.length*12,normalOffset=align4(positionBytes),normalBytes=vertices.length*12,regions=new Map();
   for(const t of triangles){const region=clamp(Math.floor(finite(t.region,0)),0,materials.length-1);if(!regions.has(region))regions.set(region,[]);regions.get(region).push(t.a,t.b,t.c)}
+  const normals=Array.from({length:vertices.length},()=>({x:0,y:0,z:0}));
+  for(const t of triangles){
+    const a=vertices[t.a],b=vertices[t.b],d=vertices[t.c];if(!a||!b||!d)continue;
+    const ux=b.x-a.x,uy=b.y-a.y,uz=b.z-a.z,vx=d.x-a.x,vy=d.y-a.y,vz=d.z-a.z;
+    const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+    const len=Math.hypot(nx,ny,nz)||1,fx=nx/len,fy=ny/len,fz=nz/len;
+    for(const id of [t.a,t.b,t.c]){normals[id].x+=fx;normals[id].y+=fy;normals[id].z+=fz}
+  }
+  for(const normal of normals){const len=Math.hypot(normal.x,normal.y,normal.z)||1;normal.x/=len;normal.y/=len;normal.z/=len}
   const texture=options.texture?.png?.length&&typeof options.texture.uv==="function"?options.texture:null;
-  const uvOffset=align4(positionBytes),uvBytes=texture?vertices.length*8:0;
+  const uvOffset=align4(normalOffset+normalBytes),uvBytes=texture?vertices.length*8:0;
   let binaryLength=align4(uvOffset+uvBytes),offset=binaryLength;const regionOffsets=new Map();
   for(const [region,indices] of regions){regionOffsets.set(region,{offset,count:indices.length});binaryLength=align4(offset+indices.length*4);offset=binaryLength}
   const imageOffset=binaryLength;
   if(texture)binaryLength=align4(binaryLength+texture.png.length);
   const binary=new Uint8Array(binaryLength),view=new DataView(binary.buffer);
   vertices.forEach((v,i)=>{view.setFloat32(i*12,finite(v.x),true);view.setFloat32(i*12+4,finite(v.y),true);view.setFloat32(i*12+8,finite(v.z),true)});
+  normals.forEach((n,i)=>{view.setFloat32(normalOffset+i*12,finite(n.x),true);view.setFloat32(normalOffset+i*12+4,finite(n.y),true);view.setFloat32(normalOffset+i*12+8,finite(n.z),true)});
   if(texture){vertices.forEach((v,i)=>{const uv=texture.uv(v);view.setFloat32(uvOffset+i*8,finite(uv.u),true);view.setFloat32(uvOffset+i*8+4,finite(uv.v),true)});binary.set(texture.png,imageOffset);}
   for(const [region,indices] of regions){const info=regionOffsets.get(region);indices.forEach((value,i)=>view.setUint32(info.offset+i*4,value,true))}
   let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
   for(const vertex of vertices){
     const x=finite(vertex.x),y=finite(vertex.y),z=finite(vertex.z);
-    if(x<minX)minX=x;if(x>maxX)maxX=x;
-    if(y<minY)minY=y;if(y>maxY)maxY=y;
-    if(z<minZ)minZ=z;if(z>maxZ)maxZ=z;
+    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;if(z<minZ)minZ=z;if(z>maxZ)maxZ=z;
   }
   const min=vertices.length?[minX,minY,minZ]:[0,0,0],max=vertices.length?[maxX,maxY,maxZ]:[0,0,0];
-  const bufferViews=[{buffer:0,byteOffset:0,byteLength:positionBytes,target:34962}],accessors=[{bufferView:0,componentType:5126,count:vertices.length,type:"VEC3",min,max}],primitives=[];
+  const bufferViews=[
+    {buffer:0,byteOffset:0,byteLength:positionBytes,target:34962},
+    {buffer:0,byteOffset:normalOffset,byteLength:normalBytes,target:34962}
+  ];
+  const accessors=[
+    {bufferView:0,componentType:5126,count:vertices.length,type:"VEC3",min,max},
+    {bufferView:1,componentType:5126,count:vertices.length,type:"VEC3"}
+  ],primitives=[];
   let uvAccessor=null,imageView=null;
   if(texture){
     const uvView=bufferViews.length;bufferViews.push({buffer:0,byteOffset:uvOffset,byteLength:uvBytes,target:34962});
@@ -331,18 +346,17 @@ export function encodeGlb(mesh,options={}){
   for(const [region,indices] of regions){
     const info=regionOffsets.get(region),bufferView=bufferViews.length;bufferViews.push({buffer:0,byteOffset:info.offset,byteLength:indices.length*4,target:34963});
     const accessor=accessors.length;accessors.push({bufferView,componentType:5125,count:indices.length,type:"SCALAR"});
-    primitives.push({attributes:{POSITION:0,...(texture&&region===texture.region?{TEXCOORD_0:uvAccessor}:{})},indices:accessor,material:region,mode:4});
+    primitives.push({attributes:{POSITION:0,NORMAL:1,...(texture&&region===texture.region?{TEXCOORD_0:uvAccessor}:{})},indices:accessor,material:region,mode:4});
   }
   const gltf={
     asset:{version:"2.0",generator:"VYNDI 3rd Diamension"},scene:0,scenes:[{nodes:[0]}],nodes:[{
-      mesh:0,
-      name:String(options.title||"VYNDI Terrain"),
-      rotation:[-0.7071067811865476,0,0,0.7071067811865476]
+      mesh:0,name:String(options.title||"VYNDI Terrain"),rotation:[-0.7071067811865476,0,0,0.7071067811865476]
     }],
     meshes:[{primitives}],
     materials:materials.map(material=>{
       const rgb=parseHexColor(material.color),raw=String(material.color||"").replace("#",""),alpha=raw.length>=8?parseInt(raw.slice(6,8),16)/255:1;
-      const out={name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:0,roughnessFactor:.88}};
+      const metallic=clamp(finite(material.metallic,0),0,1),roughness=clamp(finite(material.roughness,.88),.04,1);
+      const out={name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:metallic,roughnessFactor:roughness}};
       if(material.emissive){
         const e=parseHexColor(material.emissive);
         out.emissiveFactor=[Math.min(.35,e[0]*.35),Math.min(.35,e[1]*.35),Math.min(.35,e[2]*.35)];

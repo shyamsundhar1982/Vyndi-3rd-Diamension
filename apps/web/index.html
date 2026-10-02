@@ -27,14 +27,14 @@
 
   <section class="material-ribbon" aria-label="Terrain material ribbon">
     <div class="ribbon-label"><strong>MATERIALS</strong><span id="landcoverStatus">live terrain palette</span></div>
-    <label>Land<input data-palette="land" type="color" value="#b7a77a"></label>
-    <label>Forest<input data-palette="forest" type="color" value="#3f6b3a"></label>
-    <label>Mountain<input data-palette="mountain" type="color" value="#8a7a68"></label>
-    <label>Snow<input data-palette="snow" type="color" value="#f4f3ee"></label>
-    <label>Water<input data-palette="water" type="color" value="#3d86b8"></label>
-    <label>Route<input data-palette="route" type="color" value="#ff6a1f"></label>
-    <label>Rim<input data-palette="rim" type="color" value="#23201d"></label>
-    <label>Labels<input data-palette="labels" type="color" value="#f2c14e"></label>
+    <label>Land<input data-palette="land" type="color" value="#6f9f46"></label>
+    <label>Forest<input data-palette="forest" type="color" value="#2f6c31"></label>
+    <label>Mountain<input data-palette="mountain" type="color" value="#8b5a31"></label>
+    <label>Snow<input data-palette="snow" type="color" value="#f7f7f3"></label>
+    <label>Water<input data-palette="water" type="color" value="#155b8a"></label>
+    <label>Route<input data-palette="route" type="color" value="#ff2f24"></label>
+    <label>Rim<input data-palette="rim" type="color" value="#22201f"></label>
+    <label>Labels<input data-palette="labels" type="color" value="#f3c56a"></label>
   </section>
 
   <main class="studio">
@@ -42,6 +42,13 @@
       <div class="route-brief">
         <strong id="routeBrief">No route loaded</strong>
         <span id="routeDetail">Drop one or more GPX files or use Demo.</span>
+        <label class="preset-line">Presentation
+          <select id="visualPreset">
+            <option value="premium-medal" selected>Premium terrain medal</option>
+            <option value="detailed-map">Detailed cartography</option>
+            <option value="fabrication-proof">Fabrication proof</option>
+          </select>
+        </label>
       </div>
 
       <details class="personalise" open>
@@ -89,26 +96,28 @@
 
       <section class="tab-panel" data-panel="colours">
         <div class="colour-grid">
-          <label>Land<input data-palette="land" type="color" value="#b7a77a"></label>
-          <label>Forest<input data-palette="forest" type="color" value="#3f6b3a"></label>
-          <label>Mountain<input data-palette="mountain" type="color" value="#8a7a68"></label>
-          <label>Snow<input data-palette="snow" type="color" value="#f4f3ee"></label>
-          <label>Water<input data-palette="water" type="color" value="#3d86b8"></label>
-          <label>Route<input data-palette="route" type="color" value="#ff6a1f"></label>
+          <label>Land<input data-palette="land" type="color" value="#6f9f46"></label>
+          <label>Forest<input data-palette="forest" type="color" value="#2f6c31"></label>
+          <label>Mountain<input data-palette="mountain" type="color" value="#8b5a31"></label>
+          <label>Snow<input data-palette="snow" type="color" value="#f7f7f3"></label>
+          <label>Water<input data-palette="water" type="color" value="#155b8a"></label>
+          <label>Route<input data-palette="route" type="color" value="#ff2f24"></label>
           <label>Roads<input data-palette="roads" type="color" value="#c9c1b5"></label>
           <label>Trails<input data-palette="trails" type="color" value="#3f6b3a"></label>
           <label>Railways<input data-palette="railways" type="color" value="#7e8791"></label>
           <label>Buildings<input data-palette="buildings" type="color" value="#d8d1c4"></label>
-          <label>Rim<input data-palette="rim" type="color" value="#23201d"></label>
-          <label>Border text<input data-palette="labels" type="color" value="#f2c14e"></label>
+          <label>Rim<input data-palette="rim" type="color" value="#22201f"></label>
+          <label>Border text<input data-palette="labels" type="color" value="#f3c56a"></label>
         </div>
       </section>
 
       <section class="tab-panel" data-panel="plate">
-        <label>Shape<select id="shape"><option value="circle" selected>Round</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="heart">Heart</option><option value="route-fit">Route fit plaque</option><option value="geographic">Country / region outline</option></select></label>
+        <label>Shape<select id="shape"><option value="circle" selected>Round</option><option value="geo-medallion">Round medal · geographic terrain</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="heart">Heart</option><option value="route-fit">Route fit plaque</option><option value="geographic">Geographic cut-out</option></select></label>
         <label>Medal size<select id="medalSize"><option value="custom">Custom</option><option value="76.2">3″ · 76.2 mm</option><option value="101.6">4″ · 101.6 mm</option><option value="180">TrailRelief 180 mm</option></select></label>
         <div class="pair"><label>Model width mm<input id="modelWidth" type="number" min="60" max="600" step="1" value="180"></label><label>Base mm<input id="baseMm" type="number" min=".8" max="10" step=".1" value="3"></label></div>
         <div class="pair"><label>Rim width mm<input id="rimWidthMm" type="number" min="0" max="40" step=".5" value="12"></label><label>Rim height mm<input id="rimHeightMm" type="number" min="0" max="20" step=".5" value="5"></label></div>
+        <label>Surface lettering<select id="surfaceLettering"><option value="auto" selected>Auto clean</option><option value="full">Full event / rider / stats</option><option value="none">No top lettering</option></select></label>
+        <p class="hint">Auto clean protects compact geographic medals from unreadable top-surface text while retaining event metadata in the job and authenticity record.</p>
         <div class="option-card">
           <label class="check"><input id="contourEnabled" type="checkbox"> Printable contour emboss</label>
           <div class="pair"><label>Interval mm<input id="contourInterval" type="number" min=".2" max="5" step=".1" value="1"></label><label>Rise mm<input id="contourRise" type="number" min=".05" max="1" step=".05" value=".2"></label></div>
@@ -143,11 +152,11 @@
       <section class="tab-panel" data-panel="print">
         <label>Printer / production profile<select id="printerProfile"><option value="bambu-p1s">Bambu Lab P1S / AMS</option><option value="generic-fdm">Generic FDM · 0.4 mm</option><option value="fine-fdm">Fine FDM · 0.25 mm</option><option value="resin">MSLA / SLA resin</option><option value="sls">SLS / MJF service</option></select></label>
         <p class="hint" id="printerProfileNote">Bambu P1S · 3MF preferred · Bambu Studio / OrcaSlicer.</p>
-        <label>Place labels<select id="placeLabelMode"><option value="major">Major only</option><option value="none">None</option><option value="all">All collision-limited</option></select></label>
+        <label>Place labels<select id="placeLabelMode"><option value="none" selected>None · premium</option><option value="major">Major only</option><option value="all">All collision-limited</option></select></label>
         <div class="checks">
-          <label><input id="roads" type="checkbox" checked> Roads</label>
-          <label><input id="trails" type="checkbox" checked> Trails</label>
-          <label><input id="railways" type="checkbox" checked> Railways</label>
+          <label><input id="roads" type="checkbox"> Roads</label>
+          <label><input id="trails" type="checkbox"> Trails</label>
+          <label><input id="railways" type="checkbox"> Railways</label>
           <label><input id="buildings" type="checkbox"> Buildings</label>
         </div>
         <label>Elevation source<select id="demSource"><option value="terrarium">AWS Terrarium · no key</option><option value="geotiff">Local GeoTIFF</option><option value="arc">Local Arc-ASCII</option><option value="opentopography">OpenTopography · optional API key</option></select></label>
@@ -165,6 +174,12 @@
 
     <section class="viewport">
       <div class="view-tabs"><button class="active" data-view="live">LIVE</button><button data-view="production" disabled>PRODUCTION</button><span id="viewState">LIVE 3D</span></div>
+      <div class="camera-tools" aria-label="3D camera controls">
+        <button id="cameraIso" type="button" title="Professional three-quarter view">3D</button>
+        <button id="cameraTop" type="button" title="Orthographic-style top inspection">TOP</button>
+        <button id="cameraFit" type="button" title="Fit model to viewport">FIT</button>
+        <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
+      </div>
       <div id="liveStage" class="stage active">
         <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>

@@ -26,6 +26,28 @@ export function insidePolygons(x,y,polygons){
   return polygons.some(rings=>insideRing(x,y,rings[0])&&!rings.slice(1).some(ring=>insideRing(x,y,ring)));
 }
 
+export function filterPrintableOutlinePolygons(polygons=[],options={}){
+  const radiusMm=Math.max(.1,Number(options.radiusMm)||50);
+  const minSpanMm=Math.max(0,Number(options.minSpanMm)||1.2);
+  const minAreaMm2=Math.max(0,Number(options.minAreaMm2)||1.4);
+  const maxComponents=Math.max(1,Math.floor(Number(options.maxComponents)||24));
+  const scored=(polygons||[]).map((rings,index)=>{
+    const outer=rings?.[0]||[];
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const p of outer){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y)}
+    const widthMm=Math.max(0,maxX-minX)*radiusMm,heightMm=Math.max(0,maxY-minY)*radiusMm;
+    const areaMm2=Math.abs(area(outer))*radiusMm*radiusMm;
+    return {rings,index,widthMm,heightMm,spanMm:Math.max(widthMm,heightMm),areaMm2};
+  }).sort((a,b)=>b.areaMm2-a.areaMm2);
+  const kept=[],removed=[];
+  for(let i=0;i<scored.length;i++){
+    const item=scored[i],significant=i===0||(item.spanMm>=minSpanMm&&item.areaMm2>=minAreaMm2);
+    if(significant&&kept.length<maxComponents)kept.push(item);else removed.push(item);
+  }
+  kept.sort((a,b)=>a.index-b.index);removed.sort((a,b)=>a.index-b.index);
+  return {kept:kept.map(item=>item.rings),removed:removed.map(item=>item.rings),metrics:{kept:kept.map(({index,widthMm,heightMm,areaMm2})=>({index,widthMm,heightMm,areaMm2})),removed:removed.map(({index,widthMm,heightMm,areaMm2})=>({index,widthMm,heightMm,areaMm2}))}};
+}
+
 export function projectGeographicOutline(geometry,bounds,size=1.8){
   const source=geometry?.type==="Polygon"?[geometry.coordinates]:geometry?.type==="MultiPolygon"?geometry.coordinates:null;
   if(!source?.length)throw new Error("This place has no polygon boundary. Choose a country or region with an outline.");

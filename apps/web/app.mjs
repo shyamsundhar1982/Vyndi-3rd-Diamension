@@ -84,6 +84,40 @@ function syncPrinterProfile(){
 function syncMedalSize(){
   if($("medalSize").value!=="custom")$("modelWidth").value=$("medalSize").value;
 }
+function setControl(id,value){
+  const el=$(id);if(!el)return;
+  if(el.type==="checkbox")el.checked=Boolean(value);else el.value=String(value);
+}
+function setPalette(values={}){
+  for(const [key,value] of Object.entries(values))document.querySelectorAll('[data-palette="'+key+'"]').forEach(el=>{el.value=value});
+  readPalette();
+}
+function applyVisualPreset(name=$("visualPreset")?.value||"premium-medal",{initial=false}={}){
+  const width=finite($("modelWidth")?.value,180);
+  if(name==="premium-medal"){
+    setPalette({land:"#6f9f46",forest:"#2f6c31",mountain:"#8b5a31",snow:"#f7f7f3",water:"#155b8a",route:"#ff2f24",rim:"#22201f",labels:"#f3c56a"});
+    setControl("roads",false);setControl("trails",false);setControl("railways",false);setControl("buildings",false);setControl("placeLabelMode","none");
+    setControl("contourEnabled",false);setControl("magnetEnabled",false);setControl("hangerEnabled",false);setControl("tileEnabled",false);
+    setControl("routeStyle","raised");setControl("surfaceLettering","full");setControl("waterMode","procedural-waves");
+    setControl("mountainM",900);setControl("snowM",2800);setControl("forestRaise",.18);setControl("waterDepth",.25);setControl("waveHeight",.12);setControl("waveSpacing",2.8);
+    setControl("routeWidth",width<=90?1.1:width<=120?1.3:1.6);setControl("routeRise",width<=90?.8:1);
+    setControl("relief",width<=90?6.5:width<=120?8:12);setControl("rimWidthMm",width<=90?5.5:width<=120?7.5:12);setControl("rimHeightMm",width<=90?3:width<=120?4:5);
+    if(state.geoOutline)setControl("shape","geo-medallion");
+    $("qualityBadge").textContent="PREMIUM MEDAL · TERRAIN FIRST";
+  }else if(name==="detailed-map"){
+    setControl("roads",true);setControl("trails",true);setControl("railways",true);setControl("buildings",false);setControl("placeLabelMode","major");
+    setControl("surfaceLettering","auto");if(state.geoOutline&&$("shape").value==="geo-medallion")setControl("shape","geographic");
+    $("qualityBadge").textContent="DETAILED MAP";
+  }else{
+    setControl("roads",false);setControl("trails",false);setControl("railways",false);setControl("buildings",false);setControl("placeLabelMode","none");
+    setControl("surfaceLettering","none");setControl("waterMode","flat");setControl("contourEnabled",false);
+    setPalette({land:"#b7a77a",forest:"#6f795f",mountain:"#8a7a68",snow:"#f4f3ee",water:"#62869a",route:"#ff6a1f",rim:"#23201d",labels:"#f2c14e"});
+    $("qualityBadge").textContent="FABRICATION PROOF";
+  }
+  syncOutputs();
+  if(!initial){resetGenerated("Presentation preset changed · regenerate production model.");schedulePreview(0)}
+}
+
 function syncDemSource(){
   const source=$("demSource").value;
   $("geoTiffRow").hidden=source!=="geotiff";$("arcRow").hidden=source!=="arc";$("openTopoRow").hidden=source!=="opentopography";
@@ -130,12 +164,12 @@ function currentConfig(){
     },
     contours:{enabled:$("contourEnabled").checked,intervalMm:finite($("contourInterval").value,1),widthMm:.08,riseMm:finite($("contourRise").value,.2)},
     placeLabels:{mode:$("placeLabelMode").value,selectedNames:[],maxCount:$("placeLabelMode").value==="all"?60:18},
-    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
+    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,rimTextLayout:$("visualPreset").value==="premium-medal"?"expedition":"standard",bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
     customization:{...readOverrides(),location:$("eventLocation").value,bib:$("bib").value,status:$("resultStatus").value,start:$("startDetail").value,finish:$("finishDetail").value,placing:$("placing").value},
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{
       ...base.shape,kind:shapeKind,aspect:finite($("shapeAspect").value,1.35),routeBufferKm:finite($("routeBufferKm").value,5),
-      outlineGeometry:shapeKind==="geographic"?state.geoOutline:null,
+      outlineGeometry:(shapeKind==="geographic"||shapeKind==="geo-medallion")?state.geoOutline:null,
       logoEnabled:Boolean(state.logoImage),logoAuto:$("logoAuto").checked,logoWidthMm:finite($("logoWidth").value,18),logoRiseMm:finite($("logoRise").value,.8)
     },
     fabrication:{
@@ -160,6 +194,27 @@ function previewConfig(){
     fabrication:{...base.fabrication,targetXyMm:Math.max(3,finite(base.fabrication.targetXyMm,3)),tiled:false,magnetEnabled:false,standEnabled:false}
   });
 }
+function updateQualityBadge(model,prefix="QUALITY"){
+  const q=model?.quality||{},bits=[];
+  if(q.surfaceLetteringSuppressed)bits.push("CLEAN SURFACE");
+  if(Number(q.outlineComponentsRemoved)>0)bits.push(q.outlineComponentsRemoved+" MICRO PART"+(q.outlineComponentsRemoved===1?"":"S")+" REMOVED");
+  if(Number.isFinite(Number(q.placeLabelsPlanned))&&Number(q.placeLabelsRequested)>0&&Number(q.placeLabelsPlanned)<Number(q.placeLabelsRequested))bits.push(q.placeLabelsPlanned+" LABELS");
+  if(q.hangerAnchored)bits.push("HANGER ANCHORED");
+  if(q.geographicMedallion)bits.push("GEO MEDALLION");
+  $("qualityBadge").textContent=bits.length?prefix+" · "+bits.join(" · "):prefix+" · PASS";
+  $("qualityBadge").classList.toggle("active",bits.length>0);
+}
+function applyCameraPreset(kind){
+  const viewers=[$("liveModelViewer"),$("modelViewer")].filter(Boolean);
+  for(const viewer of viewers){
+    viewer.cameraTarget="auto auto auto";
+    if(kind==="top"){viewer.cameraOrbit="0deg 0deg auto";viewer.fieldOfView="24deg"}
+    else if(kind==="iso"){viewer.cameraOrbit="-28deg 56deg auto";viewer.fieldOfView="30deg"}
+    else{viewer.cameraOrbit="auto auto auto";viewer.fieldOfView="30deg";viewer.updateFraming?.()}
+    viewer.jumpCameraToGoal?.();
+  }
+}
+
 async function installLiveModel(model,label){
   if(state.previewUrl)URL.revokeObjectURL(state.previewUrl);
   state.previewUrl=URL.createObjectURL(new Blob([model.glb],{type:"model/gltf-binary"}));
@@ -169,7 +224,7 @@ async function installLiveModel(model,label){
 async function generateLivePreview({preferDem=true}={}){
   if(!state.route?.points?.length)return;
   const generation=++state.previewGeneration,route=state.route,config=previewConfig();
-  if(config.shape.kind==="geographic"&&!state.geoOutline){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
+  if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
   $("livePreviewStatus").textContent=state.liveDemSampler?"REFINING LIVE 3D · TERRAIN DEM":"BUILDING LIVE 3D · GPX ELEVATION";
   try{
     const demSampler=state.liveDemSampler||gpxPreviewSampler(route.points),title=productionDisplayTitle(route.name,config.customization);
@@ -254,7 +309,7 @@ async function resolveDem(config,bounds){
 }
 async function generate(){
   if(!state.route)return;
-  const config=currentConfig();if(config.shape.kind==="geographic"&&!state.geoOutline){$("productionStatus").textContent="Geographic shape requires a selected or uploaded boundary.";return}
+  const config=currentConfig();if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline){$("productionStatus").textContent="Geographic terrain requires a selected or uploaded boundary.";return}
   $("generate").disabled=true;$("productionStatus").textContent="Loading DEM and building governed production mesh…";
   try{
     const bounds=productionBounds(state.route.bounds||previewBounds(state.route.points),config.shape),demSampler=await resolveDem(config,bounds);
@@ -265,8 +320,10 @@ async function generate(){
     state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     const p=state.production;
     $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles · "+p.materials.length+" materials · "+p.profile.label;
+    updateQualityBadge(p,"PRODUCTION");
     $("modelDiagnostics").textContent=[
       "Watertight: "+(p.validation.watertight?"YES":"NO"),
+      "Quality guard: "+(p.quality?.surfaceLetteringSuppressed?"clean surface · ":"")+(p.quality?.outlineComponentsRemoved||0)+" micro parts removed · "+(p.quality?.placeLabelsPlanned||0)+" labels",
       "Route: "+config.fabrication.routeStyle+" · "+config.fabrication.routeWidthMm+" mm",
       "Shape: "+config.shape.kind+" · "+config.fabrication.modelWidthMm+" mm",
       "DEM: "+config.dem.source+" · XY "+config.fabrication.targetXyMm+" mm",
@@ -318,7 +375,7 @@ async function selectGeography(item){
   $("geoSearchStatus").textContent="Loading boundary…";
   try{
     const response=await fetch("/api/geo/outline?type="+encodeURIComponent(type)+"&id="+encodeURIComponent(id)),data=await response.json();if(!response.ok)throw new Error(data.error||"Boundary failed.");
-    state.geoOutline=data.geometry;state.geoMeta=data;$("shape").value="geographic";$("geoSearchStatus").textContent="Boundary ready · "+data.name;resetGenerated();schedulePreview(0);
+    state.geoOutline=data.geometry;state.geoMeta=data;$("shape").value=$("visualPreset").value==="premium-medal"?"geo-medallion":"geographic";$("geoSearchStatus").textContent="Boundary ready · "+data.name+" · "+($("shape").value==="geo-medallion"?"round premium medallion":"geographic cut-out");resetGenerated();schedulePreview(0);
   }catch(error){$("geoSearchStatus").textContent=error.message||String(error)}
 }
 function exportJob(){
@@ -333,7 +390,7 @@ $("generate").addEventListener("click",()=>void generate());
 $("issueAuthenticity").addEventListener("click",()=>void issueAuthenticity());
 $("downloadAuthenticity").addEventListener("click",()=>state.authenticity&&download(JSON.stringify(state.authenticity,null,2),stem(state.route?.name)+"-authenticity.json","application/json"));
 $("geoSearchButton").addEventListener("click",()=>void searchGeography());$("geoSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();void searchGeography()}});
-$("geoJsonInput").addEventListener("change",async event=>{const file=event.target.files?.[0];if(!file)return;try{const geometry=JSON.parse(await file.text());state.geoOutline=geometry;state.geoMeta={name:file.name,source:"local GeoJSON"};$("shape").value="geographic";$("geoSearchStatus").textContent="Local boundary ready · "+file.name;resetGenerated();schedulePreview(0)}catch(error){$("geoSearchStatus").textContent="Invalid GeoJSON · "+error.message}});
+$("geoJsonInput").addEventListener("change",async event=>{const file=event.target.files?.[0];if(!file)return;try{const geometry=JSON.parse(await file.text());state.geoOutline=geometry;state.geoMeta={name:file.name,source:"local GeoJSON"};$("shape").value=$("visualPreset").value==="premium-medal"?"geo-medallion":"geographic";$("geoSearchStatus").textContent="Local boundary ready · "+file.name;resetGenerated();schedulePreview(0)}catch(error){$("geoSearchStatus").textContent="Invalid GeoJSON · "+error.message}});
 $("logoInput").addEventListener("change",async event=>{const file=event.target.files?.[0];state.logoImage=file?await readImageData(file):null;resetGenerated();schedulePreview(0)});
 $("heightmapInput").addEventListener("change",async event=>{const file=event.target.files?.[0];state.heightmapImage=file?await readImageData(file):null;resetGenerated();schedulePreview(0)});
 $("geoTiffInput").addEventListener("change",event=>{state.demFile=event.target.files?.[0]||null;$("demStatus").textContent=state.demFile?"GeoTIFF selected · "+state.demFile.name:"Choose a GeoTIFF DEM.";resetGenerated()});
@@ -342,13 +399,14 @@ $("demSource").addEventListener("change",()=>{state.openTopoSampler=null;state.o
 $("loadHighResDem").addEventListener("click",async()=>{if(!state.route)return void($("demStatus").textContent="Load a GPX route first.");try{const config=currentConfig(),bounds=productionBounds(state.route.bounds||previewBounds(state.route.points),config.shape);await loadOpenTopography(bounds);resetGenerated("OpenTopography DEM loaded · generate production model.")}catch(error){$("demStatus").textContent=error.message||String(error)}});
 $("medalSize").addEventListener("change",()=>{syncMedalSize();resetGenerated();schedulePreview()});
 $("printerProfile").addEventListener("change",()=>{syncPrinterProfile();resetGenerated()});
+$("visualPreset").addEventListener("change",()=>applyVisualPreset($("visualPreset").value));
 
 for(const id of ["riderName","eventDate","eventOverride","eventLocation","bib","resultStatus","startDetail","finishDetail","placing"])$(id).addEventListener("input",()=>{updateRibbon();resetGenerated();schedulePreview(260)});
 document.querySelectorAll("[data-palette]").forEach(el=>el.addEventListener("input",event=>{
   document.querySelectorAll('[data-palette="'+event.target.dataset.palette+'"]').forEach(peer=>{if(peer!==event.target)peer.value=event.target.value});
   resetGenerated();schedulePreview();
 }));
-for(const id of ["routeBufferKm","relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
+for(const id of ["routeBufferKm","relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","surfaceLettering","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
   const el=$(id);if(!el)continue;el.addEventListener("input",()=>{syncOutputs();resetGenerated();schedulePreview()});el.addEventListener("change",()=>{syncOutputs();resetGenerated();schedulePreview()});
 }
 document.querySelectorAll("[data-panel-tab]").forEach(button=>button.addEventListener("click",()=>{
@@ -373,6 +431,9 @@ $("downloadPrintPackage").addEventListener("click",()=>state.production?.printPa
 $("downloadJob").addEventListener("click",exportJob);
 $("openAdvanced").onclick=()=>{$("advancedDrawer").classList.add("open");$("advancedDrawer").setAttribute("aria-hidden","false")};
 $("closeAdvanced").onclick=()=>{$("advancedDrawer").classList.remove("open");$("advancedDrawer").setAttribute("aria-hidden","true")};
-$("resetView").onclick=()=>{for(const id of ["liveModelViewer","modelViewer"]){const viewer=$(id);if(viewer){viewer.cameraOrbit="-25deg 50deg auto";viewer.fieldOfView="30deg";viewer.jumpCameraToGoal?.()}}};
+$("cameraIso").addEventListener("click",()=>applyCameraPreset("iso"));
+$("cameraTop").addEventListener("click",()=>applyCameraPreset("top"));
+$("cameraFit").addEventListener("click",()=>applyCameraPreset("fit"));
+$("resetView").onclick=()=>applyCameraPreset("iso");
 
-syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
+applyVisualPreset($("visualPreset").value,{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();

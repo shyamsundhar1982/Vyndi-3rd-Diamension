@@ -152,3 +152,23 @@ test("circular production keeps route geometry inside the object and emits a gov
   const minTextRadius=Math.min(...[...textVertexIds].map(i=>Math.hypot(model.mesh.vertices[i].x,model.mesh.vertices[i].y)));
   assert.ok(minTextRadius>=19.5,"circular personalization should live on the rim, not cover the terrain");
 });
+
+test("GLB carries vertex normals and region-specific PBR so terrain relief reads professionally",()=>{
+  const mesh={
+    vertices:[{x:0,y:0,z:0},{x:10,y:0,z:0},{x:0,y:10,z:3},{x:10,y:10,z:5}],
+    triangles:[{a:0,b:1,c:2,region:0},{a:1,b:3,c:2,region:4}]
+  };
+  const glb=encodeGlb(mesh,{title:"Premium relief",materials:[
+    {name:"Land",color:"#6f9f46FF",roughness:.82},
+    {name:"Forest",color:"#2f6c31FF"},
+    {name:"Mountain",color:"#8b5a31FF"},
+    {name:"Snow",color:"#f7f7f3FF"},
+    {name:"Water",color:"#155b8aFF",roughness:.42,metallic:.05}
+  ]});
+  const json=glbJson(glb);
+  assert.ok(json.meshes[0].primitives.every(p=>Number.isInteger(p.attributes.NORMAL)),"every GLB primitive should reference vertex normals");
+  assert.equal(json.accessors[json.meshes[0].primitives[0].attributes.NORMAL].type,"VEC3");
+  assert.equal(json.materials[0].pbrMetallicRoughness.roughnessFactor,.82);
+  assert.equal(json.materials[4].pbrMetallicRoughness.roughnessFactor,.42);
+  assert.equal(json.materials[4].pbrMetallicRoughness.metallicFactor,.05);
+});
