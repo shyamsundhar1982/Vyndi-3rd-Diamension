@@ -47,6 +47,22 @@ try{
   },null,{timeout:30000});
   await page.waitForTimeout(1000);
   await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
+
+  await page.click("#engineTrailRelief");
+  await page.waitForFunction(()=>document.querySelector("#sourceEngineFrame")?.getAttribute("src")==="engines/trailrelief/index.html",null,{timeout:10000});
+  const sourceFrame=page.frameLocator("#sourceEngineFrame");
+  await sourceFrame.locator("canvas").first().waitFor({state:"visible",timeout:30000});
+  const trailTitle=await sourceFrame.locator("body").evaluate(()=>document.title);
+  if(trailTitle!=="TrailRelief")throw new Error("TrailRelief source engine did not load its original document.");
+
+  await page.click("#engineVyndi");
+  await page.waitForFunction(()=>document.querySelector("#sourceEngineFrame")?.getAttribute("src")==="engines/vyndi-medal/terrain-medal.html",null,{timeout:10000});
+  await sourceFrame.locator("#medalCanvas").waitFor({state:"visible",timeout:30000});
+  const vyndiTitle=await sourceFrame.locator("body").evaluate(()=>document.title);
+  if(!vyndiTitle.includes("Terrain Medal"))throw new Error("VYNDI source engine did not load its original terrain-medal document.");
+
+  await page.click("#engineUnified");
+  await page.waitForFunction(()=>!document.querySelector("#sourceStage")?.classList.contains("active"),null,{timeout:10000});
   await page.click("#openAdvanced");
   await page.waitForFunction(()=>document.querySelector("#advancedDrawer")?.classList.contains("open"));
   const labels=await page.locator("#advancedDrawer summary").allTextContents();
@@ -54,7 +70,7 @@ try{
     if(!labels.includes(expected))throw new Error("Missing Advanced section: "+expected);
   }
   if(errors.length)throw new Error("Browser errors: "+errors.join(" | "));
-  console.log("BROWSER PASS · ribbon + palette + GPX intelligence + Advanced workbench");
+  console.log("BROWSER PASS · unified + exact TrailRelief + exact VYNDI terrain engines + Advanced workbench");
 }finally{
   await browser.close();
 }
