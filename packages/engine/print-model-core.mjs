@@ -25,8 +25,8 @@ function topRegion(vertices,indices,regionAt,radius){
 function meshShapeRadius(shape,angle,aspect=1.35){
   if(shape==="square")return 1/Math.max(Math.abs(Math.cos(angle)),Math.abs(Math.sin(angle)),1e-9);
   if(shape==="ellipse")return 1/Math.sqrt(Math.cos(angle)**2+(Math.sin(angle)*clamp(finite(aspect,1.35),.5,2.5))**2);
-  if(shape==="hexagon"||shape==="octagon"){
-    const n=shape==="hexagon"?6:8,sector=TAU/n;
+  if(shape==="triangle"||shape==="hexagon"||shape==="octagon"){
+    const n=shape==="triangle"?3:shape==="hexagon"?6:8,sector=TAU/n;
     const local=((angle+sector/2)%sector+sector)%sector-sector/2;
     return Math.cos(Math.PI/n)/Math.max(1e-9,Math.cos(local));
   }
