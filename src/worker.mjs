@@ -121,7 +121,7 @@ export default {
     if(url.pathname==="/api/authenticity/verify"&&request.method==="GET"){const result=await verifyToken(url.searchParams.get("receipt")||"",env.VYNDI_AUTH_SECRET);return json(result,result.verified?200:400)}
     if(url.pathname==="/verify"&&request.method==="GET")return verifyPage(url,env.VYNDI_AUTH_SECRET);
     if(url.pathname==="/"){
-      const target=new URL(request.url);target.pathname="/apps/web/";return secure(await env.ASSETS.fetch(new Request(target,request)));
+      const target=new URL(request.url);target.pathname="/apps/web/";return secure(Response.redirect(target.toString(),302));
     }
     return secure(await env.ASSETS.fetch(request));
   }
