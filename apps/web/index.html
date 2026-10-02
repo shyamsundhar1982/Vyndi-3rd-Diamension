@@ -173,17 +173,31 @@
     </aside>
 
     <section class="viewport">
-      <div class="view-tabs"><button class="active" data-view="live">LIVE</button><button data-view="production" disabled>PRODUCTION</button><span id="viewState">LIVE 3D</span></div>
-      <div class="camera-tools" aria-label="3D camera controls">
+      <div class="view-tabs source-tabs">
+        <button class="active" data-view="source-trail">TRAILRELIEF EXACT</button>
+        <button data-view="source-ride">RIDE STORIES EXACT</button>
+        <button data-view="live">V3D LIVE</button>
+        <button data-view="production" disabled>V3D PRODUCTION</button>
+        <span id="viewState">SOURCE · TRAILRELIEF</span>
+      </div>
+      <div id="cameraTools" class="camera-tools" aria-label="3D camera controls" hidden>
         <button id="cameraIso" type="button" title="Professional three-quarter view">3D</button>
         <button id="cameraTop" type="button" title="Orthographic-style top inspection">TOP</button>
         <button id="cameraFit" type="button" title="Fit model to viewport">FIT</button>
         <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
       </div>
-      <div id="liveStage" class="stage active">
+      <div id="sourceTrailStage" class="stage source-stage active">
+        <iframe id="sourceEngineFrame" class="source-frame" src="/apps/trailrelief-exact/" title="TrailRelief exact source renderer" loading="eager"></iframe>
+        <div class="source-badge">BYTE-IDENTICAL TRAILRELIEF RENDER CORE</div>
+      </div>
+      <div id="sourceRideStage" class="stage source-stage">
+        <iframe id="rideStoriesEngineFrame" class="source-frame" src="/apps/ride-stories-exact/" title="VYNDI Ride Stories exact terrain renderer" loading="eager"></iframe>
+        <div class="source-badge">EXACT VYNDI RIDE STORIES TERRAIN APP</div>
+      </div>
+      <div id="liveStage" class="stage">
         <model-viewer id="liveModelViewer" camera-controls environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
-        <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>
-        <div class="stage-note" id="livePreviewStatus">Upload GPX · instant 3D builds locally, then refines with DEM.</div>
+        <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>Unified V3D canonical terrain geometry.</span></div>
+        <div class="stage-note" id="livePreviewStatus">Upload GPX · instant V3D preview builds locally, then refines with DEM.</div>
       </div>
       <div id="productionStage" class="stage">
         <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
