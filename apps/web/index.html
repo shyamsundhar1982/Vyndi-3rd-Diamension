@@ -188,6 +188,8 @@
         <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
       </div>
       <div id="liveStage" class="stage active">
+        <canvas id="trailReliefSourceCanvas" class="source-canvas" hidden></canvas>
+        <canvas id="sourcePreviewCanvas" class="source-canvas" hidden></canvas>
         <model-viewer id="liveModelViewer" camera-controls environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>
         <div class="stage-note" id="livePreviewStatus">Upload GPX · instant 3D builds locally, then refines with DEM.</div>
