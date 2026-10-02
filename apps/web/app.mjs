@@ -134,7 +134,7 @@ function currentConfig(){
     customization:{...readOverrides(),location:$("eventLocation").value,bib:$("bib").value,status:$("resultStatus").value,start:$("startDetail").value,finish:$("finishDetail").value,placing:$("placing").value},
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{
-      ...base.shape,kind:shapeKind,aspect:finite($("shapeAspect").value,1.35),
+      ...base.shape,kind:shapeKind,aspect:finite($("shapeAspect").value,1.35),routeBufferKm:finite($("routeBufferKm").value,5),
       outlineGeometry:shapeKind==="geographic"?state.geoOutline:null,
       logoEnabled:Boolean(state.logoImage),logoAuto:$("logoAuto").checked,logoWidthMm:finite($("logoWidth").value,18),logoRiseMm:finite($("logoRise").value,.8)
     },
@@ -336,7 +336,7 @@ document.querySelectorAll("[data-palette]").forEach(el=>el.addEventListener("inp
   document.querySelectorAll('[data-palette="'+event.target.dataset.palette+'"]').forEach(peer=>{if(peer!==event.target)peer.value=event.target.value});
   resetGenerated();schedulePreview();
 }));
-for(const id of ["relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
+for(const id of ["routeBufferKm","relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
   const el=$(id);if(!el)continue;el.addEventListener("input",()=>{syncOutputs();resetGenerated();schedulePreview()});el.addEventListener("change",()=>{syncOutputs();resetGenerated();schedulePreview()});
 }
 document.querySelectorAll("[data-panel-tab]").forEach(button=>button.addEventListener("click",()=>{
