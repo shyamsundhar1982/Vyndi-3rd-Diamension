@@ -93,7 +93,7 @@ export default {
   async fetch(request,env){
     const url=new URL(request.url);
     if(url.pathname.startsWith("/api/")&&!trusted(request))return json({error:"Cross-site API access is not permitted."},403);
-    if(url.pathname==="/health")return json({ok:true,service:"vyndi-3rd-diamension",version:"0.2.0",featureUnion:true});
+    if(url.pathname==="/health")return json({ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
     if(url.pathname==="/api/geo/search"&&request.method==="GET"){try{return json({results:await geoSearch(url)})}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/geo/outline"&&request.method==="GET"){try{return json(await geoOutline(url))}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/authenticity/status"&&request.method==="GET")return json({configured:typeof env.VYNDI_AUTH_SECRET==="string"&&env.VYNDI_AUTH_SECRET.length>=32,version:1});
