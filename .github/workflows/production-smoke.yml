@@ -1,0 +1,63 @@
+name: Production Smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify live Worker health and studio route
+        run: |
+          python3 - <<'PY'
+          import json, time, urllib.request
+
+          base="https://vyndi-3rd-diamension.vayushastr.workers.dev"
+
+          class LimitedRedirects(urllib.request.HTTPRedirectHandler):
+              max_redirections=5
+              max_repeats=3
+
+          opener=urllib.request.build_opener(LimitedRedirects)
+
+          def get(path):
+              req=urllib.request.Request(base+path,headers={
+                  "User-Agent":"VYNDI-3D-Production-Smoke/1.0",
+                  "Cache-Control":"no-cache"
+              })
+              with opener.open(req,timeout=20) as r:
+                  return r.status,r.geturl(),r.headers,r.read().decode("utf-8","replace")
+
+          last=""
+          for attempt in range(24):
+              try:
+                  hs,hurl,hheaders,hbody=get("/health?smoke="+str(time.time_ns()))
+                  ss,surl,sheaders,sbody=get("/apps/web/?smoke="+str(time.time_ns()))
+                  health=json.loads(hbody)
+                  if (
+                      hs==200
+                      and health.get("ok") is True
+                      and health.get("service")=="vyndi-3rd-diamension"
+                      and ss==200
+                      and "VYNDI 3rd DIAMENSION" in sbody
+                      and "/apps/web/" in surl
+                      and sheaders.get("x-content-type-options")=="nosniff"
+                  ):
+                      print("LIVE PASS")
+                      print("health:",hurl)
+                      print("studio:",surl)
+                      raise SystemExit(0)
+                  last=f"health={hs} {health} studio={ss} url={surl} marker={'VYNDI 3rd DIAMENSION' in sbody}"
+              except Exception as e:
+                  last=repr(e)
+              time.sleep(5)
+
+          print("LIVE FAIL:",last)
+          raise SystemExit(1)
+          PY
