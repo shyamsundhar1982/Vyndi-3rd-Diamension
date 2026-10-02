@@ -150,7 +150,7 @@
           <label><input id="railways" type="checkbox" checked> Railways</label>
           <label><input id="buildings" type="checkbox"> Buildings</label>
         </div>
-        <label>Elevation source<select id="demSource"><option value="terrarium">AWS Terrarium · no key</option><option value="geotiff">Local GeoTIFF</option><option value="arc">Local Arc-ASCII</option></select></label>
+        <label>Elevation source<select id="demSource"><option value="terrarium">AWS Terrarium · no key</option><option value="geotiff">Local GeoTIFF</option><option value="arc">Local Arc-ASCII</option><option value="opentopography">OpenTopography · optional API key</option></select></label>
         <label id="geoTiffRow" hidden>GeoTIFF DEM<input id="geoTiffInput" type="file" accept=".tif,.tiff,image/tiff"></label>
         <label id="arcRow" hidden>Arc-ASCII DEM<input id="arcInput" type="file" accept=".asc,.txt,text/plain"></label>
         <label>Route elevation<select id="elevationMode"><option value="dem">DEM only</option><option value="gpx">GPX where available</option><option value="blend">Blend GPX + DEM</option></select></label>
@@ -215,6 +215,12 @@
     <div class="advanced-scroll">
       <details open><summary>DEM & elevation</summary><div class="block">
         <p id="demStatus">Terrarium is the default no-key DEM. GeoTIFF and Arc-ASCII stay local.</p>
+        <div id="openTopoRow" hidden>
+          <label>OpenTopography dataset<select id="openTopoDataset"><option value="COP30">Copernicus 30 m</option><option value="NASADEM">NASADEM 30 m</option><option value="SRTM_GL1">SRTM GL1 30 m</option><option value="EU_DTM">Europe DTM 30 m</option><option value="AW3D30">ALOS World 3D 30 m</option><option value="COP90">Copernicus 90 m</option></select></label>
+          <label>API key<input id="openTopoKey" type="password" autocomplete="off" placeholder="Not stored"></label>
+          <button id="loadHighResDem" type="button">Test & load OpenTopography DEM</button>
+          <p class="hint">Optional high-resolution override. The key is sent only for this request and is not stored.</p>
+        </div>
         <label>GPX / DEM blend <output id="elevationBlendOut">50%</output><input id="elevationBlend" type="range" min="0" max="1" step=".05" value=".5"></label>
       </div></details>
       <details><summary>Map layers</summary><div class="block">
