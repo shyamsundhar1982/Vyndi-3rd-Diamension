@@ -59,14 +59,15 @@
     </aside>
 
     <section class="viewport">
-      <div class="view-tabs"><button class="active" data-view="concept">Live terrain</button><button data-view="production" disabled>Production GLB</button><span id="viewState">CONCEPT</span></div>
-      <div id="conceptStage" class="stage active">
-        <canvas id="terrainCanvas" width="1200" height="760"></canvas>
-        <div class="stage-note">Drag to orbit · wheel to zoom · concept preview</div>
+      <div class="view-tabs"><button class="active" data-view="live">Live 3D</button><button data-view="production" disabled>Production quality</button><span id="viewState">LIVE 3D</span></div>
+      <div id="liveStage" class="stage active">
+        <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
+        <div id="liveEmpty" class="live-empty"><strong>DROP A GPX INTO THE RIBBON</strong><span>The same canonical terrain engine now drives this live view and every export.</span></div>
+        <div class="stage-note" id="livePreviewStatus">Upload a GPX · instant 3D will build locally, then refine with terrain DEM.</div>
       </div>
       <div id="productionStage" class="stage">
-        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity=".8" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
-        <div class="stage-note" id="viewerStatus">Generate the exact production model to inspect GLB / AR.</div>
+        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
+        <div class="stage-note" id="viewerStatus">Generate the high-resolution governed model to inspect GLB / AR.</div>
       </div>
     </section>
   </main>
