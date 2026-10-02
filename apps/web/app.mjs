@@ -99,12 +99,12 @@ function setPalette(values={}){
 function applyVisualPreset(name=$("visualPreset")?.value||"premium-medal",{initial=false}={}){
   const width=finite($("modelWidth")?.value,180);
   if(name==="premium-medal"){
-    setPalette({land:"#6f9f46",forest:"#2f6c31",mountain:"#8b5a31",snow:"#f7f7f3",water:"#155b8a",route:"#ff2f24",rim:"#22201f",labels:"#f3c56a"});
+    setPalette({land:"#6f9f46",forest:"#2f6c31",mountain:"#8b5a31",snow:"#f7f7f3",water:"#0e4f7a",route:"#ff2f24",rim:"#1a1816",labels:"#f3c56a"});
     setControl("roads",false);setControl("trails",false);setControl("railways",false);setControl("buildings",false);setControl("placeLabelMode","none");
     setControl("contourEnabled",false);setControl("magnetEnabled",false);setControl("hangerEnabled",false);setControl("tileEnabled",false);
     setControl("routeStyle","raised");setControl("surfaceLettering","full");setControl("waterMode","procedural-waves");
-    setControl("mountainM",900);setControl("snowM",2800);setControl("forestRaise",.22);setControl("waterDepth",1.1);setControl("waveHeight",.4);setControl("waveSpacing",2.4);
-    setControl("routeWidth",width<=90?1.1:width<=120?1.3:1.6);setControl("routeRise",width<=90?.8:1);
+    setControl("mountainM",900);setControl("snowM",2800);setControl("forestRaise",.28);setControl("waterDepth",1.2);setControl("waveHeight",.45);setControl("waveSpacing",2.4);
+    setControl("routeWidth",width<=90?1.2:width<=120?1.5:1.8);setControl("routeRise",width<=90?.9:1.2);
     setControl("relief",width<=90?6.5:width<=120?8:12);setControl("rimWidthMm",width<=90?5.5:width<=120?7.5:12);setControl("rimHeightMm",width<=90?3:width<=120?4:5);
     if(state.geoOutline)setControl("shape","geo-medallion");
     $("qualityBadge").textContent="PREMIUM MEDAL · TERRAIN FIRST";
@@ -857,4 +857,37 @@ applySourceRenderer(sourceMode(),{initial:true});syncOutputs();syncPrinterProfil
 
   selectMat("land");
 })();
+
+
+/** One-click industry premium: renderer + presentation + shape + materials + fabrication */
+function applyIndustryPremium(){
+  setControl("rendererMode","v3d-unified");
+  if($("visualPreset"))$("visualPreset").value="premium-medal";
+  applyVisualPreset("premium-medal");
+  if(state.geoOutline)setControl("shape","geo-medallion");
+  setControl("printerProfile","bambu-p1s");
+  setControl("surfaceLettering","full");
+  setControl("waterMode","procedural-waves");
+  setControl("waterDepth",1.2);
+  setControl("waveHeight",.45);
+  setControl("routeStyle","raised");
+  setControl("placeLabelMode","none");
+  setPalette({land:"#6f9f46",forest:"#2f6c31",mountain:"#8b5a31",snow:"#f7f7f3",water:"#0e4f7a",route:"#ff2f24",rim:"#1a1816",labels:"#f3c56a"});
+  syncOutputs();
+  if($("qualityBadge"))$("qualityBadge").textContent="INDUSTRY PREMIUM · READY TO GENERATE";
+  if($("productionStatus"))$("productionStatus").textContent="Premium preset applied · generate print model for governed 3MF/STL.";
+  try{resetGenerated("Premium preset applied · regenerate for production mesh.");}catch(e){}
+  try{schedulePreview(80);}catch(e){}
+  try{const waterChip=document.querySelector('.mat-chip[data-mat="water"]');if(waterChip)waterChip.click();}catch(e){}
+}
+
+function wirePremiumButtons(){
+  for(const id of ["premiumPreset","premiumPresetRail"]){
+    const btn=$(id);
+    if(!btn||btn.dataset.wired)continue;
+    btn.dataset.wired="1";
+    btn.addEventListener("click",()=>{applyIndustryPremium();});
+  }
+}
+wirePremiumButtons();
 
