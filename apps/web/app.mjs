@@ -1,9 +1,10 @@
 import { parseGpxText } from "../../packages/gpx/gpx-core.mjs";
 import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
 import { deriveRibbonMeta, normalizeTerrainPalette, terrainBandForElevation, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
+import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
 
 const $=id=>document.getElementById(id);
-const state={route:null,palette:{...DEFAULT_TERRAIN_PALETTE},production:null,glbUrl:null,yaw:-.35,pitch:.82,zoom:1,drag:false,last:[0,0],demFile:null,arcFile:null};
+const state={route:null,palette:{...DEFAULT_TERRAIN_PALETTE},production:null,glbUrl:null,yaw:-.35,pitch:.82,zoom:1,drag:false,last:[0,0],demFile:null,arcFile:null,landcover:[]};
 
 function readOverrides(){return {event:$("eventOverride").value,rider:$("riderName").value,date:$("eventDate").value}}
 function updateRibbon(){
@@ -18,12 +19,19 @@ function syncOutputs(){
   $("routeWidthOut").value=Number($("routeWidth").value).toFixed(1)+" mm";
   $("mountainOut").value=$("mountainM").value+" m";$("snowOut").value=$("snowM").value+" m";
 }
-function projectPoints(points,w,h){
-  if(!points?.length)return [];
+function previewBounds(points=[]){
   let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity;
   for(const p of points){minLat=Math.min(minLat,p.lat);maxLat=Math.max(maxLat,p.lat);minLon=Math.min(minLon,p.lon);maxLon=Math.max(maxLon,p.lon)}
-  const sx=Math.max(1e-9,maxLon-minLon),sy=Math.max(1e-9,maxLat-minLat),pad=.1;
-  return points.map(p=>({x:(pad+(p.lon-minLon)/sx*(1-2*pad))*w,y:(1-pad-(p.lat-minLat)/sy*(1-2*pad))*h,ele:Number(p.ele)||0}));
+  return {minLat,maxLat,minLon,maxLon};
+}
+function projectLatLon(lat,lon,bounds,w,h){
+  const sx=Math.max(1e-9,bounds.maxLon-bounds.minLon),sy=Math.max(1e-9,bounds.maxLat-bounds.minLat),pad=.1;
+  return {x:(pad+(lon-bounds.minLon)/sx*(1-2*pad))*w,y:(1-pad-(lat-bounds.minLat)/sy*(1-2*pad))*h};
+}
+function projectPoints(points,w,h){
+  if(!points?.length)return [];
+  const bounds=previewBounds(points);
+  return points.map(p=>({...projectLatLon(p.lat,p.lon,bounds,w,h),ele:Number(p.ele)||0}));
 }
 function render(){
   const canvas=$("terrainCanvas"),ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,p=readPalette();
@@ -34,6 +42,18 @@ function render(){
   ctx.globalAlpha=1;
   if(!state.route?.points?.length){
     ctx.fillStyle="#071014aa";ctx.fillRect(w*.28,h*.39,w*.44,h*.18);ctx.fillStyle="#fff";ctx.font="700 28px Arial";ctx.textAlign="center";ctx.fillText("DROP A GPX INTO THE RIBBON",w/2,h*.48);return;
+  }
+  const bounds=previewBounds(state.route.points);
+  for(const feature of state.landcover){
+    for(const path of feature.paths||[]){
+      if(path.length<2)continue;
+      ctx.beginPath();
+      path.forEach((point,index)=>{const q=projectLatLon(point.lat,point.lon,bounds,w,h);if(index===0)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y)});
+      if(feature.kind==="forest"){ctx.closePath();ctx.globalAlpha=.42;ctx.fillStyle=p.forest;ctx.fill();}
+      else if(feature.kind==="water"){ctx.closePath();ctx.globalAlpha=.62;ctx.fillStyle=p.water;ctx.fill();}
+      else{ctx.globalAlpha=.8;ctx.strokeStyle=p.water;ctx.lineWidth=2;ctx.stroke();}
+      ctx.globalAlpha=1;
+    }
   }
   const pts=projectPoints(state.route.points,w,h);
   const mountain=Number($("mountainM").value),snow=Number($("snowM").value);
@@ -93,7 +113,15 @@ async function generate(){
   }catch(error){$("productionStatus").textContent=error.message||String(error)}
   finally{$("generate").disabled=false}
 }
-$("gpxInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{state.route=parseGpxText(await file.text(),file.name);updateRibbon();$("generate").disabled=false;$("productionStatus").textContent="Route loaded · ready to generate.";render()}catch(error){$("productionStatus").textContent=error.message||String(error)}});
+async function loadLandcover(){
+  if(!state.route?.points?.length)return;
+  $("landcoverStatus").textContent="loading forest + water…";
+  const result=await fetchLandcover(previewBounds(state.route.points));
+  state.landcover=result.features||[];
+  $("landcoverStatus").textContent=result.ok?state.landcover.length+" landcover features":"palette ready · landcover unavailable";
+  render();
+}
+$("gpxInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{state.route=parseGpxText(await file.text(),file.name);state.landcover=[];updateRibbon();$("generate").disabled=false;$("productionStatus").textContent="Route loaded · ready to generate.";render();void loadLandcover()}catch(error){$("productionStatus").textContent=error.message||String(error)}});
 ["riderName","eventDate","eventOverride"].forEach(id=>$(id).addEventListener("input",()=>{updateRibbon();render()}));
 document.querySelectorAll("[data-palette],#relief,#routeWidth,#mountainM,#snowM").forEach(el=>el.addEventListener("input",()=>{syncOutputs();render()}));
 $("generate").addEventListener("click",()=>void generate());
