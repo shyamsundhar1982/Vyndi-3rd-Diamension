@@ -2,9 +2,11 @@ import { chromium } from "playwright";
 
 const browser=await chromium.launch({headless:true,args:["--use-gl=swiftshader","--enable-webgl","--ignore-gpu-blocklist"]});
 const page=await browser.newPage({viewport:{width:1600,height:1000}});
-const errors=[];
+const errors=[],networkErrors=[];
 page.on("pageerror",error=>errors.push(String(error)));
 page.on("console",message=>{if(message.type()==="error")errors.push(message.text())});
+page.on("response",response=>{if(response.status()>=400)networkErrors.push(response.status()+" "+response.url())});
+page.on("requestfailed",request=>networkErrors.push("FAILED "+request.url()+" "+(request.failure()?.errorText||"")));
 
 try{
   await page.goto("http://127.0.0.1:8765/apps/web/index.html",{waitUntil:"networkidle",timeout:60000});
@@ -25,7 +27,7 @@ try{
       production:document.querySelector("#productionStatus")?.textContent,
       ready:document.readyState
     }));
-    throw new Error("GPX ribbon did not update · "+JSON.stringify({state,errors,cause:String(error)}));
+    throw new Error("GPX ribbon did not update · "+JSON.stringify({state,errors,networkErrors,cause:String(error)}));
   }
   const paletteCount=await page.locator("[data-palette]").count();
   if(paletteCount!==8)throw new Error("Expected 8 terrain palette controls, got "+paletteCount);
