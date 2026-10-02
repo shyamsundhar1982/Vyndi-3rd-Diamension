@@ -1,0 +1,24 @@
+name: Apply premium pack
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/premium_pack.css"
+      - "scripts/premium_pack_block.html"
+      - "scripts/patch_premium_pack.py"
+      - "apps/web/premium-pack.mjs"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_premium_pack.py
+      - run: node --check apps/web/app.mjs
+      - run: |
+          git config user.name "vyndi-premium"
+          git config user.email "vyndi-premium@users.noreply.github.com"
+          git add apps/web/index.html apps/web/styles.css apps/web/app.mjs apps/web/premium-pack.mjs packages/toolkit/toolkit-core.mjs
+          git diff --cached --quiet || git commit -m "Premium pack: fonts, places, world geo, memory, continuous routes"
+          git push
