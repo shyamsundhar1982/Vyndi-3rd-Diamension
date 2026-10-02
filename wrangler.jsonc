@@ -1,0 +1,14 @@
+{
+  "$schema":"node_modules/wrangler/config-schema.json",
+  "name":"vyndi-3rd-diamension",
+  "main":"src/worker.mjs",
+  "compatibility_date":"2026-10-02",
+  "build":{"command":"npm run build"},
+  "assets":{
+    "directory":"./dist",
+    "binding":"ASSETS",
+    "not_found_handling":"404-page",
+    "run_worker_first":true
+  },
+  "observability":{"enabled":true}
+}
