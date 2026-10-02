@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { defaultAdvancedConfig, productionBounds, generateProductionModel } from "../packages/toolkit/toolkit-core.mjs";
 import { mergeGpxRoutes } from "../packages/gpx/gpx-core.mjs";
+import { FABRICATION_SHAPES, pointInsideShape } from "../packages/engine/fabrication-extras-core.mjs";
 
 const html=readFileSync(new URL("../apps/web/index.html",import.meta.url),"utf8");
 const app=readFileSync(new URL("../apps/web/app.mjs",import.meta.url),"utf8");
@@ -76,4 +77,11 @@ test("bottom mark is physical underside engraving, not metadata only",async()=>{
     title:"Underside engraving"
   });
   assert.ok(model.mesh.vertices.some(v=>v.z>.05&&v.z<.55),"expected recessed underside engraving vertices");
+});
+
+test("TrailRelief triangle plate remains available in the unified fabrication engine",()=>{
+  assert.ok(FABRICATION_SHAPES.triangle);
+  assert.equal(pointInsideShape(0,0,"triangle"),true);
+  assert.equal(pointInsideShape(2,0,"triangle"),false);
+  assert.match(html,/<option value="triangle">Triangle<\/option>/);
 });
