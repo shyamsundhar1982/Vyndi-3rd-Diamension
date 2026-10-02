@@ -60,8 +60,11 @@ export const PRODUCTION_FORMATS=Object.freeze(["3mf","stl","obj","glb"]);
 export function normalizeCustomization(input={}){
   return {
     event:String(input.event||"").trim().replace(/\s+/g," "),
-    name:String(input.name||"").trim().replace(/\s+/g," "),
-    date:String(input.date||"").trim().replace(/\s+/g," ")
+    name:String(input.name||input.rider||"").trim().replace(/\s+/g," "),
+    date:String(input.date||"").trim().replace(/\s+/g," "),
+    distance:String(input.distance||"").trim().replace(/\s+/g," "),
+    elevation:String(input.elevation||"").trim().replace(/\s+/g," "),
+    duration:String(input.duration||"").trim().replace(/\s+/g," ")
   };
 }
 
@@ -575,13 +578,25 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
 
 export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
-  const meta=normalizeCustomization(customization),event=meta.event,secondary=[meta.name,meta.date].filter(Boolean).join(" · ");
-  if(!event&&!secondary)return [];
+  const meta=normalizeCustomization(customization);
+  const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
+  const stats=[meta.distance,meta.elevation,meta.duration].filter(Boolean).join(" · ");
+  if(!meta.event&&!identity&&!stats)return [];
   const width=Math.max(1,extents.maxX-extents.minX),height=Math.max(1,extents.maxY-extents.minY);
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
-  const meshes=[],maxWidth=width*.72,baseCell=Math.max(.65,Math.min(2.2,width/115));
-  if(event)meshes.push(...textLineMeshes(event,{centerX:0,centerY:extents.minY+height*.32,maxWidth,cellMm:baseCell,riseMm,terrainTopMm,inside}));
-  if(secondary)meshes.push(...textLineMeshes(secondary,{centerX:0,centerY:extents.minY+height*.21,maxWidth,cellMm:baseCell*.78,riseMm:Math.max(.3,riseMm*.78),terrainTopMm,inside}));
+  const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
+  if(meta.event)meshes.push(...textLineMeshes(meta.event,{
+    centerX:0,centerY:extents.maxY-height*.10,maxWidth,cellMm:baseCell,
+    riseMm:Math.max(.45,riseMm),terrainTopMm,inside
+  }));
+  if(identity)meshes.push(...textLineMeshes(identity,{
+    centerX:0,centerY:extents.minY+height*.13,maxWidth,cellMm:baseCell*.78,
+    riseMm:Math.max(.35,riseMm*.82),terrainTopMm,inside
+  }));
+  if(stats)meshes.push(...textLineMeshes(stats,{
+    centerX:0,centerY:extents.minY+height*.065,maxWidth,cellMm:baseCell*.56,
+    riseMm:Math.max(.3,riseMm*.68),terrainTopMm,inside
+  }));
   return meshes;
 }
 
