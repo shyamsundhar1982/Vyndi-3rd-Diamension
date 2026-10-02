@@ -186,11 +186,24 @@ function geometryBounds(geometry){
   return {minLat,maxLat,minLon,maxLon};
 }
 
+export function expandBoundsKm(bounds,distanceKm=0){
+  const km=Math.max(0,Number(distanceKm)||0);
+  if(!km)return {...bounds};
+  const midLat=(Number(bounds.minLat)+Number(bounds.maxLat))/2;
+  const latPad=km/111.32,lonPad=km/(111.32*Math.max(.08,Math.cos(midLat*Math.PI/180)));
+  return {
+    minLat:Math.max(-85,Number(bounds.minLat)-latPad),maxLat:Math.min(85,Number(bounds.maxLat)+latPad),
+    minLon:Math.max(-180,Number(bounds.minLon)-lonPad),maxLon:Math.min(180,Number(bounds.maxLon)+lonPad)
+  };
+}
+
 export function productionBounds(route,shape={}){
   if(shape?.kind==="geographic"&&shape?.outlineGeometry){
     return expandBounds(geometryBounds(shape.outlineGeometry),.015);
   }
-  const base=expandBounds(route,shape?.kind==="route-fit" ? .04 : .03);
+  const requestedKm=Math.max(0,Number(shape?.routeBufferKm)||0);
+  const padded=requestedKm?expandBoundsKm(route,requestedKm):route;
+  const base=requestedKm?{...padded}:expandBounds(padded,shape?.kind==="route-fit" ? .04 : .03);
   if(!shape?.kind||shape.kind==="route-fit")return base;
   const midLat=(base.minLat+base.maxLat)/2,midLon=(base.minLon+base.maxLon)/2;
   const lonScale=Math.max(.08,Math.cos(midLat*Math.PI/180));
@@ -779,6 +792,23 @@ function modelExtents(config,projection,outlinePolygons){
   };
 }
 
+function bottomTextDepthAt(x,y,config,extents){
+  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const depth=Math.max(0,Math.min(Math.max(.05,Number(config?.fabrication?.baseMm)||3)-.2,Number(config?.production?.bottomEngraveDepthMm)||0));
+  if(!value||depth<=0||!extents)return 0;
+  const width=Math.max(1,extents.maxX-extents.minX),maxWidth=width*.72,nominal=Math.max(1,value.length*6-1);
+  const cell=Math.max(.55,Math.min(1.55,maxWidth/nominal));
+  const total=nominal*cell,startX=-total/2,topY=3.5*cell;
+  const u=(x-startX)/cell,v=(topY-y)/cell;
+  if(u<0||v<0)return 0;
+  const ci=Math.floor(u/6),col=Math.floor(u-ci*6),row=Math.floor(v);
+  if(ci<0||ci>=value.length||col<0||col>4||row<0||row>6)return 0;
+  const fracX=u-Math.floor(u),fracY=v-Math.floor(v);
+  if(fracX>.84||fracY>.84)return 0;
+  const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
+  return glyph[row]?.[col]==="1"?depth:0;
+}
+
 function makePockets(config,extents){
   if(!config.fabrication.magnetEnabled)return [];
   const maxX=(extents.maxX-extents.minX)*.32,maxY=(extents.maxY-extents.minY)*.32;
@@ -920,13 +950,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       columns:Math.max(24,Math.ceil(projection.widthMm/c.fabrication.targetXyMm)),
       rows:Math.max(24,Math.ceil(projection.heightMm/c.fabrication.targetXyMm)),
       heightAt:(x,y)=>terrainHeightNormalized(x/projection.radius,y/projection.radius),
-      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
+      bottomAt:(x,y)=>Math.max(magnetPocketDepth(x,y,pockets),bottomTextDepthAt(x,y,c,extents)),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
     });
   }else if(c.shape.kind==="geographic"){
     baseMesh=(await import("../engine/map-outline-core.mjs")).buildOutlineHeightfieldMesh({
       polygons:outlinePolygons,radiusMm:projection.radius,baseMm:c.fabrication.baseMm,stepMm:c.fabrication.targetXyMm,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
+      bottomAt:(nx,ny)=>Math.max(magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),bottomTextDepthAt(nx*projection.radius,ny*projection.radius,c,extents)),regionAt:terrainRegionNormalized
     });
   }else{
     baseMesh=buildRadialMedalMesh({
@@ -935,7 +965,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       segments:Math.max(192,Math.ceil(Math.PI*c.fabrication.modelWidthMm/c.fabrication.targetXyMm/4)*4),
       shape:c.shape.kind,aspect:c.shape.aspect,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
+      bottomAt:(nx,ny)=>Math.max(magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),bottomTextDepthAt(nx*projection.radius,ny*projection.radius,c,extents)),regionAt:terrainRegionNormalized
     });
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
