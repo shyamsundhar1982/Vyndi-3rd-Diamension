@@ -1,19 +1,21 @@
 {
-  "name":"vyndi-3rd-diamension",
-  "version":"0.1.0",
-  "private":true,
-  "type":"module",
-  "scripts":{
-    "test":"node --test tests/*.test.mjs",
-    "check":"node --check packages/ui/ribbon-core.mjs && node --check apps/web/app.mjs && node --check packages/toolkit/toolkit-core.mjs && node --check packages/gpx/gpx-core.mjs"
+  "name": "vyndi-3rd-diamension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run build:vendor && node --check packages/ui/ribbon-core.mjs && node --check apps/web/app.mjs && node --check packages/toolkit/toolkit-core.mjs && node --check packages/gpx/gpx-core.mjs",
+    "build:vendor": "node scripts/build-vendor.mjs",
+    "postinstall": "npm run build:vendor"
   },
-  "dependencies":{
-    "@google/model-viewer":"4.3.1",
-    "geotiff":"3.0.5",
-    "proj4":"2.22.0",
-    "three":"0.183.0"
+  "dependencies": {
+    "@google/model-viewer": "4.3.1",
+    "geotiff": "3.0.5",
+    "proj4": "2.22.0",
+    "three": "0.183.0"
   },
-  "devDependencies":{
-    "esbuild":"0.28.2"
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }
