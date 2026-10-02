@@ -7,6 +7,7 @@ import {
 import { deriveRibbonMeta, formatDuration, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
 import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
 import { encodeGlb, encodeArtifactZip } from "../../packages/engine/print-model-core.mjs";
+import { TRAILRELIEF_SOURCE_DEFAULTS, TRAILRELIEF_SOURCE_SCENE, VYNDI_SOURCE_VIEW, trailReliefSourceConfig } from "../../packages/source-parity/source-contracts.mjs";
 
 const $=id=>document.getElementById(id);
 const state={
@@ -14,7 +15,8 @@ const state={
   production:null,glbUrl:null,previewUrl:null,previewTimer:null,previewGeneration:0,
   liveDemSampler:null,liveDemPromise:null,liveDemInfo:null,demFile:null,arcFile:null,openTopoSampler:null,openTopoInfo:null,
   landcover:[],logoImage:null,heightmapImage:null,geoOutline:null,geoMeta:null,
-  authenticity:null
+  authenticity:null,
+  trailRenderer:null,sourceRenderGeneration:0,vyndiView:{yaw:VYNDI_SOURCE_VIEW.yaw,pitch:VYNDI_SOURCE_VIEW.pitch,zoom:VYNDI_SOURCE_VIEW.zoom}
 };
 
 function finite(v,f=0){const n=Number(v);return Number.isFinite(n)?n:f}
