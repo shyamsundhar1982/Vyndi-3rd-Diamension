@@ -9,6 +9,7 @@ async function loadGpx(payload){
   const file=new File([String(payload.gpxText||"")],String(payload.fileName||"v3d-route.gpx"),{type:"application/gpx+xml"});
   const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
   input.dispatchEvent(new Event("change",{bubbles:true}));
+  document.documentElement.dataset.v3dGpxLoaded=file.name;
   const meta=payload.meta||{};
   setField("eventName",meta.event);setField("participant",meta.rider);setField("eventDate",meta.date);
   setField("eventLocation",meta.location);setField("bib",meta.bib);
