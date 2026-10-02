@@ -1,4 +1,4 @@
-import { parseGpxText, mergeGpxRoutes } from "../../packages/gpx/gpx-core.mjs";
+import { parseGpxText, mergeGpxRoutes, serializeGpxRoute } from "../../packages/gpx/gpx-core.mjs";
 import {
   defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds,
   loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, loadOpenFreeMapCartography,
@@ -14,6 +14,7 @@ const state={
   production:null,glbUrl:null,previewUrl:null,previewTimer:null,previewGeneration:0,
   liveDemSampler:null,liveDemPromise:null,liveDemInfo:null,demFile:null,arcFile:null,openTopoSampler:null,openTopoInfo:null,
   landcover:[],logoImage:null,heightmapImage:null,geoOutline:null,geoMeta:null,
+  sourceGpxText:null,sourceFileName:"v3d-route.gpx",sourceReady:{trailrelief:false,"ride-stories":false},
   authenticity:null
 };
 
@@ -67,6 +68,33 @@ function updateRibbon(){
     $("routeDetail").textContent=Math.round(finite(state.route.distanceKm))+" km · +"+Math.round(finite(state.route.elevationGainM)).toLocaleString("en-US")+" m · "+finite(state.route.sourcePointCount).toLocaleString("en-US")+" source points";
   }
 }
+function sourceMeta(){
+  return {
+    event:clean($("eventOverride").value)||state.route?.name||"",
+    rider:clean($("riderName").value),date:clean($("eventDate").value),
+    location:clean($("eventLocation").value),bib:clean($("bib").value)
+  };
+}
+function sourceFrame(engine){
+  return engine==="trailrelief"?$("sourceEngineFrame"):engine==="ride-stories"?$("rideStoriesEngineFrame"):null;
+}
+function pushRouteToSource(engine){
+  const frame=sourceFrame(engine);
+  if(!frame?.contentWindow||!state.sourceGpxText)return;
+  frame.contentWindow.postMessage({type:"v3d-load-gpx",gpxText:state.sourceGpxText,fileName:state.sourceFileName,meta:sourceMeta()},location.origin);
+}
+function syncSourceEngines(){
+  pushRouteToSource("trailrelief");pushRouteToSource("ride-stories");
+}
+addEventListener("message",event=>{
+  if(event.origin!==location.origin)return;
+  const type=event.data?.type,engine=event.data?.engine;
+  if(type==="v3d-source-ready"&&(engine==="trailrelief"||engine==="ride-stories")){
+    state.sourceReady[engine]=true;pushRouteToSource(engine);
+  }
+  if(type==="v3d-source-error"&&event.data?.message)$("productionStatus").textContent=engine+" source renderer · "+event.data.message;
+});
+
 function syncOutputs(){
   $("routeBufferOut").value=finite($("routeBufferKm").value).toFixed(1)+" km";
   $("xyDetailOut").value=finite($("xyDetail").value).toFixed(2)+" mm";
@@ -356,11 +384,12 @@ async function loadRoutes(files){
   const routes=[];
   for(const file of list)routes.push(parseGpxText(await file.text(),file.name,{maxPoints:30000}));
   state.routes=routes;state.route=mergeGpxRoutes(routes,routes.length===1?routes[0].name:routes.map(r=>r.name).join(" + "));
+  state.sourceGpxText=serializeGpxRoute(state.route);state.sourceFileName=stem(state.route.name)+".gpx";
   state.landcover=[];state.liveDemSampler=null;state.liveDemPromise=null;state.liveDemInfo=null;state.previewGeneration++;
   if(state.previewUrl){URL.revokeObjectURL(state.previewUrl);state.previewUrl=null}
   $("liveModelViewer").removeAttribute("src");$("liveEmpty").hidden=false;$("livePreviewStatus").textContent="BUILDING LIVE 3D · GPX ELEVATION";
   resetGenerated("Route loaded · production model not generated.");
-  updateRibbon();$("generate").disabled=false;$("downloadJob").disabled=false;
+  updateRibbon();syncSourceEngines();$("generate").disabled=false;$("downloadJob").disabled=false;
   void generateLivePreview();void loadLandcover();
 }
 function demoRoute(){
@@ -373,8 +402,8 @@ function demoRoute(){
   let distance=0,gain=0;const hav=(a,b)=>{const r=Math.PI/180,R=6371,dlat=(b.lat-a.lat)*r,dlon=(b.lon-a.lon)*r,q=Math.sin(dlat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dlon/2)**2;return 2*R*Math.atan2(Math.sqrt(q),Math.sqrt(1-q))};
   for(let i=1;i<pts.length;i++){distance+=hav(pts[i-1],pts[i]);gain+=Math.max(0,pts[i].ele-pts[i-1].ele)}
   const bounds=previewBounds(pts);state.routes=[{name:"Alpine Super Randonnee Demo",points:pts,sourcePointCount:pts.length,distanceKm:distance,elevationGainM:gain,elapsedTimeSeconds:(pts.at(-1).time-pts[0].time)/1000,bounds}];
-  state.route=state.routes[0];state.landcover=[];state.liveDemSampler=null;state.liveDemPromise=null;state.previewGeneration++;
-  resetGenerated("Demo loaded · production model not generated.");updateRibbon();$("generate").disabled=false;$("downloadJob").disabled=false;
+  state.route=state.routes[0];state.sourceGpxText=serializeGpxRoute(state.route);state.sourceFileName="trailrelief-demo.gpx";state.landcover=[];state.liveDemSampler=null;state.liveDemPromise=null;state.previewGeneration++;
+  resetGenerated("Demo loaded · production model not generated.");updateRibbon();syncSourceEngines();$("generate").disabled=false;$("downloadJob").disabled=false;
   void generateLivePreview();void loadLandcover();
 }
 async function loadOpenTopography(bounds){
@@ -516,8 +545,17 @@ document.querySelectorAll("[data-panel-tab]").forEach(button=>button.addEventLis
   document.querySelectorAll("[data-panel]").forEach(panel=>panel.classList.toggle("active",panel.dataset.panel===button.dataset.panelTab));
 }));
 document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{
-  if(button.disabled)return;document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b===button));
-  const production=button.dataset.view==="production";$("liveStage").classList.toggle("active",!production);$("productionStage").classList.toggle("active",production);$("viewState").textContent=production?"PRODUCTION QUALITY":"LIVE 3D";
+  if(button.disabled)return;
+  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b===button));
+  const view=button.dataset.view;
+  $("sourceTrailStage").classList.toggle("active",view==="source-trail");
+  $("sourceRideStage").classList.toggle("active",view==="source-ride");
+  $("liveStage").classList.toggle("active",view==="live");
+  $("productionStage").classList.toggle("active",view==="production");
+  $("cameraTools").hidden=view==="source-trail"||view==="source-ride";
+  $("viewState").textContent=view==="source-trail"?"SOURCE · TRAILRELIEF":view==="source-ride"?"SOURCE · RIDE STORIES":view==="production"?"V3D PRODUCTION":"V3D LIVE";
+  if(view==="source-trail")pushRouteToSource("trailrelief");
+  if(view==="source-ride")pushRouteToSource("ride-stories");
 }));
 document.querySelectorAll("[data-export]").forEach(button=>button.addEventListener("click",()=>{
   const p=state.production;if(!p)return;const s=stem(state.route?.name);
@@ -537,5 +575,7 @@ $("cameraIso").addEventListener("click",()=>applyCameraPreset("iso"));
 $("cameraTop").addEventListener("click",()=>applyCameraPreset("top"));
 $("cameraFit").addEventListener("click",()=>applyCameraPreset("fit"));
 $("resetView").onclick=()=>applyCameraPreset("iso");
+$("sourceEngineFrame").addEventListener("load",()=>pushRouteToSource("trailrelief"));
+$("rideStoriesEngineFrame").addEventListener("load",()=>pushRouteToSource("ride-stories"));
 
 applyVisualPreset($("visualPreset").value,{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
