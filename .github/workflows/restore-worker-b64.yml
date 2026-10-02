@@ -1,0 +1,23 @@
+name: Restore worker from b64
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/wp1.b64"
+      - "scripts/wp2.b64"
+      - "scripts/restore_worker_b64.py"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/restore_worker_b64.py
+      - run: node --check src/worker.mjs
+      - run: |
+          git config user.name "vyndi-restore"
+          git config user.email "vyndi-restore@users.noreply.github.com"
+          git add src/worker.mjs
+          git diff --cached --quiet || git commit -m "Restore worker with merch landing at /"
+          git push
