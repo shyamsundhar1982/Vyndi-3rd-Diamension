@@ -17,10 +17,10 @@ test("health endpoint identifies the dedicated V3D worker and disables caching",
   assert.deepEqual(await response.json(),{ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
 });
 
-test("root serves the studio entry without exposing repository files",async()=>{
+test("root redirects to the canonical studio directory so relative CSS and JS resolve correctly",async()=>{
   const response=await worker.fetch(new Request("https://example.test/"),{ASSETS:assets});
-  assert.equal(response.status,200);
-  assert.match(await response.text(),/V3D/);
+  assert.equal(response.status,302);
+  assert.equal(response.headers.get("location"),"https://example.test/apps/web/");
 });
 
 test("HTML receives restrictive production security headers",async()=>{
