@@ -37,9 +37,25 @@ try{
     if(!await page.locator("#"+id).count())throw new Error("Missing full-union control: "+id);
   }
   await page.waitForFunction(()=>{
+    const canvas=document.querySelector("#trailReliefSourceCanvas");
+    const status=document.querySelector("#livePreviewStatus")?.textContent||"";
+    return canvas&&!canvas.hidden&&status.includes("TRAILRELIEF ORIGINAL");
+  },null,{timeout:60000});
+  await page.screenshot({path:"vyndi-source-trailrelief.png",fullPage:true});
+
+  await page.selectOption("#sourceRenderer","vyndi-original");
+  await page.waitForFunction(()=>{
+    const canvas=document.querySelector("#sourcePreviewCanvas");
+    const status=document.querySelector("#livePreviewStatus")?.textContent||"";
+    return canvas&&!canvas.hidden&&status.includes("VYNDI TERRAIN MEDAL ORIGINAL");
+  },null,{timeout:60000});
+  await page.screenshot({path:"vyndi-source-original.png",fullPage:true});
+
+  await page.selectOption("#sourceRenderer","v3d-unified");
+  await page.waitForFunction(()=>{
     const viewer=document.querySelector("#liveModelViewer");
     const status=document.querySelector("#livePreviewStatus")?.textContent||"";
-    return Boolean(viewer?.src)&&status.includes("LIVE 3D READY");
+    return Boolean(viewer?.src)&&!viewer.hidden&&status.includes("V3D READY");
   },null,{timeout:60000});
   await page.waitForFunction(()=>{
     const viewer=document.querySelector("#liveModelViewer");
@@ -54,7 +70,7 @@ try{
     if(!labels.includes(expected))throw new Error("Missing Advanced section: "+expected);
   }
   if(errors.length)throw new Error("Browser errors: "+errors.join(" | "));
-  console.log("BROWSER PASS · ribbon + palette + GPX intelligence + Advanced workbench");
+  console.log("BROWSER PASS · TrailRelief Original + VYNDI Original + V3D Unified + Advanced workbench");
 }finally{
   await browser.close();
 }
