@@ -8,14 +8,25 @@ page.on("console",message=>{if(message.type()==="error")errors.push(message.text
 
 try{
   await page.goto("http://127.0.0.1:8765/apps/web/index.html",{waitUntil:"networkidle",timeout:60000});
+  await page.waitForFunction(()=>document.readyState==="complete");
   const gpx=`<gpx version="1.1"><trk><name>VYNDI ICONIC TEST</name><trkseg>
   <trkpt lat="10.0000" lon="76.0000"><ele>100</ele><time>2026-10-02T00:00:00Z</time></trkpt>
   <trkpt lat="10.0100" lon="76.0100"><ele>160</ele><time>2026-10-02T00:10:00Z</time></trkpt>
   <trkpt lat="10.0200" lon="76.0200"><ele>140</ele><time>2026-10-02T00:20:00Z</time></trkpt>
   </trkseg></trk></gpx>`;
   await page.setInputFiles("#gpxInput",{name:"iconic.gpx",mimeType:"application/gpx+xml",buffer:Buffer.from(gpx)});
-  await page.waitForFunction(()=>document.querySelector("#ribbonEvent")?.textContent==="VYNDI ICONIC TEST");
-  await page.waitForFunction(()=>document.querySelector("#ribbonPoints")?.textContent==="3 PTS");
+  try{
+    await page.waitForFunction(()=>document.querySelector("#ribbonEvent")?.textContent==="VYNDI ICONIC TEST",null,{timeout:10000});
+    await page.waitForFunction(()=>document.querySelector("#ribbonPoints")?.textContent==="3 PTS",null,{timeout:10000});
+  }catch(error){
+    const state=await page.evaluate(()=>({
+      event:document.querySelector("#ribbonEvent")?.textContent,
+      points:document.querySelector("#ribbonPoints")?.textContent,
+      production:document.querySelector("#productionStatus")?.textContent,
+      ready:document.readyState
+    }));
+    throw new Error("GPX ribbon did not update · "+JSON.stringify({state,errors,cause:String(error)}));
+  }
   const paletteCount=await page.locator("[data-palette]").count();
   if(paletteCount!==8)throw new Error("Expected 8 terrain palette controls, got "+paletteCount);
   await page.click("#openAdvanced");
