@@ -4,7 +4,9 @@ import { readFileSync } from "node:fs";
 import {
   planProfessionalPlaceLabels,
   professionalHangerPlacement,
-  surfaceLetteringAllowed
+  surfaceLetteringAllowed,
+  productionBounds,
+  generateProductionModel
 } from "../packages/toolkit/toolkit-core.mjs";
 import { filterPrintableOutlinePolygons } from "../packages/engine/map-outline-core.mjs";
 
@@ -62,4 +64,46 @@ test("professional viewport exposes compact camera presets and a quality status 
   for(const id of ["cameraIso","cameraTop","cameraFit","qualityBadge"])assert.match(html,new RegExp('id="'+id+'"'));
   assert.match(app,/applyCameraPreset/);
   assert.match(app,/qualityBadge/);
+});
+
+test("geographic medallion frames the selected country inside a round plate with surrounding sea",async()=>{
+  const indiaLike={type:"Polygon",coordinates:[[[76,8],[82,8],[88,28],[80,35],[72,24],[76,8]]]};
+  const route={minLat:8,maxLat:35,minLon:72,maxLon:88};
+  const bounds=productionBounds(route,{kind:"geo-medallion",outlineGeometry:indiaLike});
+  assert.ok(bounds.minLon<72&&bounds.maxLon>88);
+  assert.ok(bounds.minLat<8&&bounds.maxLat>35);
+
+  const points=[
+    {lat:9,lon:77,ele:30,segment:1},
+    {lat:20,lon:78,ele:500,segment:1},
+    {lat:33,lon:79,ele:3500,segment:1}
+  ];
+  const model=await generateProductionModel({
+    points,
+    demSampler:(lat)=>Math.max(0,(lat-8)*140),
+    config:{
+      shape:{kind:"geo-medallion",outlineGeometry:indiaLike},
+      map:{roads:false,trails:false,railways:false,buildings:false},
+      placeLabels:{mode:"none"},
+      terrainBands:{mountainM:900,snowM:2800},
+      surface:{waterMode:"procedural-waves",waterDepthMm:.3,waveHeightMm:.12,waveSpacingMm:2.8},
+      fabrication:{modelWidthMm:76.2,baseMm:3,reliefMm:7,targetXyMm:2.2,routeStyle:"raised",routeWidthMm:1.1,routeRiseMm:.8,rimWidthMm:7,rimHeightMm:3}
+    },
+    title:"Premium India medal"
+  });
+  const regions=new Set(model.mesh.triangles.map(t=>t.region));
+  assert.ok(regions.has(0)||regions.has(2)||regions.has(3),"land terrain should exist");
+  assert.ok(regions.has(4),"surrounding sea should be part of the round medal");
+  assert.ok(regions.has(5),"route should remain visible above the terrain");
+  assert.ok(regions.has(12),"raised dark rim should remain part of the medal");
+  const maxRadius=Math.max(...model.mesh.vertices.map(v=>Math.hypot(v.x,v.y)));
+  assert.ok(maxRadius<=38.101,"geo-medallion must remain circular");
+});
+
+test("premium medal preset is exposed as the primary presentation style",()=>{
+  assert.match(html,/id="visualPreset"/);
+  assert.match(html,/Premium terrain medal/);
+  assert.match(html,/value="geo-medallion"/);
+  assert.match(app,/applyVisualPreset/);
+  assert.match(app,/premium-medal/);
 });
