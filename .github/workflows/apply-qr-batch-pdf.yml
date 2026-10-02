@@ -1,0 +1,22 @@
+name: Apply QR batch PDF
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/web/qr-batch-pdf.mjs"
+      - "scripts/patch_qr_batch_pdf.py"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_qr_batch_pdf.py
+      - run: node --check apps/web/app.mjs
+      - run: |
+          git config user.name "vyndi-features"
+          git config user.email "vyndi-features@users.noreply.github.com"
+          git add apps/web/index.html apps/web/app.mjs apps/web/qr-batch-pdf.mjs
+          git diff --cached --quiet || git commit -m "QR reverse plate, shared-terrain batch, PDF order form"
+          git push
