@@ -8,6 +8,7 @@ import { deriveRibbonMeta, formatDuration, DEFAULT_TERRAIN_PALETTE } from "../..
 import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
 import { encodeGlb, encodeArtifactZip } from "../../packages/engine/print-model-core.mjs";
 import { TRAILRELIEF_SOURCE_DEFAULTS, TRAILRELIEF_SOURCE_SCENE, VYNDI_SOURCE_DEFAULTS, VYNDI_SOURCE_VIEW, trailReliefSourceConfig } from "../../packages/source-parity/source-contracts.mjs";
+import { buildTrailReliefSourceModel } from "../../packages/source-parity/trailrelief-mesh.mjs";
 
 const $=id=>document.getElementById(id);
 const state={
@@ -475,8 +476,8 @@ async function generateLivePreview({preferDem=true}={}){
       if(sourceMode==="vyndi-original"){
         renderVyndiSourcePreview({route,demSampler,config});
       }else{
-        config=normalizeAdvancedConfig({...config,fabrication:{...config.fabrication,reliefMm:trailReliefSourceRelief(route,demSampler,config)},shape:{...config.shape,kind:"circle",outlineGeometry:null},map:{roads:false,trails:false,railways:false,buildings:false},placeLabels:{...config.placeLabels,mode:"none"}});
-        const model=await generateProductionModel({points:route.points,demSampler,cartography:null,landcover:state.landcover,config,logoImage:null,heightmapImage:null,title});
+        config=normalizeAdvancedConfig({...config,shape:{...config.shape,kind:"circle",outlineGeometry:null},map:{roads:false,trails:false,railways:false,buildings:false},placeLabels:{...config.placeLabels,mode:"none"}});
+        const model=buildTrailReliefSourceModel({points:route.points,routeBounds:route.bounds||previewBounds(route.points),demSampler,landcover:state.landcover,config});
         if(generation!==state.previewGeneration||route!==state.route)return;
         await renderTrailReliefSource(model,config);
       }
