@@ -43,6 +43,7 @@ import {
 } from "../engine/fabrication-extras-core.mjs";
 import {
   projectGeographicOutline,
+  filterPrintableOutlinePolygons,
   insidePolygons,
   maskPolygons,
   findEmptyLogoPlacement
@@ -102,7 +103,7 @@ export function defaultAdvancedConfig(){
     surface:{forestRaiseMm:.4,waterDepthMm:.6,waterMode:"procedural-waves",waveHeightMm:.3,waveSpacingMm:2.6},
     contours:{enabled:false,intervalMm:1,widthMm:.08,riseMm:.2},
     placeLabels:{mode:"major",selectedNames:[],maxCount:18},
-    production:{printerProfile:"bambu-p1s",medalSize:"custom",bottomMark:"",bottomEngraveDepthMm:.35},
+    production:{printerProfile:"bambu-p1s",medalSize:"custom",surfaceLettering:"auto",bottomMark:"",bottomEngraveDepthMm:.35},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
@@ -124,6 +125,36 @@ function deepMerge(base,patch){
     else out[key]=value;
   }
   return out;
+}
+
+export function surfaceLetteringAllowed({shapeKind="circle",modelWidthMm=180,mode="auto"}={}){
+  const policy=String(mode||"auto");
+  if(policy==="none")return false;
+  if(policy==="full")return true;
+  return !(shapeKind==="geographic"&&Number(modelWidthMm)<140);
+}
+
+export function professionalHangerPlacement({outlinePolygons=null,extents=null,radiusMm=50,innerRadiusMm=3,wallMm=3,baseMm=3}={}){
+  const radius=Math.max(1,Number(radiusMm)||50),inner=Math.max(1,Number(innerRadiusMm)||3),wall=Math.max(1,Number(wallMm)||3),outer=inner+wall;
+  let anchorX=0,anchorY=Number(extents?.maxY)||radius;
+  if(Array.isArray(outlinePolygons)&&outlinePolygons.length){
+    const ranked=outlinePolygons.map(rings=>{
+      const ring=rings?.[0]||[];let signed=0;
+      for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];signed+=a.x*b.y-b.x*a.y}
+      return {rings,area:Math.abs(signed)/2};
+    }).sort((a,b)=>b.area-a.area);
+    const ring=ranked[0]?.rings?.[0]||[];
+    let top=null;
+    for(const p of ring)if(!top||p.y>top.y)top=p;
+    if(top){anchorX=top.x*radius;anchorY=top.y*radius}
+  }
+  const overlap=Math.max(wall*1.15,outer*.34),centerY=anchorY+outer*.64;
+  const bridgeHalf=Math.max(wall*.72,1.4);
+  return {
+    anchorX,anchorY,centerX:anchorX,centerY,innerRadiusMm:inner,outerRadiusMm:outer,
+    heightMm:Math.max(.8,Number(baseMm)||3)+1.5,
+    bridge:{minX:anchorX-bridgeHalf,maxX:anchorX+bridgeHalf,minY:anchorY-overlap,maxY:centerY-inner*.35}
+  };
 }
 
 export function normalizeAdvancedConfig(config={}){
@@ -653,11 +684,11 @@ const GLYPH_5X7={
   " ":["00000","00000","00000","00000","00000","00000","00000"]
 };
 
-function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0,inside=()=>true}={}){
+function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,minCellMm=.55,riseMm=.8,terrainTopMm=()=>0,inside=()=>true}={}){
   const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
   if(!value)return [];
   const nominalWidth=value.length*6-1;
-  const cell=Math.max(.55,Math.min(cellMm,maxWidth/Math.max(1,nominalWidth)));
+  const cell=Math.max(Math.max(.3,Number(minCellMm)||.55),Math.min(cellMm,maxWidth/Math.max(1,nominalWidth)));
   const totalWidth=nominalWidth*cell,startX=centerX-totalWidth/2,meshes=[];
   for(let ci=0;ci<value.length;ci++){
     const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
@@ -750,25 +781,41 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   return meshes;
 }
 
-export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[]}={}){
-  if(mode==="none"||!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
-  const radius=projection.radius,meshes=[],occupied=[],selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
-  let places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
-  if(mode==="selected")places=places.filter(p=>selected.has(String(p.name).toLowerCase()));
-  else if(mode==="major")places=places.filter(p=>p.class==="city"||p.class==="town");
-  places=places.slice(0,Math.max(0,maxLabels));
-  for(const place of places){
+export function planProfessionalPlaceLabels({places=[],mode="major",selectedNames=[],maxLabels=18,shapeKind="route-fit",modelWidthMm=180,radius=90,insideNormalized=()=>true}={}){
+  if(mode==="none")return [];
+  const selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
+  let candidates=(places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
+  const smallGeo=shapeKind==="geographic"&&Number(modelWidthMm)<120;
+  const mediumGeo=shapeKind==="geographic"&&Number(modelWidthMm)<180;
+  if(mode==="selected")candidates=candidates.filter(p=>selected.has(String(p.name).toLowerCase()));
+  else if(mode==="major")candidates=candidates.filter(p=>smallGeo?p.class==="city":p.class==="city"||p.class==="town");
+  const physicalLimit=smallGeo?Math.max(2,Math.min(4,Math.floor(Number(modelWidthMm)/19))):mediumGeo?Math.min(8,maxLabels):maxLabels;
+  const limit=Math.max(0,Math.min(maxLabels,physicalLimit)),occupied=[],plan=[];
+  const collision=radius*(smallGeo?.30:mediumGeo?.24:.18);
+  for(const place of candidates){
+    if(plan.length>=limit)break;
     const nx=Number(place.x),ny=Number(place.y);
     if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
-    if(ny>.56||ny<-.56)continue;
+    if(shapeKind!=="geographic"&&(ny>.56||ny<-.56))continue;
     const x=nx*radius,y=ny*radius;
-    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<radius*.18))continue;
-    const cell=place.class==="city"?Math.max(.62,radius/82):place.class==="town"?Math.max(.56,radius/94):Math.max(.50,radius/108);
-    const labels=textLineMeshes(String(place.name),{
-      centerX:x,centerY:y,maxWidth:radius*.42,cellMm:cell,riseMm:.38,
+    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<collision))continue;
+    const cellMm=smallGeo?Math.max(.48,radius/110):place.class==="city"?Math.max(.56,radius/92):place.class==="town"?Math.max(.52,radius/104):Math.max(.48,radius/116);
+    plan.push({place,x,y,cellMm,maxWidthMm:radius*(smallGeo?.34:mediumGeo?.38:.42),riseMm:smallGeo?.34:.38,minCellMm:smallGeo?.48:.5});
+    occupied.push({x,y});
+  }
+  return plan;
+}
+
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[],shapeKind="route-fit",modelWidthMm=180,plan=null}={}){
+  if(mode==="none"||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[];
+  const planned=plan||planProfessionalPlaceLabels({places:cartography?.places||[],mode,selectedNames,maxLabels,shapeKind,modelWidthMm,radius,insideNormalized});
+  for(const item of planned){
+    const labels=textLineMeshes(String(item.place.name),{
+      centerX:item.x,centerY:item.y,maxWidth:item.maxWidthMm,cellMm:item.cellMm,minCellMm:item.minCellMm,riseMm:item.riseMm,
       terrainTopMm,inside:(px,py)=>insideNormalized(px/radius,py/radius)
     });
-    if(labels.length){meshes.push(...labels);occupied.push({x,y});}
+    meshes.push(...labels);
   }
   return meshes;
 }
@@ -877,12 +924,17 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
+  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
   const geometry=outlineGeometry||c.shape.outlineGeometry;
   if(c.shape.kind==="geographic"&&!geometry)throw new Error("Geographic shape requires a GeoJSON Polygon or MultiPolygon.");
   const shapeForBounds={...c.shape,outlineGeometry:geometry};
   const bounds=productionBounds(routeBounds(points),shapeForBounds),projection=makeProjection(bounds,c.fabrication.modelWidthMm);
-  let outlinePolygons=null;
-  if(c.shape.kind==="geographic")outlinePolygons=projectGeographicOutline(geometry,bounds,2);
+  let outlinePolygons=null,outlineFilter={kept:[],removed:[],metrics:{kept:[],removed:[]}};
+  if(c.shape.kind==="geographic"){
+    const projected=projectGeographicOutline(geometry,bounds,2);
+    outlineFilter=filterPrintableOutlinePolygons(projected,{radiusMm:projection.radius,minSpanMm:Math.max(1.2,profile.minFeatureMm*1.5),minAreaMm2:Math.max(1.4,profile.minFeatureMm*profile.minFeatureMm*2.2),maxComponents:24});
+    outlinePolygons=outlineFilter.kept;
+  }
   const insideNormalized=(nx,ny)=>{
     if(c.shape.kind==="route-fit")return Math.abs(nx*projection.radius)<=projection.widthMm/2+.001&&Math.abs(ny*projection.radius)<=projection.heightMm/2+.001;
     if(c.shape.kind==="geographic")return insidePolygons(nx,ny,outlinePolygons);
@@ -970,25 +1022,34 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18),mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames});
-  const textMeshes=buildPersonalizationMeshes({
+  const requestedLabelCount=Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18);
+  const placePlan=planProfessionalPlaceLabels({places:cartography?.places||[],mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,maxLabels:requestedLabelCount,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,radius:projection.radius,insideNormalized:contentInsideNormalized});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:requestedLabelCount,mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,plan:placePlan});
+  const allowSurfaceLettering=surfaceLetteringAllowed({shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,mode:c.production.surfaceLettering});
+  const textMeshes=allowSurfaceLettering?buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
     rimWidthMm:c.fabrication.rimWidthMm,shape:c.shape.kind
-  });
+  }):[];
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
+  let hangerPlacement=null;
   if(c.fabrication.hangerEnabled){
-    const inner=Math.max(1,(Number(c.fabrication.hangerInnerDiameterMm)||6)/2),wall=Math.max(1,Number(c.fabrication.hangerWallMm)||3),outer=inner+wall,centerY=extents.maxY+outer*.55;
-    meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
+    hangerPlacement=professionalHangerPlacement({outlinePolygons:c.shape.kind==="geographic"?outlinePolygons:null,extents,radiusMm:projection.radius,innerRadiusMm:(Number(c.fabrication.hangerInnerDiameterMm)||6)/2,wallMm:Number(c.fabrication.hangerWallMm)||3,baseMm:c.fabrication.baseMm});
+    const b=hangerPlacement.bridge;
+    meshes.push(buildExtrudedPolygonMesh({
+      points:[{x:b.minX,y:b.minY},{x:b.maxX,y:b.minY},{x:b.maxX,y:b.maxY},{x:b.minX,y:b.maxY}],
+      baseZAt:()=>0,heightMm:hangerPlacement.heightMm,region:12
+    }));
+    meshes.push(buildAnnulusMesh({outerRadiusMm:hangerPlacement.outerRadiusMm,innerRadiusMm:hangerPlacement.innerRadiusMm,heightMm:hangerPlacement.heightMm,centerX:hangerPlacement.centerX,centerY:hangerPlacement.centerY,segments:64}));
   }
   const mesh=mergeMeshes(meshes),validation=validateMesh(mesh);
   if(!validation.watertight)throw new Error("Generated production mesh is not watertight (boundary "+validation.boundaryEdges+", non-manifold "+validation.nonManifoldEdges+").");
   const materials=productionMaterials(c);
   const stl=encodeBinaryStl(mesh,{name:title}),threeMf=encode3mf(mesh,{title,materials}),mtl=encodeMtl(materials),obj=encodeObj(mesh,{name:title,materials,mtlFile:"model.mtl"}),glb=encodeGlb(mesh,{title,materials});
   const objBundle=encodeArtifactZip([{name:"model.obj",data:obj},{name:"model.mtl",data:mtl}]);
-  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
   const coupon=buildPrintValidationCoupon({technology:profile.technology,nozzleMm:profile.nozzleMm,minFeatureMm:profile.minFeatureMm,minEmbossMm:profile.minEmbossMm});
-  const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),config:c};
+  const quality={outlineComponentsRemoved:outlineFilter.removed.length,outlineComponentsKept:outlineFilter.kept.length,placeLabelsPlanned:placePlan.length,placeLabelsRequested:requestedLabelCount,surfaceLetteringSuppressed:!allowSurfaceLettering,hangerAnchored:Boolean(hangerPlacement),printerProfile:profile.label};
+  const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),quality,config:c};
   const validationBundle=encodeArtifactZip([
     {name:"validation.json",data:JSON.stringify(manifest,null,2)},
     {name:"print-validation-coupon.stl",data:encodeBinaryStl(coupon.mesh,{name:"TrailRelief validation coupon"})},
@@ -1005,7 +1066,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     standStl=encodeBinaryStl(stand,{name:"TrailRelief display stand"});
   }
   const workload=classifyTerrainWorkload({estimatedVertices:mesh.vertices.length,deviceMemoryGb:Number(globalThis.navigator?.deviceMemory||8)});
-  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,config:c};
+  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,quality,config:c};
   const packageFiles=[
     {name:"model.3mf",data:threeMf},{name:"model.stl",data:stl},{name:"model.glb",data:glb},
     {name:"model-obj.zip",data:objBundle},{name:"validation.zip",data:validationBundle},
@@ -1014,5 +1075,5 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   if(standStl)packageFiles.push({name:"display-stand.stl",data:standStl});
   if(tileBundle)packageFiles.push({name:"tiled-map.zip",data:tileBundle});
   const printPackage=encodeArtifactZip(packageFiles);
-  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,workload};
+  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,quality,hangerPlacement,workload};
 }
