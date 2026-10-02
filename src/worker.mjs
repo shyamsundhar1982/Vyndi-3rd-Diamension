@@ -123,7 +123,7 @@ export default {
     if(url.pathname==="/"||url.pathname==="/merch"||url.pathname==="/merch.html"){
       // Merchandise landing
       const assetUrl=new URL(request.url);
-      assetUrl.pathname="/index.html";
+      assetUrl.pathname="/apps/web/merch.html";
       return secure(await env.ASSETS.fetch(new Request(assetUrl.toString(),request)));
     }
     if(url.pathname==="/workbench"||url.pathname==="/studio"){
