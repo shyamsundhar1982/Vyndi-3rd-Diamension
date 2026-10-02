@@ -25,16 +25,51 @@
     </div>
   </section>
 
-  <section class="material-ribbon" aria-label="Terrain material ribbon">
-    <div class="ribbon-label"><strong>MATERIALS</strong><span id="landcoverStatus">live terrain palette</span></div>
-    <label>Land<input data-palette="land" type="color" value="#6f9f46"></label>
-    <label>Forest<input data-palette="forest" type="color" value="#2f6c31"></label>
-    <label>Mountain<input data-palette="mountain" type="color" value="#8b5a31"></label>
-    <label>Snow<input data-palette="snow" type="color" value="#f7f7f3"></label>
-    <label>Water<input data-palette="water" type="color" value="#155b8a"></label>
-    <label>Route<input data-palette="route" type="color" value="#ff2f24"></label>
-    <label>Rim<input data-palette="rim" type="color" value="#22201f"></label>
-    <label>Labels<input data-palette="labels" type="color" value="#f3c56a"></label>
+  <section class="material-ribbon" aria-label="Material selector">
+    <div class="ribbon-label">
+      <strong>MATERIALS</strong>
+      <span id="landcoverStatus">tap a layer · edit colour &amp; settings</span>
+    </div>
+    <button type="button" class="mat-chip active" data-mat="land" title="Land surface">
+      <input data-palette="land" type="color" value="#6f9f46" aria-label="Land colour">
+      <span>Land</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="forest" title="Forest raise">
+      <input data-palette="forest" type="color" value="#2f6c31" aria-label="Forest colour">
+      <span>Forest</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="mountain" title="Mountain band">
+      <input data-palette="mountain" type="color" value="#8b5a31" aria-label="Mountain colour">
+      <span>Mountain</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="snow" title="Snow line">
+      <input data-palette="snow" type="color" value="#f7f7f3" aria-label="Snow colour">
+      <span>Snow</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="water" title="Sea and lakes">
+      <input data-palette="water" type="color" value="#155b8a" aria-label="Water colour">
+      <span>Water</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="route" title="Your GPX route">
+      <input data-palette="route" type="color" value="#ff2f24" aria-label="Route colour">
+      <span>Route</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="rim" title="Medal rim">
+      <input data-palette="rim" type="color" value="#22201f" aria-label="Rim colour">
+      <span>Rim</span>
+    </button>
+    <button type="button" class="mat-chip" data-mat="labels" title="Place labels">
+      <input data-palette="labels" type="color" value="#f3c56a" aria-label="Label colour">
+      <span>Labels</span>
+    </button>
+  </section>
+
+  <section class="mat-inspector" id="matInspector" aria-label="Selected material settings">
+    <div class="mat-inspector-head">
+      <strong id="matInspectorTitle">Land</strong>
+      <span id="matInspectorHint">Surface colour and overall relief</span>
+    </div>
+    <div class="mat-inspector-body" id="matInspectorBody"></div>
   </section>
 
   <main class="studio">
@@ -87,10 +122,10 @@
         <label>Mountain starts at <output id="mountainOut">1200 m</output><input id="mountainM" type="range" min="100" max="3500" step="50" value="1200"></label>
         <label>Snow line <output id="snowOut">2600 m</output><input id="snowM" type="range" min="500" max="6000" step="50" value="2600"></label>
         <label>Forest raise <output id="forestRaiseOut">0.4 mm</output><input id="forestRaise" type="range" min="0" max="2" step=".1" value=".4"></label>
-        <label>Water depth <output id="waterDepthOut">0.6 mm</output><input id="waterDepth" type="range" min="0" max="3" step=".1" value=".6"></label>
+        <label>Water depth <output id="waterDepthOut">0.6 mm</output><input id="waterDepth" type="range" min="0" max="3" step=".1" value="1.1"></label>
         <label>Sea surface<select id="waterMode"><option value="procedural-waves">Procedural waves</option><option value="flat">Flat water</option><option value="none">No water class</option></select></label>
         <div class="pair">
-          <label>Wave relief <input id="waveHeight" type="number" min="0" max="1.5" step=".05" value=".3"></label>
+          <label>Wave relief <input id="waveHeight" type="number" min="0" max="1.5" step=".05" value=".45"></label>
           <label>Wave spacing <input id="waveSpacing" type="number" min=".5" max="10" step=".1" value="2.6"></label>
         </div>
         <div class="route-style">
@@ -119,7 +154,7 @@
       </section>
 
       <section class="tab-panel" data-panel="plate">
-        <label>Shape<select id="shape"><option value="circle" selected>Round</option><option value="geo-medallion">Round medal · geographic terrain</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="heart">Heart</option><option value="route-fit">Route fit plaque</option><option value="geographic">Geographic cut-out</option></select></label>
+        <label>Shape<select id="shape"><option value="circle">Round</option><option value="geo-medallion" selected>Round medal · geographic terrain</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="ellipse">Ellipse</option><option value="hexagon">Hexagon</option><option value="octagon">Octagon</option><option value="heart">Heart</option><option value="route-fit">Route fit plaque</option><option value="geographic">Geographic cut-out</option></select></label>
         <label>Medal size<select id="medalSize"><option value="custom">Custom</option><option value="76.2">3″ · 76.2 mm</option><option value="101.6">4″ · 101.6 mm</option><option value="180">TrailRelief 180 mm</option></select></label>
         <div class="pair"><label>Model width mm<input id="modelWidth" type="number" min="60" max="600" step="1" value="180"></label><label>Base mm<input id="baseMm" type="number" min=".8" max="10" step=".1" value="3"></label></div>
         <div class="pair"><label>Rim width mm<input id="rimWidthMm" type="number" min="0" max="40" step=".5" value="12"></label><label>Rim height mm<input id="rimHeightMm" type="number" min="0" max="20" step=".5" value="5"></label></div>
