@@ -1,5 +1,5 @@
-import { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob } from "../gpx/gpx-core.mjs";
-export { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob } from "../gpx/gpx-core.mjs";
+import { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob, mergeGpxRoutes } from "../gpx/gpx-core.mjs";
+export { parseGpxText, extractGpxName, serializeGpxRoute, shouldPreprocessLiveGpx, processGpxTextJob, mergeGpxRoutes } from "../gpx/gpx-core.mjs";
 import {
   adaptiveLargeFormatPlan,
   classifyTerrainWorkload,
@@ -37,7 +37,9 @@ import {
   shapeBoundaryRadius,
   magnetPocketDepth,
   dovetailSlotDepth,
-  alignmentSocketDepth
+  alignmentSocketDepth,
+  contourEmbossHeight,
+  rasterSampler
 } from "../engine/fabrication-extras-core.mjs";
 import {
   projectGeographicOutline,
@@ -55,6 +57,13 @@ export const ADVANCED_GROUPS=Object.freeze([
 ]);
 
 export const PRODUCTION_FORMATS=Object.freeze(["3mf","stl","obj","glb"]);
+export const PRINTER_PROFILES=Object.freeze({
+  "bambu-p1s":{label:"Bambu Lab P1S / AMS",technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3,recommendedLayerMm:.16,bed:[256,256,256],slicers:["Bambu Studio","OrcaSlicer"],preferredFormat:"3mf"},
+  "generic-fdm":{label:"Generic FDM · 0.4 mm nozzle",technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3,recommendedLayerMm:.2,bed:[220,220,250],slicers:["PrusaSlicer","Cura"],preferredFormat:"3mf"},
+  "fine-fdm":{label:"Fine FDM · 0.25 mm nozzle",technology:"FDM",nozzleMm:.25,minFeatureMm:.5,minEmbossMm:.2,recommendedLayerMm:.12,bed:[180,180,180],slicers:["Bambu Studio","OrcaSlicer","PrusaSlicer"],preferredFormat:"3mf"},
+  "resin":{label:"MSLA / SLA resin",technology:"MSLA",nozzleMm:.25,minFeatureMm:.35,minEmbossMm:.18,recommendedLayerMm:.05,bed:[130,80,160],slicers:["Lychee","Chitubox"],preferredFormat:"stl"},
+  "sls":{label:"SLS / MJF service",technology:"SLS",nozzleMm:.4,minFeatureMm:.6,minEmbossMm:.25,recommendedLayerMm:.1,bed:[250,250,250],slicers:["Service bureau"],preferredFormat:"stl"}
+});
 
 
 export function normalizeCustomization(input={}){
@@ -90,14 +99,19 @@ export function defaultAdvancedConfig(){
     shape:{kind:"route-fit",aspect:1.35,outlineGeometry:null,logoEnabled:false,logoAuto:true,logoWidthMm:18,logoRiseMm:.8},
     colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8a7a68",snow:"#f4f3ee",water:"#3d86b8",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e",rim:"#23201d"},
     terrainBands:{mountainM:1200,snowM:2600},
+    surface:{forestRaiseMm:.4,waterDepthMm:.6,waterMode:"procedural-waves",waveHeightMm:.3,waveSpacingMm:2.6},
+    contours:{enabled:false,intervalMm:1,widthMm:.08,riseMm:.2},
+    placeLabels:{mode:"major",selectedNames:[],maxCount:18},
+    production:{printerProfile:"bambu-p1s",medalSize:"custom",bottomMark:"",bottomEngraveDepthMm:.35},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
-      routeWidthMm:1.6,routeRiseMm:1.2,
+      routeStyle:"raised",routeWidthMm:1.6,routeRiseMm:1.2,
       rimWidthMm:12,rimHeightMm:5,
-      tiled:false,maxTileMm:200,jointType:"dovetail",
-      magnetEnabled:false,magnetDiameterMm:8,magnetDepthMm:2,
-      hangerEnabled:false,standEnabled:false
+      tiled:false,maxTileMm:200,maxTileWidthMm:200,maxTileHeightMm:200,jointType:"dovetail",jointDiameterMm:8,jointDepthMm:2,jointClearanceMm:.2,
+      magnetEnabled:false,magnetDiameterMm:8,magnetDepthMm:2,magnetSpacingMm:30,
+      hangerEnabled:false,hangerInnerDiameterMm:6,hangerWallMm:3,
+      standEnabled:false,heightmapStrengthMm:0
     }
   };
 }
@@ -172,11 +186,24 @@ function geometryBounds(geometry){
   return {minLat,maxLat,minLon,maxLon};
 }
 
+export function expandBoundsKm(bounds,distanceKm=0){
+  const km=Math.max(0,Number(distanceKm)||0);
+  if(!km)return {...bounds};
+  const midLat=(Number(bounds.minLat)+Number(bounds.maxLat))/2;
+  const latPad=km/111.32,lonPad=km/(111.32*Math.max(.08,Math.cos(midLat*Math.PI/180)));
+  return {
+    minLat:Math.max(-85,Number(bounds.minLat)-latPad),maxLat:Math.min(85,Number(bounds.maxLat)+latPad),
+    minLon:Math.max(-180,Number(bounds.minLon)-lonPad),maxLon:Math.min(180,Number(bounds.maxLon)+lonPad)
+  };
+}
+
 export function productionBounds(route,shape={}){
   if(shape?.kind==="geographic"&&shape?.outlineGeometry){
     return expandBounds(geometryBounds(shape.outlineGeometry),.015);
   }
-  const base=expandBounds(route,shape?.kind==="route-fit" ? .04 : .03);
+  const requestedKm=Math.max(0,Number(shape?.routeBufferKm)||0);
+  const padded=requestedKm?expandBoundsKm(route,requestedKm):route;
+  const base=requestedKm?{...padded}:expandBounds(padded,shape?.kind==="route-fit" ? .04 : .03);
   if(!shape?.kind||shape.kind==="route-fit")return base;
   const midLat=(base.minLat+base.maxLat)/2,midLon=(base.minLon+base.maxLon)/2;
   const lonScale=Math.max(.08,Math.cos(midLat*Math.PI/180));
@@ -501,6 +528,29 @@ function inRect(x,y,rect){
   return !rect||(x>=rect.minX&&x<=rect.maxX&&y>=rect.minY&&y<=rect.maxY);
 }
 
+function buildRouteChannelField(points,projection,config){
+  const style=String(config?.fabrication?.routeStyle||"raised");
+  if(!["engraved","inlay"].includes(style))return ()=>0;
+  const width=Math.max(.2,Number(config.fabrication.routeWidthMm)||1.2),depth=Math.max(.05,Number(config.fabrication.routeRiseMm)||.8);
+  const projected=(points||[]).map(point=>projection.project(point));
+  const stride=Math.max(1,Math.ceil(projected.length/1400)),route=[];
+  for(let i=0;i<projected.length;i+=stride)route.push(projected[i]);
+  if(projected.length&&route.at(-1)!==projected.at(-1))route.push(projected.at(-1));
+  const pointSegmentDistance=(x,y,a,b)=>{
+    const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+    if(d2<1e-12)return Math.hypot(x-a.x,y-a.y);
+    const t=Math.max(0,Math.min(1,((x-a.x)*dx+(y-a.y)*dy)/d2));
+    return Math.hypot(x-(a.x+t*dx),y-(a.y+t*dy));
+  };
+  return (x,y)=>{
+    let best=Infinity;
+    for(let i=1;i<route.length;i++)best=Math.min(best,pointSegmentDistance(x,y,route[i-1],route[i]));
+    if(best>=width*.62)return 0;
+    const edge=Math.max(0,Math.min(1,1-best/(width*.62)));
+    return depth*edge;
+  };
+}
+
 function featureMeshes({points,cartography,config,projection,terrainTopMm,insideNormalized,clipRect=null,offsetX=0,offsetY=0}){
   const meshes=[],radius=projection.radius,route=points.map(point=>projection.project(point));
   const addSegments=(segments,width,rise,region,maxSegments)=>{
@@ -526,7 +576,10 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
   const stride=Math.max(1,Math.ceil(route.length/1600)),routeLite=[];
   for(let i=0;i<route.length;i+=stride)routeLite.push(route[i]);
   if(routeLite.at(-1)!==route.at(-1))routeLite.push(route.at(-1));
-  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  const routeStyle=String(config.fabrication.routeStyle||"raised");
+  if(routeStyle==="raised")addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  else if(routeStyle==="inlay")addSegments([routeLite],config.fabrication.routeWidthMm,Math.max(.05,config.fabrication.routeRiseMm),5,1800);
+  else if(routeStyle==="color")addSegments([routeLite],config.fabrication.routeWidthMm,.08,5,1800);
   if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,6,700);
   if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,7,700);
   if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,8,450);
@@ -697,10 +750,13 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   return meshes;
 }
 
-export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18}={}){
-  if(!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
-  const radius=projection.radius,meshes=[],occupied=[];
-  const places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class)).slice(0,Math.max(0,maxLabels));
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18,mode="major",selectedNames=[]}={}){
+  if(mode==="none"||!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[],occupied=[],selected=new Set((selectedNames||[]).map(name=>String(name).toLowerCase()));
+  let places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class));
+  if(mode==="selected")places=places.filter(p=>selected.has(String(p.name).toLowerCase()));
+  else if(mode==="major")places=places.filter(p=>p.class==="city"||p.class==="town");
+  places=places.slice(0,Math.max(0,maxLabels));
   for(const place of places){
     const nx=Number(place.x),ny=Number(place.y);
     if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
@@ -736,9 +792,28 @@ function modelExtents(config,projection,outlinePolygons){
   };
 }
 
+function bottomTextDepthAt(x,y,config,extents){
+  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const depth=Math.max(0,Math.min(Math.max(.05,Number(config?.fabrication?.baseMm)||3)-.2,Number(config?.production?.bottomEngraveDepthMm)||0));
+  if(!value||depth<=0||!extents)return 0;
+  const width=Math.max(1,extents.maxX-extents.minX),maxWidth=width*.72,nominal=Math.max(1,value.length*6-1);
+  const cell=Math.max(.55,Math.min(1.55,maxWidth/nominal));
+  const total=nominal*cell,startX=-total/2,topY=3.5*cell;
+  const u=(x-startX)/cell,v=(topY-y)/cell;
+  if(u<0||v<0)return 0;
+  const ci=Math.floor(u/6),col=Math.floor(u-ci*6),row=Math.floor(v);
+  if(ci<0||ci>=value.length||col<0||col>4||row<0||row>6)return 0;
+  const fracX=u-Math.floor(u),fracY=v-Math.floor(v);
+  if(fracX>.84||fracY>.84)return 0;
+  const glyph=GLYPH_5X7[value[ci]]||GLYPH_5X7[" "];
+  return glyph[row]?.[col]==="1"?depth:0;
+}
+
 function makePockets(config,extents){
   if(!config.fabrication.magnetEnabled)return [];
-  const x=(extents.maxX-extents.minX)*.26,y=(extents.maxY-extents.minY)*.26;
+  const maxX=(extents.maxX-extents.minX)*.32,maxY=(extents.maxY-extents.minY)*.32;
+  const halfSpacing=Math.max(4,(Number(config.fabrication.magnetSpacingMm)||30)/2);
+  const x=Math.min(maxX,halfSpacing),y=Math.min(maxY,halfSpacing);
   return [
     {xMm:-x,yMm:-y,diameterMm:config.fabrication.magnetDiameterMm,depthMm:config.fabrication.magnetDepthMm},
     {xMm:x,yMm:-y,diameterMm:config.fabrication.magnetDiameterMm,depthMm:config.fabrication.magnetDepthMm},
@@ -750,7 +825,7 @@ function makePockets(config,extents){
 function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents}){
   const widthMm=extents.maxX-extents.minX,heightMm=extents.maxY-extents.minY;
   const adaptive=adaptiveLargeFormatPlan({
-    widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:config.fabrication.maxTileMm
+    widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:Math.min(Number(config.fabrication.maxTileWidthMm)||config.fabrication.maxTileMm,Number(config.fabrication.maxTileHeightMm)||config.fabrication.maxTileMm)
   });
   const connectors=planTiledMap({
     widthMm,heightMm,maxTileWidthMm:widthMm/adaptive.columns+.001,maxTileHeightMm:heightMm/adaptive.rows+.001,jointType:config.fabrication.jointType
@@ -769,8 +844,8 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
       bottomAt:(lx,ly)=>{
         let depth=0;
         for(const connector of related){
-          if(config.fabrication.jointType==="dovetail")depth=Math.max(depth,dovetailSlotDepth(lx,ly,tile,connector,{lengthMm:16,headWidthMm:8,neckWidthMm:5,depthMm:Math.min(config.fabrication.baseMm-.4,2)}));
-          if(config.fabrication.jointType==="pin")depth=Math.max(depth,alignmentSocketDepth(lx,ly,tile,connector,{diameterMm:8,depthMm:Math.min(config.fabrication.baseMm-.4,2)}));
+          if(config.fabrication.jointType==="dovetail")depth=Math.max(depth,dovetailSlotDepth(lx,ly,tile,connector,{lengthMm:16,headWidthMm:8,neckWidthMm:5,depthMm:Math.min(config.fabrication.baseMm-.4,Number(config.fabrication.jointDepthMm)||2)}));
+          if(config.fabrication.jointType==="pin")depth=Math.max(depth,alignmentSocketDepth(lx,ly,tile,connector,{diameterMm:Number(config.fabrication.jointDiameterMm)||8,depthMm:Math.min(config.fabrication.baseMm-.4,Number(config.fabrication.jointDepthMm)||2)}));
         }
         return depth;
       },
@@ -791,14 +866,14 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
     const key=buildDovetailKeyMesh({lengthMm:16,headWidthMm:8,neckWidthMm:5,heightMm:2.4});
     files.push({name:"dovetail-key.stl",data:encodeBinaryStl(key,{name:"TrailRelief dovetail key"})});
   }else if(config.fabrication.jointType==="pin"){
-    const puck=buildCylinderMesh({diameterMm:7.7,heightMm:2,segments:48,region:6});
+    const clearance=Math.max(0,Number(config.fabrication.jointClearanceMm)||0);const puck=buildCylinderMesh({diameterMm:Math.max(1,(Number(config.fabrication.jointDiameterMm)||8)-clearance),heightMm:Math.max(.5,Number(config.fabrication.jointDepthMm)||2),segments:48,region:6});
     files.push({name:"alignment-puck.stl",data:encodeBinaryStl(puck,{name:"TrailRelief alignment puck"})});
   }
   files.push({name:"manifest.json",data:JSON.stringify({...plan,jointQuantity:config.fabrication.jointType==="flat"?0:jointPairs},null,2)});
   return {plan,bundle:encodeArtifactZip(files)};
 }
 
-export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
+export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,heightmapImage=null,title="TrailRelief"}={}){
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
@@ -828,6 +903,9 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   };
   const isRimNormalized=(nx,ny)=>rimWidthMm>0&&insideNormalized(nx,ny)&&!contentInsideNormalized(nx,ny);
   const range=sampleRange(demSampler,bounds,contentInsideNormalized);
+  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
+  const heightmapSampler=heightmapImage?rasterSampler(heightmapImage,{channel:"luminance"}):null;
+  const routeChannelAt=buildRouteChannelField(points,projection,c);
   const routeCorrection=buildRouteElevationCorrection(points,demSampler,projection,range,{
     mode:c.dem.routeElevationMode,blend:c.dem.routeElevationBlend,maxDeltaM:c.dem.maxDeltaM,
     reliefMm:c.fabrication.reliefMm,routeWidthMm:c.fabrication.routeWidthMm
@@ -838,16 +916,31 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(!contentInsideNormalized(nx,ny))return 0;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     if(!Number.isFinite(elevation))return 0;
-    const base=(elevation-range.min)/(range.max-range.min)*c.fabrication.reliefMm;
-    const corrected=base+routeCorrection.at(nx*projection.radius,ny*projection.radius);
-    return Math.max(0,Math.min(c.fabrication.reliefMm,corrected));
+    const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    const span=Math.max(1e-9,range.max-range.min);
+    let relief=(elevation-range.min)/span*c.fabrication.reliefMm;
+    relief+=routeCorrection.at(nx*projection.radius,ny*projection.radius);
+    if(material===1)relief+=Math.max(0,Number(c.surface.forestRaiseMm)||0);
+    if(material===4&&c.surface.waterMode!=="none"){
+      relief-=Math.max(0,Number(c.surface.waterDepthMm)||0);
+      if(c.surface.waterMode==="procedural-waves"){
+        const spacing=Math.max(.4,Number(c.surface.waveSpacingMm)||2.6),amp=Math.max(0,Number(c.surface.waveHeightMm)||.3);
+        const x=nx*projection.radius,y=ny*projection.radius;
+        relief+=amp*(.58*Math.sin((x+y*.31)/spacing*Math.PI*2)+.28*Math.sin((y-x*.17)/spacing*Math.PI*3.1));
+      }
+    }
+    if(heightmapSampler)relief+=heightmapSampler(nx,ny)*Math.max(0,Number(c.fabrication.heightmapStrengthMm)||0);
+    relief+=contourEmbossHeight(relief,c.contours);
+    relief-=routeChannelAt(nx*projection.radius,ny*projection.radius);
+    const extra=Math.max(0,Number(c.surface.forestRaiseMm)||0,Number(c.contours.riseMm)||0,Number(c.fabrication.heightmapStrengthMm)||0,Number(c.surface.waveHeightMm)||0);
+    return Math.max(0,Math.min(c.fabrication.reliefMm+extra,relief));
   };
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
-  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const terrainRegionNormalized=(nx,ny)=>{
     if(isRimNormalized(nx,ny))return 12;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
-    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    return material===4&&c.surface.waterMode==="none"?0:material;
   };
   const extents=modelExtents(c,projection,outlinePolygons),pockets=makePockets(c,extents);
   let baseMesh;
@@ -857,13 +950,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       columns:Math.max(24,Math.ceil(projection.widthMm/c.fabrication.targetXyMm)),
       rows:Math.max(24,Math.ceil(projection.heightMm/c.fabrication.targetXyMm)),
       heightAt:(x,y)=>terrainHeightNormalized(x/projection.radius,y/projection.radius),
-      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
+      bottomAt:(x,y)=>Math.max(magnetPocketDepth(x,y,pockets),bottomTextDepthAt(x,y,c,extents)),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
     });
   }else if(c.shape.kind==="geographic"){
     baseMesh=(await import("../engine/map-outline-core.mjs")).buildOutlineHeightfieldMesh({
       polygons:outlinePolygons,radiusMm:projection.radius,baseMm:c.fabrication.baseMm,stepMm:c.fabrication.targetXyMm,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
+      bottomAt:(nx,ny)=>Math.max(magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),bottomTextDepthAt(nx*projection.radius,ny*projection.radius,c,extents)),regionAt:terrainRegionNormalized
     });
   }else{
     baseMesh=buildRadialMedalMesh({
@@ -872,12 +965,12 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       segments:Math.max(192,Math.ceil(Math.PI*c.fabrication.modelWidthMm/c.fabrication.targetXyMm/4)*4),
       shape:c.shape.kind,aspect:c.shape.aspect,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
+      bottomAt:(nx,ny)=>Math.max(magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),bottomTextDepthAt(nx*projection.radius,ny*projection.radius,c,extents)),regionAt:terrainRegionNormalized
     });
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18),mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
@@ -885,7 +978,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   });
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){
-    const outer=7,inner=3,centerY=extents.maxY+outer*.55;
+    const inner=Math.max(1,(Number(c.fabrication.hangerInnerDiameterMm)||6)/2),wall=Math.max(1,Number(c.fabrication.hangerWallMm)||3),outer=inner+wall,centerY=extents.maxY+outer*.55;
     meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
   }
   const mesh=mergeMeshes(meshes),validation=validateMesh(mesh);
@@ -893,7 +986,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const materials=productionMaterials(c);
   const stl=encodeBinaryStl(mesh,{name:title}),threeMf=encode3mf(mesh,{title,materials}),mtl=encodeMtl(materials),obj=encodeObj(mesh,{name:title,materials,mtlFile:"model.mtl"}),glb=encodeGlb(mesh,{title,materials});
   const objBundle=encodeArtifactZip([{name:"model.obj",data:obj},{name:"model.mtl",data:mtl}]);
-  const coupon=buildPrintValidationCoupon({technology:"FDM",nozzleMm:.4,minFeatureMm:.8,minEmbossMm:.3});
+  const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
+  const coupon=buildPrintValidationCoupon({technology:profile.technology,nozzleMm:profile.nozzleMm,minFeatureMm:profile.minFeatureMm,minEmbossMm:profile.minEmbossMm});
   const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),config:c};
   const validationBundle=encodeArtifactZip([
     {name:"validation.json",data:JSON.stringify(manifest,null,2)},
@@ -911,5 +1005,14 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     standStl=encodeBinaryStl(stand,{name:"TrailRelief display stand"});
   }
   const workload=classifyTerrainWorkload({estimatedVertices:mesh.vertices.length,deviceMemoryGb:Number(globalThis.navigator?.deviceMemory||8)});
-  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,workload};
+  const packageManifest={schema:"vyndi-3rd-diamension/print-package-v1",title,generatedAt:new Date().toISOString(),printerProfile:c.production.printerProfile,preferredFormat:profile.preferredFormat,routeStyle:c.fabrication.routeStyle,shape:c.shape.kind,vertices:mesh.vertices.length,triangles:mesh.triangles.length,materials:materials.map(item=>item.name),validation,elevationDiagnostics:routeCorrection.diagnostics,config:c};
+  const packageFiles=[
+    {name:"model.3mf",data:threeMf},{name:"model.stl",data:stl},{name:"model.glb",data:glb},
+    {name:"model-obj.zip",data:objBundle},{name:"validation.zip",data:validationBundle},
+    {name:"production.json",data:JSON.stringify(packageManifest,null,2)}
+  ];
+  if(standStl)packageFiles.push({name:"display-stand.stl",data:standStl});
+  if(tileBundle)packageFiles.push({name:"tiled-map.zip",data:tileBundle});
+  const printPackage=encodeArtifactZip(packageFiles);
+  return {mesh,materials,validation,range,bounds,config:c,projection,elevationDiagnostics:routeCorrection.diagnostics,stl,threeMf,obj,mtl,objBundle,glb,validationBundle,tilePlan,tileBundle,standStl,printPackage,packageManifest,profile,workload};
 }

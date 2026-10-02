@@ -5,6 +5,7 @@ const finite=(v,fallback=0)=>Number.isFinite(Number(v))?Number(v):fallback;
 export const FABRICATION_SHAPES=Object.freeze({
   circle:{label:"Circle"},
   square:{label:"Square"},
+  triangle:{label:"Triangle"},
   ellipse:{label:"Ellipse"},
   hexagon:{label:"Hexagon"},
   octagon:{label:"Octagon"},
@@ -22,8 +23,8 @@ export function shapeBoundaryRadius(shape="circle",angle=0,options={}){
     const aspect=clamp(finite(options.aspect,1.35),.5,2.5);
     return 1/Math.sqrt(Math.cos(a)**2+(Math.sin(a)*aspect)**2);
   }
-  if(kind==="hexagon"||kind==="octagon"){
-    const n=kind==="hexagon"?6:8,sector=TAU/n;
+  if(kind==="triangle"||kind==="hexagon"||kind==="octagon"){
+    const n=kind==="triangle"?3:kind==="hexagon"?6:8,sector=TAU/n;
     let local=((a+sector/2)%sector+sector)%sector-sector/2;
     return Math.cos(Math.PI/n)/Math.max(1e-9,Math.cos(local));
   }

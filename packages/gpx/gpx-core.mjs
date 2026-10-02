@@ -108,6 +108,44 @@ export function parseGpxText(text="",fallbackName="Route",options={}){
   };
 }
 
+export function mergeGpxRoutes(routes=[],name="Combined route"){
+  const valid=(routes||[]).filter(route=>Array.isArray(route?.points)&&route.points.length>=2);
+  if(!valid.length)throw new Error("At least one GPX route is required.");
+  if(valid.length===1){
+    const only=valid[0];
+    return {...only,name:String(name||only.name||"Route").trim()||only.name||"Route"};
+  }
+  const points=[];let segmentBase=0;
+  let sourcePointCount=0,distanceKm=0,elevationGainM=0,movingTimeSeconds=0,elapsedTimeSeconds=0;
+  let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity,minEle=Infinity,maxEle=-Infinity;
+  for(const route of valid){
+    const localSegments=new Map();let nextSegment=segmentBase+1;
+    for(const point of route.points){
+      const key=Number.isFinite(Number(point.segment))?Number(point.segment):0;
+      if(!localSegments.has(key))localSegments.set(key,nextSegment++);
+      const copy={...point,segment:localSegments.get(key)};
+      points.push(copy);
+      minLat=Math.min(minLat,Number(copy.lat));maxLat=Math.max(maxLat,Number(copy.lat));
+      minLon=Math.min(minLon,Number(copy.lon));maxLon=Math.max(maxLon,Number(copy.lon));
+      if(Number.isFinite(Number(copy.ele))){minEle=Math.min(minEle,Number(copy.ele));maxEle=Math.max(maxEle,Number(copy.ele));}
+    }
+    segmentBase=nextSegment;
+    sourcePointCount+=Number(route.sourcePointCount)||route.points.length;
+    distanceKm+=Number(route.distanceKm)||0;
+    elevationGainM+=Number(route.elevationGainM)||0;
+    movingTimeSeconds+=Number(route.movingTimeSeconds)||0;
+    elapsedTimeSeconds+=Number(route.elapsedTimeSeconds)||0;
+  }
+  return {
+    name:String(name||valid.map(r=>r.name).filter(Boolean).join(" + ")||"Combined route").trim()||"Combined route",
+    points,sourcePointCount,simplified:valid.some(route=>route.simplified),
+    distanceKm:Number(distanceKm.toFixed(2)),elevationGainM:Number(elevationGainM.toFixed(1)),
+    movingTimeSeconds:Math.round(movingTimeSeconds),elapsedTimeSeconds:Math.round(elapsedTimeSeconds),
+    bounds:{minLat,maxLat,minLon,maxLon,minEle:Number.isFinite(minEle)?minEle:0,maxEle:Number.isFinite(maxEle)?maxEle:0},
+    routeCount:valid.length
+  };
+}
+
 function encodeXml(value=""){
   return String(value)
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")

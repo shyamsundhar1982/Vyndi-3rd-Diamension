@@ -29,8 +29,13 @@ try{
     }));
     throw new Error("GPX ribbon did not update · "+JSON.stringify({state,errors,networkErrors,cause:String(error)}));
   }
-  const paletteCount=await page.locator("[data-palette]").count();
-  if(paletteCount!==8)throw new Error("Expected 8 terrain palette controls, got "+paletteCount);
+  const paletteKeys=await page.locator("[data-palette]").evaluateAll(nodes=>[...new Set(nodes.map(node=>node.dataset.palette))]);
+  for(const key of ["land","forest","mountain","snow","water","route","roads","labels","rim"]){
+    if(!paletteKeys.includes(key))throw new Error("Missing terrain palette control: "+key);
+  }
+  for(const id of ["routeStyle","forestRaise","waterDepth","printerProfile","contourEnabled","magnetEnabled","hangerEnabled","tileEnabled","placeLabelMode","downloadPrintPackage","issueAuthenticity"]){
+    if(!await page.locator("#"+id).count())throw new Error("Missing full-union control: "+id);
+  }
   await page.waitForFunction(()=>{
     const viewer=document.querySelector("#liveModelViewer");
     const status=document.querySelector("#livePreviewStatus")?.textContent||"";
