@@ -120,7 +120,13 @@ export default {
     }
     if(url.pathname==="/api/authenticity/verify"&&request.method==="GET"){const result=await verifyToken(url.searchParams.get("receipt")||"",env.VYNDI_AUTH_SECRET);return json(result,result.verified?200:400)}
     if(url.pathname==="/verify"&&request.method==="GET")return verifyPage(url,env.VYNDI_AUTH_SECRET);
-    if(url.pathname==="/"){
+    if(url.pathname==="/"||url.pathname==="/merch"||url.pathname==="/merch.html"){
+      // Merchandise landing
+      const assetUrl=new URL(request.url);
+      assetUrl.pathname="/index.html";
+      return secure(await env.ASSETS.fetch(new Request(assetUrl.toString(),request)));
+    }
+    if(url.pathname==="/workbench"||url.pathname==="/studio"){
       const target=new URL(request.url);target.pathname="/apps/web/";return secure(Response.redirect(target.toString(),302));
     }
     return secure(await env.ASSETS.fetch(request));
