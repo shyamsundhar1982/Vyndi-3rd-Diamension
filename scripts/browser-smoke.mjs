@@ -31,13 +31,11 @@ try{
   }
   await page.waitForFunction(()=>{
     const frame=document.querySelector("#sourceEngineFrame");
-    const input=frame?.contentDocument?.querySelector('input[type="file"]');
-    return input?.files?.length===1 && /iconic\.gpx/i.test(input.files[0].name);
+    return /iconic\.gpx/i.test(frame?.contentDocument?.documentElement?.dataset?.v3dGpxLoaded||"");
   },null,{timeout:20000});
   await page.waitForFunction(()=>{
     const frame=document.querySelector("#rideStoriesEngineFrame");
-    const input=frame?.contentDocument?.querySelector("#gpxInput");
-    return input?.files?.length===1 && /iconic\.gpx/i.test(input.files[0].name);
+    return /iconic\.gpx/i.test(frame?.contentDocument?.documentElement?.dataset?.v3dGpxLoaded||"");
   },null,{timeout:20000});
   const exactLabels=await page.evaluate(()=>({
     trail:document.querySelector("#sourceEngineFrame")?.contentDocument?.body?.innerText||"",
