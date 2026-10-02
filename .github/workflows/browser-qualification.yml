@@ -32,5 +32,8 @@ jobs:
         if: always()
         with:
           name: iconic-studio-browser
-          path: vyndi-3rd-diamension-studio.png
+          path: |
+            vyndi-source-trailrelief.png
+            vyndi-source-original.png
+            vyndi-3rd-diamension-studio.png
           if-no-files-found: ignore
