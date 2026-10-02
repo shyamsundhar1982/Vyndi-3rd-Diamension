@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { productionMaterials, classifyTerrainMaterial } from "../packages/toolkit/toolkit-core.mjs";
+import { productionMaterials, classifyTerrainMaterial, buildPersonalizationMeshes } from "../packages/toolkit/toolkit-core.mjs";
 import { encodeGlb } from "../packages/engine/print-model-core.mjs";
 
 function glbJson(bytes){
@@ -51,4 +51,25 @@ test("GLB converts Z-up production geometry to model-viewer Y-up and preserves e
   const json=glbJson(glb);
   assert.deepEqual(json.nodes[0].rotation.map(v=>Number(v.toFixed(6))),[-0.707107,0,0,0.707107]);
   assert.deepEqual(json.materials[1].emissiveFactor.map(v=>Number(v.toFixed(3))),[0.35,0.117,0]);
+});
+
+
+test("physical model retains rider date and ride statistics",()=>{
+  const meshes=buildPersonalizationMeshes({
+    customization:{
+      event:"Parvatha 600",
+      rider:"Shyam",
+      date:"09 Nov 2024",
+      distance:"609 KM",
+      elevation:"9,274 M",
+      duration:"39:36:19"
+    },
+    extents:{minX:-50,maxX:50,minY:-50,maxY:50},
+    radius:50,
+    terrainTopMm:()=>5,
+    insideNormalized:(x,y)=>Math.hypot(x,y)<=1,
+    riseMm:.8
+  });
+  assert.ok(meshes.length>20,"expected printable event/rider/stat geometry");
+  assert.ok(meshes.every(mesh=>mesh.triangles.some(t=>t.region===11)));
 });
