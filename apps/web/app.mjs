@@ -130,7 +130,7 @@ function currentConfig(){
     },
     contours:{enabled:$("contourEnabled").checked,intervalMm:finite($("contourInterval").value,1),widthMm:.08,riseMm:finite($("contourRise").value,.2)},
     placeLabels:{mode:$("placeLabelMode").value,selectedNames:[],maxCount:$("placeLabelMode").value==="all"?60:18},
-    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
+    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
     customization:{...readOverrides(),location:$("eventLocation").value,bib:$("bib").value,status:$("resultStatus").value,start:$("startDetail").value,finish:$("finishDetail").value,placing:$("placing").value},
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{
@@ -160,6 +160,26 @@ function previewConfig(){
     fabrication:{...base.fabrication,targetXyMm:Math.max(3,finite(base.fabrication.targetXyMm,3)),tiled:false,magnetEnabled:false,standEnabled:false}
   });
 }
+function updateQualityBadge(model,prefix="QUALITY"){
+  const q=model?.quality||{},bits=[];
+  if(q.surfaceLetteringSuppressed)bits.push("CLEAN SURFACE");
+  if(Number(q.outlineComponentsRemoved)>0)bits.push(q.outlineComponentsRemoved+" MICRO PART"+(q.outlineComponentsRemoved===1?"":"S")+" REMOVED");
+  if(Number.isFinite(Number(q.placeLabelsPlanned))&&Number(q.placeLabelsRequested)>0&&Number(q.placeLabelsPlanned)<Number(q.placeLabelsRequested))bits.push(q.placeLabelsPlanned+" LABELS");
+  if(q.hangerAnchored)bits.push("HANGER ANCHORED");
+  $("qualityBadge").textContent=bits.length?prefix+" · "+bits.join(" · "):prefix+" · PASS";
+  $("qualityBadge").classList.toggle("active",bits.length>0);
+}
+function applyCameraPreset(kind){
+  const viewers=[$("liveModelViewer"),$("modelViewer")].filter(Boolean);
+  for(const viewer of viewers){
+    viewer.cameraTarget="auto auto auto";
+    if(kind==="top"){viewer.cameraOrbit="0deg 0deg auto";viewer.fieldOfView="24deg"}
+    else if(kind==="iso"){viewer.cameraOrbit="-28deg 56deg auto";viewer.fieldOfView="30deg"}
+    else{viewer.cameraOrbit="auto auto auto";viewer.fieldOfView="30deg";viewer.updateFraming?.()}
+    viewer.jumpCameraToGoal?.();
+  }
+}
+
 async function installLiveModel(model,label){
   if(state.previewUrl)URL.revokeObjectURL(state.previewUrl);
   state.previewUrl=URL.createObjectURL(new Blob([model.glb],{type:"model/gltf-binary"}));
@@ -265,8 +285,10 @@ async function generate(){
     state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     const p=state.production;
     $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles · "+p.materials.length+" materials · "+p.profile.label;
+    updateQualityBadge(p,"PRODUCTION");
     $("modelDiagnostics").textContent=[
       "Watertight: "+(p.validation.watertight?"YES":"NO"),
+      "Quality guard: "+(p.quality?.surfaceLetteringSuppressed?"clean surface · ":"")+(p.quality?.outlineComponentsRemoved||0)+" micro parts removed · "+(p.quality?.placeLabelsPlanned||0)+" labels",
       "Route: "+config.fabrication.routeStyle+" · "+config.fabrication.routeWidthMm+" mm",
       "Shape: "+config.shape.kind+" · "+config.fabrication.modelWidthMm+" mm",
       "DEM: "+config.dem.source+" · XY "+config.fabrication.targetXyMm+" mm",
@@ -348,7 +370,7 @@ document.querySelectorAll("[data-palette]").forEach(el=>el.addEventListener("inp
   document.querySelectorAll('[data-palette="'+event.target.dataset.palette+'"]').forEach(peer=>{if(peer!==event.target)peer.value=event.target.value});
   resetGenerated();schedulePreview();
 }));
-for(const id of ["routeBufferKm","relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
+for(const id of ["routeBufferKm","relief","routeWidth","routeRise","mountainM","snowM","forestRaise","waterDepth","waterMode","waveHeight","waveSpacing","routeStyle","xyDetail","rimWidthMm","rimHeightMm","modelWidth","baseMm","shape","shapeAspect","surfaceLettering","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth","magnetSpacing","hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoWidth","logoRise","logoAuto","heightmapStrength","roads","trails","railways","buildings","elevationMode","elevationBlend","tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","tileJointDiameter","tileJointDepth","tileJointClearance","standEnabled","placeLabelMode"]){
   const el=$(id);if(!el)continue;el.addEventListener("input",()=>{syncOutputs();resetGenerated();schedulePreview()});el.addEventListener("change",()=>{syncOutputs();resetGenerated();schedulePreview()});
 }
 document.querySelectorAll("[data-panel-tab]").forEach(button=>button.addEventListener("click",()=>{
@@ -373,6 +395,9 @@ $("downloadPrintPackage").addEventListener("click",()=>state.production?.printPa
 $("downloadJob").addEventListener("click",exportJob);
 $("openAdvanced").onclick=()=>{$("advancedDrawer").classList.add("open");$("advancedDrawer").setAttribute("aria-hidden","false")};
 $("closeAdvanced").onclick=()=>{$("advancedDrawer").classList.remove("open");$("advancedDrawer").setAttribute("aria-hidden","true")};
-$("resetView").onclick=()=>{for(const id of ["liveModelViewer","modelViewer"]){const viewer=$(id);if(viewer){viewer.cameraOrbit="-25deg 50deg auto";viewer.fieldOfView="30deg";viewer.jumpCameraToGoal?.()}}};
+$("cameraIso").addEventListener("click",()=>applyCameraPreset("iso"));
+$("cameraTop").addEventListener("click",()=>applyCameraPreset("top"));
+$("cameraFit").addEventListener("click",()=>applyCameraPreset("fit"));
+$("resetView").onclick=()=>applyCameraPreset("iso");
 
 syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
