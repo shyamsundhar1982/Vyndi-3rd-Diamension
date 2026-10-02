@@ -1,0 +1,23 @@
+name: Assemble worker
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/worker_a.js.txt"
+      - "scripts/worker_b.js.txt"
+      - "scripts/assemble_worker.py"
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/assemble_worker.py
+      - run: node --check src/worker.mjs
+      - run: |
+          git config user.name "vyndi-restore"
+          git config user.email "vyndi-restore@users.noreply.github.com"
+          git add src/worker.mjs
+          git diff --cached --quiet || git commit -m "Restore full worker (merch landing + APIs)"
+          git push
