@@ -6,6 +6,7 @@ import {
 } from "../../packages/toolkit/toolkit-core.mjs";
 import { deriveRibbonMeta, formatDuration, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
 import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
+import { encodeGlb, encodeArtifactZip } from "../../packages/engine/print-model-core.mjs";
 
 const $=id=>document.getElementById(id);
 const state={
@@ -146,6 +147,90 @@ async function readImageData(file){
   canvas.width=width;canvas.height=height;const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(bitmap,0,0,width,height);bitmap.close?.();
   return ctx.getImageData(0,0,width,height);
 }
+function clamp01(value){return Math.max(0,Math.min(1,Number(value)||0))}
+function mixRgb(a,b,t){const x=clamp01(t);return a.map((v,i)=>Math.round(v+(b[i]-v)*x))}
+function hypsometricColor(elevation,config){
+  const e=Number.isFinite(Number(elevation))?Number(elevation):0;
+  const mountain=Math.max(300,finite(config?.terrainBands?.mountainM,900)),snow=Math.max(mountain+500,finite(config?.terrainBands?.snowM,2800));
+  const green=[104,156,70],bright=[132,174,78],dry=[166,148,78],brown=[139,88,48],rock=[118,103,88],white=[246,246,241];
+  if(e<=120)return mixRgb(green,bright,e/120);
+  if(e<mountain*.7)return mixRgb(bright,dry,(e-120)/Math.max(1,mountain*.7-120));
+  if(e<mountain*1.45)return mixRgb(dry,brown,(e-mountain*.7)/Math.max(1,mountain*.75));
+  if(e<snow)return mixRgb(brown,rock,(e-mountain*1.45)/Math.max(1,snow-mountain*1.45));
+  return mixRgb(rock,white,Math.min(1,(e-snow)/Math.max(500,snow*.35)));
+}
+function geometryPolygons(geometry){
+  const source=geometry?.type==="Feature"?geometry.geometry:geometry;
+  if(source?.type==="Polygon")return [source.coordinates];
+  if(source?.type==="MultiPolygon")return source.coordinates;
+  return [];
+}
+function paintGeographyMask(ctx,geometry,projection,size){
+  const polygons=geometryPolygons(geometry);ctx.clearRect(0,0,size,size);ctx.fillStyle="#fff";ctx.beginPath();
+  for(const rings of polygons)for(const ring of rings){
+    let started=false;
+    for(const pair of ring||[]){
+      if(!Array.isArray(pair)||pair.length<2)continue;
+      const p=projection.project({lon:Number(pair[0]),lat:Number(pair[1])}),x=(p.nx+1)*.5*size,y=(1-(p.ny+1)*.5)*size;
+      if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+      if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y);
+    }
+    if(started)ctx.closePath();
+  }
+  ctx.fill("evenodd");
+}
+async function canvasPngBytes(canvas){
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+  if(!blob)throw new Error("PNG texture encoding unavailable.");
+  return new Uint8Array(await blob.arrayBuffer());
+}
+async function buildPremiumTerrainTexture({projection,demSampler,geometry,config,resolution=384}={}){
+  if(!projection||typeof demSampler!=="function"||!geometry)throw new Error("Premium terrain texture needs projection, DEM and geography.");
+  const size=Math.max(128,Math.min(512,Math.round(resolution)||384)),maskCanvas=document.createElement("canvas"),canvas=document.createElement("canvas");
+  maskCanvas.width=maskCanvas.height=canvas.width=canvas.height=size;
+  const maskCtx=maskCanvas.getContext("2d",{willReadFrequently:true}),ctx=canvas.getContext("2d",{willReadFrequently:true});
+  paintGeographyMask(maskCtx,geometry,projection,size);
+  const mask=maskCtx.getImageData(0,0,size,size).data,elev=new Float32Array(size*size),land=new Uint8Array(size*size);
+  let min=Infinity,max=-Infinity;
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const i=y*size+x,isLand=mask[i*4+3]>127;land[i]=isLand?1:0;
+    if(!isLand){elev[i]=0;continue}
+    const nx=x/(size-1)*2-1,ny=1-y/(size-1)*2,geo=projection.unproject(nx,ny),value=Number(demSampler(geo.lat,geo.lon));
+    elev[i]=Number.isFinite(value)?value:0;if(Number.isFinite(value)){min=Math.min(min,value);max=Math.max(max,value)}
+  }
+  const image=ctx.createImageData(size,size),data=image.data,light=[-.44,-.54,.72],lightLen=Math.hypot(...light),lx=light[0]/lightLen,ly=light[1]/lightLen,lz=light[2]/lightLen;
+  const water=[18,78,126];
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const i=y*size+x,o=i*4;
+    if(!land[i]){
+      const wave=.035*Math.sin(x*.19+y*.07)+.02*Math.sin(y*.31-x*.05),shade=.92+wave;
+      data[o]=Math.round(water[0]*shade);data[o+1]=Math.round(water[1]*shade);data[o+2]=Math.round(water[2]*shade);data[o+3]=255;continue;
+    }
+    const left=elev[y*size+Math.max(0,x-1)],right=elev[y*size+Math.min(size-1,x+1)],up=elev[Math.max(0,y-1)*size+x],down=elev[Math.min(size-1,y+1)*size+x];
+    const gx=(right-left)/320,gy=(down-up)/320,nx=-gx,ny=gy,nz=1,nlen=Math.hypot(nx,ny,nz)||1,dot=(nx/nlen)*lx+(ny/nlen)*ly+(nz/nlen)*lz;
+    const shade=Math.max(.58,Math.min(1.18,.83+dot*.28)),grain=1+.018*Math.sin(x*.37+y*.23)+.012*Math.sin(x*.11-y*.29),base=hypsometricColor(elev[i],config);
+    data[o]=Math.max(0,Math.min(255,Math.round(base[0]*shade*grain)));data[o+1]=Math.max(0,Math.min(255,Math.round(base[1]*shade*grain)));data[o+2]=Math.max(0,Math.min(255,Math.round(base[2]*shade*grain)));data[o+3]=255;
+  }
+  ctx.putImageData(image,0,0);
+  return {png:await canvasPngBytes(canvas),width:size,height:size,minElevation:Number.isFinite(min)?min:0,maxElevation:Number.isFinite(max)?max:0};
+}
+function premiumTextureUv(projection){
+  const radius=Math.max(1,finite(projection?.radius,1));
+  return vertex=>({u:clamp01((finite(vertex?.x)/radius+1)/2),v:clamp01(1-(finite(vertex?.y)/radius+1)/2)});
+}
+function rebuildPrintPackage(model){
+  const manifest={...(model.packageManifest||{}),render:{mode:"premium-hypsometric-hillshade",terrainTexture:true}};
+  model.packageManifest=manifest;
+  const files=[
+    {name:"model.3mf",data:model.threeMf},{name:"model.stl",data:model.stl},{name:"model.glb",data:model.glb},
+    {name:"model-obj.zip",data:model.objBundle},{name:"validation.zip",data:model.validationBundle},
+    {name:"production.json",data:JSON.stringify(manifest,null,2)}
+  ];
+  if(model.standStl)files.push({name:"display-stand.stl",data:model.standStl});
+  if(model.tileBundle)files.push({name:"tiled-map.zip",data:model.tileBundle});
+  model.printPackage=encodeArtifactZip(files);
+}
+
 let modelViewerReady=null;
 function ensureModelViewer(){return modelViewerReady||(modelViewerReady=import("./vendor/model-viewer.min.js"));}
 
@@ -201,6 +286,7 @@ function updateQualityBadge(model,prefix="QUALITY"){
   if(Number.isFinite(Number(q.placeLabelsPlanned))&&Number(q.placeLabelsRequested)>0&&Number(q.placeLabelsPlanned)<Number(q.placeLabelsRequested))bits.push(q.placeLabelsPlanned+" LABELS");
   if(q.hangerAnchored)bits.push("HANGER ANCHORED");
   if(q.geographicMedallion)bits.push("GEO MEDALLION");
+  if(q.premiumTexture)bits.push("HILLSHADE");
   $("qualityBadge").textContent=bits.length?prefix+" · "+bits.join(" · "):prefix+" · PASS";
   $("qualityBadge").classList.toggle("active",bits.length>0);
 }
@@ -230,6 +316,13 @@ async function generateLivePreview({preferDem=true}={}){
     const demSampler=state.liveDemSampler||gpxPreviewSampler(route.points),title=productionDisplayTitle(route.name,config.customization);
     const model=await generateProductionModel({points:route.points,demSampler,cartography:null,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     if(generation!==state.previewGeneration||route!==state.route)return;
+    if($("visualPreset").value==="premium-medal"&&config.shape.kind==="geo-medallion"&&state.geoOutline){
+      try{
+        const terrainTexture=await buildPremiumTerrainTexture({projection:model.projection,demSampler,geometry:state.geoOutline,config,resolution:256});
+        model.glb=encodeGlb(model.mesh,{title,materials:model.materials,texture:{png:terrainTexture.png,regions:[0,1,2,3,4],uv:premiumTextureUv(model.projection)}});
+        model.quality={...(model.quality||{}),premiumTexture:true};
+      }catch{}
+    }
     await installLiveModel(model,state.liveDemSampler?"LIVE 3D READY · TERRAIN DEM":"LIVE 3D READY · GPX ELEVATION");
     if(preferDem&&!state.liveDemSampler&&!state.liveDemPromise)void enhanceLivePreviewWithTerrain(route);
   }catch(error){if(generation===state.previewGeneration)$("livePreviewStatus").textContent="LIVE 3D ERROR · "+(error.message||String(error))}
@@ -319,6 +412,15 @@ async function generate(){
     const title=productionDisplayTitle(state.route.name,config.customization);
     state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     const p=state.production;
+    if($("visualPreset").value==="premium-medal"&&config.shape.kind==="geo-medallion"&&state.geoOutline){
+      try{
+        $("productionStatus").textContent="Baking premium hypsometric hillshade…";
+        const terrainTexture=await buildPremiumTerrainTexture({projection:p.projection,demSampler,geometry:state.geoOutline,config,resolution:384});
+        p.glb=encodeGlb(p.mesh,{title,materials:p.materials,texture:{png:terrainTexture.png,regions:[0,1,2,3,4],uv:premiumTextureUv(p.projection)}});
+        p.quality={...(p.quality||{}),premiumTexture:true,textureResolution:terrainTexture.width};
+        rebuildPrintPackage(p);
+      }catch(error){p.quality={...(p.quality||{}),premiumTexture:false,textureError:String(error?.message||error)}}
+    }
     $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles · "+p.materials.length+" materials · "+p.profile.label;
     updateQualityBadge(p,"PRODUCTION");
     $("modelDiagnostics").textContent=[

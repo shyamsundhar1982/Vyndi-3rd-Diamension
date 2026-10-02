@@ -313,6 +313,7 @@ export function encodeGlb(mesh,options={}){
   }
   for(const normal of normals){const len=Math.hypot(normal.x,normal.y,normal.z)||1;normal.x/=len;normal.y/=len;normal.z/=len}
   const texture=options.texture?.png?.length&&typeof options.texture.uv==="function"?options.texture:null;
+  const textureRegions=new Set(texture?(Array.isArray(texture.regions)?texture.regions:[texture.region]).filter(Number.isFinite).map(Number):[]);
   const uvOffset=align4(normalOffset+normalBytes),uvBytes=texture?vertices.length*8:0;
   let binaryLength=align4(uvOffset+uvBytes),offset=binaryLength;const regionOffsets=new Map();
   for(const [region,indices] of regions){regionOffsets.set(region,{offset,count:indices.length});binaryLength=align4(offset+indices.length*4);offset=binaryLength}
@@ -346,7 +347,7 @@ export function encodeGlb(mesh,options={}){
   for(const [region,indices] of regions){
     const info=regionOffsets.get(region),bufferView=bufferViews.length;bufferViews.push({buffer:0,byteOffset:info.offset,byteLength:indices.length*4,target:34963});
     const accessor=accessors.length;accessors.push({bufferView,componentType:5125,count:indices.length,type:"SCALAR"});
-    primitives.push({attributes:{POSITION:0,NORMAL:1,...(texture&&region===texture.region?{TEXCOORD_0:uvAccessor}:{})},indices:accessor,material:region,mode:4});
+    primitives.push({attributes:{POSITION:0,NORMAL:1,...(texture&&textureRegions.has(region)?{TEXCOORD_0:uvAccessor}:{})},indices:accessor,material:region,mode:4});
   }
   const gltf={
     asset:{version:"2.0",generator:"VYNDI 3rd Diamension"},scene:0,scenes:[{nodes:[0]}],nodes:[{
@@ -356,7 +357,8 @@ export function encodeGlb(mesh,options={}){
     materials:materials.map(material=>{
       const rgb=parseHexColor(material.color),raw=String(material.color||"").replace("#",""),alpha=raw.length>=8?parseInt(raw.slice(6,8),16)/255:1;
       const metallic=clamp(finite(material.metallic,0),0,1),roughness=clamp(finite(material.roughness,.88),.04,1);
-      const out={name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:metallic,roughnessFactor:roughness}};
+      const textured=texture&&textureRegions.has(materials.indexOf(material));
+      const out={name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:textured?[1,1,1,alpha]:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:metallic,roughnessFactor:roughness}};
       if(material.emissive){
         const e=parseHexColor(material.emissive);
         out.emissiveFactor=[Math.min(.35,e[0]*.35),Math.min(.35,e[1]*.35),Math.min(.35,e[2]*.35)];
@@ -367,7 +369,7 @@ export function encodeGlb(mesh,options={}){
   };
   if(texture){
     gltf.images=[{bufferView:imageView,mimeType:"image/png"}];gltf.samplers=[{magFilter:9729,minFilter:9987,wrapS:33071,wrapT:33071}];gltf.textures=[{source:0,sampler:0}];
-    gltf.materials[texture.region].pbrMetallicRoughness.baseColorTexture={index:0};
+    for(const region of textureRegions)if(gltf.materials[region])gltf.materials[region].pbrMetallicRoughness.baseColorTexture={index:0};
   }
   const jsonBytes=encoder.encode(JSON.stringify(gltf)),jsonPadded=align4(jsonBytes.length),binPadded=align4(binary.length),total=12+8+jsonPadded+8+binPadded;
   const out=new Uint8Array(total),outView=new DataView(out.buffer);writeU32(outView,0,0x46546c67);writeU32(outView,4,2);writeU32(outView,8,total);writeU32(outView,12,jsonPadded);writeU32(outView,16,0x4e4f534a);out.fill(0x20,20,20+jsonPadded);out.set(jsonBytes,20);

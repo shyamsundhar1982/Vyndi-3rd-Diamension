@@ -181,12 +181,12 @@
         <span id="qualityBadge" class="quality-badge">QUALITY GUARD</span>
       </div>
       <div id="liveStage" class="stage active">
-        <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
+        <model-viewer id="liveModelViewer" camera-controls environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX</strong><span>TrailRelief-speed interaction, VYNDI canonical terrain geometry.</span></div>
         <div class="stage-note" id="livePreviewStatus">Upload GPX · instant 3D builds locally, then refines with DEM.</div>
       </div>
       <div id="productionStage" class="stage">
-        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
+        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" environment-image="neutral" tone-mapping="commerce" shadow-intensity="1.25" shadow-softness=".72" exposure="1.04" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div class="stage-note" id="viewerStatus">Generate the governed model to inspect exact GLB / AR.</div>
       </div>
     </section>
