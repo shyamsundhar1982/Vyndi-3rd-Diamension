@@ -628,7 +628,7 @@ async function issueAuthenticity(){
       {name:"model.3mf",bytes:p.threeMf},{name:"model.stl",bytes:p.stl},{name:"model.glb",bytes:p.glb},{name:"model-obj.zip",bytes:p.objBundle}
     ],manifestFiles=[];
     for(const file of files){const bytes=file.bytes instanceof Uint8Array?file.bytes:new Uint8Array(file.bytes);manifestFiles.push({name:file.name,sha256:await sha256Hex(bytes),size:bytes.byteLength})}
-    const manifest={artifactType:"terrain-medal",stem:stem(state.route?.name),files:manifestFiles,governed:{service:"VYNDI 3rd Diamension",shape:state.production.config.shape.kind,routeStyle:state.production.config.fabrication.routeStyle,printerProfile:state.production.config.production.printerProfile}};
+    const manifest={artifactType:"terrain-medal",stem:stem(state.route?.name),files:manifestFiles,governed:{service:"VYNDI 3rd Diamension",shape:state.production.config.shape.kind,routeStyle:state.production.config.fabrication.routeStyle,printerProfile:state.production.config.production.printerProfile,sourceRenderer:state.production.config.production.sourceRenderer}};
     const response=await fetch("/api/authenticity/issue",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({manifest})}),data=await response.json();
     if(!response.ok)throw new Error(data.error||"Authenticity signing failed.");
     state.authenticity=data;$("authenticityStatus").textContent="SIGNED · "+data.claim.artifactId+" · manifest "+data.claim.manifestHash.slice(0,12)+"…";
