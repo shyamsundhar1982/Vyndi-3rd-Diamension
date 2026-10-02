@@ -391,7 +391,7 @@ let modelViewerReady=null;
 function ensureModelViewer(){return modelViewerReady||(modelViewerReady=import("./vendor/model-viewer.min.js"));}
 
 function currentConfig(){
-  const base=defaultAdvancedConfig(),p=readPalette(),shapeKind=$("shape").value;
+  const mode=sourceMode(),base=mode==="trailrelief-original"?trailReliefSourceConfig(readOverrides()):defaultAdvancedConfig(),p=readPalette(),shapeKind=$("shape").value;
   return normalizeAdvancedConfig({...base,
     colors:{
       ...base.colors,land:p.land,terrain:p.land,forest:p.forest,mountain:p.mountain,snow:p.snow,water:p.water,route:p.route,
@@ -405,7 +405,7 @@ function currentConfig(){
     },
     contours:{enabled:$("contourEnabled").checked,intervalMm:finite($("contourInterval").value,1),widthMm:.08,riseMm:finite($("contourRise").value,.2)},
     placeLabels:{mode:$("placeLabelMode").value,selectedNames:[],maxCount:$("placeLabelMode").value==="all"?60:18},
-    production:{printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,rimTextLayout:$("visualPreset").value==="premium-medal"?"expedition":"standard",bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
+    production:{...base.production,printerProfile:$("printerProfile").value,medalSize:$("medalSize").value,surfaceLettering:$("surfaceLettering").value,rimTextLayout:mode==="v3d-unified"&&$("visualPreset").value==="premium-medal"?"expedition":"standard",sourceRenderer:mode,trailReliefExaggeration:mode==="trailrelief-original"?finite($("relief").value,TRAILRELIEF_SOURCE_DEFAULTS.exaggeration):undefined,bottomMark:$("bottomMark").value,bottomEngraveDepthMm:finite($("bottomEngraveDepth").value,.35)},
     customization:{...readOverrides(),location:$("eventLocation").value,bib:$("bib").value,status:$("resultStatus").value,start:$("startDetail").value,finish:$("finishDetail").value,placing:$("placing").value},
     map:{roads:$("roads").checked,trails:$("trails").checked,railways:$("railways").checked,buildings:$("buildings").checked},
     shape:{
@@ -428,11 +428,11 @@ function currentConfig(){
   });
 }
 function previewConfig(){
-  const base=currentConfig();
+  const base=currentConfig(),mode=sourceMode(),target=mode==="trailrelief-original"?Math.max(.25,finite(base.fabrication.modelWidthMm,180)/TRAILRELIEF_SOURCE_DEFAULTS.resolution):Math.max(3,finite(base.fabrication.targetXyMm,3));
   return normalizeAdvancedConfig({...base,
-    map:{roads:false,trails:false,railways:false,buildings:false},
-    placeLabels:{...base.placeLabels,mode:"none"},
-    fabrication:{...base.fabrication,targetXyMm:Math.max(3,finite(base.fabrication.targetXyMm,3)),tiled:false,magnetEnabled:false,standEnabled:false}
+    map:mode==="v3d-unified"?base.map:{roads:false,trails:false,railways:false,buildings:false},
+    placeLabels:{...base.placeLabels,mode:mode==="v3d-unified"?base.placeLabels.mode:"none"},
+    fabrication:{...base.fabrication,targetXyMm:target,tiled:false,magnetEnabled:false,standEnabled:false}
   });
 }
 function updateQualityBadge(model,prefix="QUALITY"){
