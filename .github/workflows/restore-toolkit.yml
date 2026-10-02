@@ -1,0 +1,25 @@
+name: Restore toolkit-core
+on:
+  workflow_dispatch:
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore toolkit-core.mjs from known-good commit
+        run: |
+          git show a8069255512bfea6ccb2554e30834b9b89659e37:packages/toolkit/toolkit-core.mjs > packages/toolkit/toolkit-core.mjs
+          test -s packages/toolkit/toolkit-core.mjs
+          wc -c packages/toolkit/toolkit-core.mjs
+          head -c 80 packages/toolkit/toolkit-core.mjs
+      - name: Commit and push restore
+        run: |
+          git config user.name "vyndi-restore"
+          git config user.email "vyndi-restore@users.noreply.github.com"
+          git add packages/toolkit/toolkit-core.mjs
+          git commit -m "RESTORE packages/toolkit/toolkit-core.mjs from a806925 (unbreak generate)" || exit 0
+          git push
