@@ -40,7 +40,7 @@
         <h2>QUICK ADJUST</h2>
         <label>Rider<input id="riderName" value=""></label>
         <label>Date<input id="eventDate" placeholder="Auto from GPX"></label>
-        <label>Relief <output id="reliefOut">8.0 mm</output><input id="relief" type="range" min="1" max="30" step=".5" value="8"></label>
+        <label>Relief <output id="reliefOut">12.0 mm</output><input id="relief" type="range" min="1" max="30" step=".5" value="12"></label>
         <label>Route width <output id="routeWidthOut">1.6 mm</output><input id="routeWidth" type="range" min=".4" max="6" step=".1" value="1.6"></label>
         <label>Mountain from <output id="mountainOut">1200 m</output><input id="mountainM" type="range" min="200" max="3000" step="50" value="1200"></label>
         <label>Snow from <output id="snowOut">2600 m</output><input id="snowM" type="range" min="800" max="6000" step="50" value="2600"></label>
@@ -61,12 +61,12 @@
     <section class="viewport">
       <div class="view-tabs"><button class="active" data-view="live">Live 3D</button><button data-view="production" disabled>Production quality</button><span id="viewState">LIVE 3D</span></div>
       <div id="liveStage" class="stage active">
-        <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
+        <model-viewer id="liveModelViewer" camera-controls shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div id="liveEmpty" class="live-empty"><strong>DROP A GPX INTO THE RIBBON</strong><span>The same canonical terrain engine now drives this live view and every export.</span></div>
         <div class="stage-note" id="livePreviewStatus">Upload a GPX · instant 3D will build locally, then refine with terrain DEM.</div>
       </div>
       <div id="productionStage" class="stage">
-        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="0deg 62deg auto" interaction-prompt="auto"></model-viewer>
+        <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" shadow-intensity="1" shadow-softness=".65" exposure="1.08" camera-orbit="-25deg 50deg auto" field-of-view="28deg" interaction-prompt="auto"></model-viewer>
         <div class="stage-note" id="viewerStatus">Generate the high-resolution governed model to inspect GLB / AR.</div>
       </div>
     </section>
@@ -96,6 +96,8 @@
       <details><summary>Fabrication</summary><div class="block">
         <label>Model width mm<input id="modelWidth" type="number" min="60" max="600" step="5" value="180"></label>
         <label>Base mm<input id="baseMm" type="number" min=".8" max="10" step=".2" value="3"></label>
+        <label>Border / rim width mm<input id="rimWidthMm" type="number" min="0" max="40" step=".5" value="12"></label>
+        <label>Border / rim height mm<input id="rimHeightMm" type="number" min="0" max="20" step=".5" value="5"></label>
         <label class="check"><input id="tiled" type="checkbox"> Split large format into tiles</label>
         <label class="check"><input id="magnets" type="checkbox"> Magnet pockets</label>
         <label class="check"><input id="stand" type="checkbox"> Separate display stand</label>
