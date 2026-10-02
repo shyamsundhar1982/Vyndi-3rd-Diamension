@@ -1,0 +1,30 @@
+name: Restore CSS and apply premium UI
+on:
+  workflow_dispatch:
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore styles.css from last good commit
+        run: |
+          git show e2f1a07bda2ff69c82fde1f0b809acd073abda71:apps/web/styles.css > apps/web/styles.css
+          test -s apps/web/styles.css
+          cat scripts/mat_only.css >> apps/web/styles.css
+          wc -c apps/web/styles.css
+      - name: Premium toolkit patches
+        run: python3 packages/toolkit/apply-premium-patches.py || true
+      - name: Append app inspector if present
+        run: |
+          if [ -f scripts/append_app_inspector.py ]; then python3 scripts/append_app_inspector.py; fi
+      - name: Commit
+        run: |
+          git config user.name "vyndi-premium"
+          git config user.email "vyndi-premium@users.noreply.github.com"
+          git add apps/web/styles.css packages/toolkit/toolkit-core.mjs apps/web/app.mjs || true
+          git diff --cached --quiet || git commit -m "Restore styles + material CSS + premium mesh patches"
+          git push

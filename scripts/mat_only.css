@@ -1,0 +1,27 @@
+/* —— Material selector ribbon (interactive) —— */
+.material-ribbon{height:auto;min-height:52px;display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:#120f0d;overflow-x:auto;flex-wrap:nowrap}
+.material-ribbon .ribbon-label{flex:0 0 118px;padding:0 4px 0 2px}
+.material-ribbon .ribbon-label strong{font-size:9px;letter-spacing:.12em;color:var(--orange);display:block}
+.material-ribbon .ribbon-label span{font-size:8px;color:var(--muted);margin-top:3px;display:block;line-height:1.3}
+.mat-chip{display:flex;align-items:center;gap:6px;padding:5px 8px 5px 6px;border:1px solid #3a2d24;border-radius:8px;background:#1a1512;color:#bcaca0;cursor:pointer;font-size:9px;white-space:nowrap;flex-shrink:0;transition:border-color .15s,box-shadow .15s,background .15s}
+.mat-chip:hover{border-color:#765436;color:var(--ink)}
+.mat-chip.active{border-color:var(--orange);background:#241a12;color:var(--ink);box-shadow:0 0 0 1px #ff9f2f44}
+.mat-chip input[type=color]{width:22px;height:22px;padding:0;border:0;border-radius:4px;background:none;cursor:pointer;flex-shrink:0}
+.mat-chip span{font-weight:700;letter-spacing:.04em}
+
+.mat-inspector{display:grid;grid-template-columns:minmax(120px,160px) 1fr;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#181310,#12100e);min-height:48px}
+.mat-inspector-head strong{display:block;color:var(--orange);font-size:11px;letter-spacing:.08em}
+.mat-inspector-head span{display:block;color:var(--muted);font-size:9px;margin-top:2px;line-height:1.35}
+.mat-inspector-body{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.mat-inspector-body label{display:flex;align-items:center;gap:8px;font-size:9px;color:#a99a8f;margin:0}
+.mat-inspector-body label.stack{flex-direction:column;align-items:stretch;gap:4px;min-width:140px}
+.mat-inspector-body input[type=range]{width:120px;accent-color:var(--orange)}
+.mat-inspector-body input[type=number],.mat-inspector-body select{min-height:28px;padding:4px 6px;border:1px solid #443329;background:#211a16;color:var(--ink);border-radius:3px;width:88px}
+.mat-inspector-body .mat-swatch{width:28px;height:28px;border-radius:4px;border:1px solid #3a2d24;padding:0}
+.mat-inspector-body output{color:var(--amber);font-size:9px;min-width:3.5em}
+
+.studio{height:calc(100vh - 248px)}
+@media(max-width:950px){
+  .mat-inspector{grid-template-columns:1fr}
+  .studio{min-height:calc(100vh - 280px)}
+}
