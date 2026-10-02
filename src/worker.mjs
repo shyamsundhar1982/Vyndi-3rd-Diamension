@@ -2,7 +2,7 @@ const OPEN_TOPO_DATASETS=new Set(["COP30","COP90","NASADEM","SRTM_GL1","AW3D30",
 const BASE_HEADERS={
   "strict-transport-security":"max-age=31536000; includeSubDomains",
   "x-content-type-options":"nosniff",
-  "x-frame-options":"SAMEORIGIN",
+  "x-frame-options":"DENY",
   "referrer-policy":"strict-origin-when-cross-origin",
   "cross-origin-opener-policy":"same-origin",
   "cross-origin-resource-policy":"same-origin",
@@ -17,12 +17,27 @@ function secure(response){
   const type=String(headers.get("content-type")||"").toLowerCase();
   if(type.includes("text/html")){
     headers.set("content-security-policy",[
-      "default-src 'self'","base-uri 'none'","object-src 'none'","frame-ancestors 'self'","form-action 'self'",
-      "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline' https://fonts.googleapis.com","font-src 'self' data: https://fonts.gstatic.com","img-src 'self' data: blob: https://vyndi-ride-stories.vayushastr.workers.dev",
-      "media-src 'self' blob:","connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems https://vyndi-ride-stories.vayushastr.workers.dev",
-      "frame-src 'self'","worker-src 'self' blob:","manifest-src 'self'"
+      "default-src 'self'","base-uri 'none'","object-src 'none'","frame-ancestors 'none'","form-action 'self'",
+      "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline'","img-src 'self' data: blob:",
+      "media-src 'self' blob:","connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems",
+      "worker-src 'self' blob:","manifest-src 'self'"
     ].join("; "));
   }
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+function secureEngine(response){
+  const headers=new Headers(response.headers);
+  for(const [name,value] of Object.entries(BASE_HEADERS))headers.set(name,value);
+  headers.set("x-frame-options","SAMEORIGIN");
+  headers.set("content-security-policy",[
+    "default-src 'self'","base-uri 'none'","object-src 'none'","frame-ancestors 'self'","form-action 'self'",
+    "script-src 'self'","script-src-attr 'none'","style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://vyndi-ride-stories.vayushastr.workers.dev",
+    "media-src 'self' blob:",
+    "connect-src 'self' blob: https://s3.amazonaws.com https://tiles.openfreemap.org https://overpass-api.de https://overpass.kumi.systems https://vyndi-ride-stories.vayushastr.workers.dev",
+    "worker-src 'self' blob:","manifest-src 'self'"
+  ].join("; "));
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 function json(body,status=200){return secure(new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}}))}
@@ -133,6 +148,7 @@ export default {
     if(url.pathname==="/"){
       const target=new URL(request.url);target.pathname="/apps/web/";return secure(await env.ASSETS.fetch(new Request(target,request)));
     }
+    if(url.pathname.startsWith("/apps/web/engines/")&&url.pathname.endsWith(".html"))return secureEngine(await env.ASSETS.fetch(request));
     return secure(await env.ASSETS.fetch(request));
   }
 };
