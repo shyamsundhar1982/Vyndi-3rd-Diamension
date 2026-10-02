@@ -104,7 +104,7 @@ export default {
     const url=new URL(request.url);
     if(url.pathname.startsWith("/api/")&&!trusted(request))return json({error:"Cross-site API access is not permitted."},403);
     if(url.pathname==="/health")return json({ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
-    if(["/api/events/search","/api/events/import-result","/api/terrain/plan","/api/map/plan"].includes(url.pathname))return sourceVyndiProxy(request,url);
+    if(["/api/geo/search","/api/geo/outline","/api/events/search","/api/events/import-result","/api/terrain/plan","/api/map/plan"].includes(url.pathname))return sourceVyndiProxy(request,url);
     if(url.pathname==="/api/geo/search"&&request.method==="GET"){try{return json({results:await geoSearch(url)})}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/geo/outline"&&request.method==="GET"){try{return json(await geoOutline(url))}catch(error){return json({error:error.message},400)}}
     if(url.pathname==="/api/terrain/opentopography"&&request.method==="POST"){
