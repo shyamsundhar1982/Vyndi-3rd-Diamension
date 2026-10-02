@@ -78,6 +78,12 @@ export function normalizeCustomization(input={}){
   };
 }
 
+export function premiumRimTextCopy(customization={}){
+  const meta=normalizeCustomization(customization);
+  const elevation=meta.elevation?(meta.elevation.trim().startsWith("+")?meta.elevation:"+"+meta.elevation):"";
+  return {event:meta.event,stats:[meta.distance,elevation,meta.duration].filter(Boolean).join(" - ")};
+}
+
 export function productionDisplayTitle(routeTitle="",customization={}){
   const meta=normalizeCustomization(customization),parts=[];
   const add=value=>{
@@ -103,7 +109,7 @@ export function defaultAdvancedConfig(){
     surface:{forestRaiseMm:.4,waterDepthMm:.6,waterMode:"procedural-waves",waveHeightMm:.3,waveSpacingMm:2.6},
     contours:{enabled:false,intervalMm:1,widthMm:.08,riseMm:.2},
     placeLabels:{mode:"major",selectedNames:[],maxCount:18},
-    production:{printerProfile:"bambu-p1s",medalSize:"custom",surfaceLettering:"auto",bottomMark:"",bottomEngraveDepthMm:.35},
+    production:{printerProfile:"bambu-p1s",medalSize:"custom",surfaceLettering:"auto",rimTextLayout:"standard",bottomMark:"",bottomEngraveDepthMm:.35},
     customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:12,targetXyMm:1,
@@ -688,11 +694,12 @@ const GLYPH_5X7={
   "8":["01110","10001","10001","01110","10001","10001","01110"],"9":["01110","10001","10001","01111","00001","00001","01110"],
   "-":["00000","00000","00000","11111","00000","00000","00000"],"/":["00001","00010","00100","01000","10000","00000","00000"],
   ".":["00000","00000","00000","00000","00000","00110","00110"],":":["00000","00110","00110","00000","00110","00110","00000"],
+  "+":["00000","00100","00100","11111","00100","00100","00000"],",":["00000","00000","00000","00000","00110","00100","01000"],
   " ":["00000","00000","00000","00000","00000","00000","00000"]
 };
 
 function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,minCellMm=.55,riseMm=.8,terrainTopMm=()=>0,inside=()=>true}={}){
-  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   if(!value)return [];
   const nominalWidth=value.length*6-1;
   const cell=Math.max(Math.max(.3,Number(minCellMm)||.55),Math.min(cellMm,maxWidth/Math.max(1,nominalWidth)));
@@ -720,7 +727,7 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,minCel
 
 
 function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,flipRadial=false,maxArcRad=2.7,cellMm=1.2,riseMm=.8,terrainTopMm=()=>0}={}){
-  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const value=String(text||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   const outer=Math.max(1,Number(radiusMm)||0),rim=Math.max(0,Number(rimWidthMm)||0);
   if(!value||rim<2||outer<=rim)return [];
   const arcRadius=outer-rim/2,nominalWidth=value.length*6-1;
@@ -752,7 +759,7 @@ function curvedRimTextMeshes(text,{radiusMm,rimWidthMm,centerAngle=Math.PI/2,fli
   return meshes;
 }
 
-export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape=""}={}){
+export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8,rimWidthMm=0,shape="",layout="standard"}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
   const meta=normalizeCustomization(customization);
   const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
@@ -762,6 +769,18 @@ export function buildPersonalizationMeshes({customization={},extents,insideNorma
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
   const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
   if(shape==="circle"&&Number(rimWidthMm)>=2){
+    if(layout==="expedition"){
+      const copy=premiumRimTextCopy(meta);
+      if(copy.event)meshes.push(...curvedRimTextMeshes(copy.event,{
+        radiusMm:radius,rimWidthMm,centerAngle:Math.PI,maxArcRad:2.18,cellMm:baseCell*.82,
+        riseMm:Math.max(.42,riseMm*.88),terrainTopMm
+      }));
+      if(copy.stats)meshes.push(...curvedRimTextMeshes(copy.stats,{
+        radiusMm:radius,rimWidthMm,centerAngle:-Math.PI/4,flipRadial:true,maxArcRad:2.0,cellMm:baseCell*.72,
+        riseMm:Math.max(.34,riseMm*.74),terrainTopMm
+      }));
+      return meshes;
+    }
     if(meta.event)meshes.push(...curvedRimTextMeshes(meta.event,{
       radiusMm:radius,rimWidthMm,centerAngle:Math.PI/2,maxArcRad:2.65,cellMm:baseCell,
       riseMm:Math.max(.45,riseMm),terrainTopMm
@@ -847,7 +866,7 @@ function modelExtents(config,projection,outlinePolygons){
 }
 
 function bottomTextDepthAt(x,y,config,extents){
-  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 \-\/\.:]/g," ").trim();
+  const value=String(config?.production?.bottomMark||"").toUpperCase().replace(/[^A-Z0-9 +,\-\/\.:]/g," ").trim();
   const depth=Math.max(0,Math.min(Math.max(.05,Number(config?.fabrication?.baseMm)||3)-.2,Number(config?.production?.bottomEngraveDepthMm)||0));
   if(!value||depth<=0||!extents)return 0;
   const width=Math.max(1,extents.maxX-extents.minX),maxWidth=width*.72,nominal=Math.max(1,value.length*6-1);
@@ -1049,7 +1068,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const textMeshes=allowSurfaceLettering?buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
-    rimWidthMm:c.fabrication.rimWidthMm,shape:medallionMode?"circle":c.shape.kind
+    rimWidthMm:c.fabrication.rimWidthMm,shape:medallionMode?"circle":c.shape.kind,layout:c.production.rimTextLayout
   }):[];
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   let hangerPlacement=null;
