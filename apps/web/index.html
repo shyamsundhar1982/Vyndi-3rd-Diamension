@@ -243,6 +243,106 @@
         <button id="generate" class="primary" disabled>GENERATE PRINT MODEL</button>
         <p id="productionStatus">Upload GPX or load Demo.</p>
       </section>
+      
+      <section class="industry-panel" id="industryPanel">
+        <span class="eyebrow">INDUSTRY STUDIO</span>
+        <p class="hint" id="industryStatus">Print readiness · batch · boundaries · order sheet</p>
+
+        <div class="industry-block">
+          <strong>1 · Print readiness</strong>
+          <div id="printReadiness" class="print-readiness">Checking printer profile…</div>
+          <button type="button" id="refreshReadiness" class="ghost">Refresh tips</button>
+        </div>
+
+        <div class="industry-block">
+          <strong>2 · Batch names (CSV)</strong>
+          <p class="hint">Columns: name, event, date, bib, status — max 25 / run</p>
+          <input id="batchCsv" type="file" accept=".csv,text/csv">
+          <label>Limit <input id="batchLimit" type="number" min="1" max="50" value="10"></label>
+          <button type="button" id="batchRun">Run batch</button>
+          <p id="batchStatus" class="hint"></p>
+        </div>
+
+        <div class="industry-block">
+          <strong>3 · Design quality</strong>
+          <button type="button" id="coastlinePremiumBtn">Coastline premium</button>
+          <button type="button" id="enableMagnetQuick">Magnet pocket</button>
+          <button type="button" id="enableStandQuick">Display stand</button>
+        </div>
+
+        <div class="industry-block">
+          <strong>4 · Finish presets</strong>
+          <div class="chip-row">
+            <button type="button" data-finish="ams">AMS multi-colour</button>
+            <button type="button" data-finish="fdm-draft">FDM draft</button>
+            <button type="button" data-finish="fine-fdm">Fine FDM</button>
+            <button type="button" data-finish="resin">Resin fine</button>
+          </div>
+        </div>
+
+        <div class="industry-block">
+          <strong>5 · Country boundary</strong>
+          <div class="chip-row countries">
+            <button type="button" data-country="India">India</button>
+            <button type="button" data-country="Nepal">Nepal</button>
+            <button type="button" data-country="Switzerland">Switzerland</button>
+            <button type="button" data-country="France">France</button>
+            <button type="button" data-country="Japan">Japan</button>
+            <button type="button" data-country="New Zealand">New Zealand</button>
+            <button type="button" data-country="Kenya">Kenya</button>
+            <button type="button" data-country="United States of America">USA</button>
+          </div>
+        </div>
+
+        <div class="industry-block">
+          <strong>6 · Ops</strong>
+          <button type="button" id="orderSheetBtn">Order sheet CSV+JSON</button>
+          <label>White-label brand<input id="whiteLabelBrand" type="text" placeholder="Race organiser mark"></label>
+          <button type="button" id="applyWhiteLabel">Apply reverse mark</button>
+        </div>
+
+        <div class="industry-block">
+          <strong>7 · Guided setup</strong>
+          <button type="button" id="wizStart">5-step wizard</button>
+        </div>
+      </section>
+
+      <div id="wizardOverlay" class="wizard-overlay" hidden>
+        <div class="wizard-card">
+          <header><strong>Medal studio wizard</strong><button type="button" id="wizClose">Close</button></header>
+          <div class="wiz-progress"><span id="wizProgressFill"></span></div>
+          <div data-wiz-panel="1" class="wiz-panel">
+            <h3>1 · Route</h3>
+            <p>Upload GPX or press DEMO.</p>
+            <button type="button" data-wiz-go="2">Next</button>
+          </div>
+          <div data-wiz-panel="2" class="wiz-panel" hidden>
+            <h3>2 · Boundary</h3>
+            <p>Pick a country chip or search a region for geo-medallion sea.</p>
+            <button type="button" data-wiz-go="1">Back</button>
+            <button type="button" data-wiz-go="3">Next</button>
+          </div>
+          <div data-wiz-panel="3" class="wiz-panel" hidden>
+            <h3>3 · Premium look</h3>
+            <p>Press ★ PREMIUM, then tune Water / Route chips.</p>
+            <button type="button" data-wiz-go="2">Back</button>
+            <button type="button" data-wiz-go="4">Next</button>
+          </div>
+          <div data-wiz-panel="4" class="wiz-panel" hidden>
+            <h3>4 · Personalise</h3>
+            <p>Event, rider name, date on the left · or batch CSV for many athletes.</p>
+            <button type="button" data-wiz-go="3">Back</button>
+            <button type="button" data-wiz-go="5">Next</button>
+          </div>
+          <div data-wiz-panel="5" class="wiz-panel" hidden>
+            <h3>5 · Generate & export</h3>
+            <p>GENERATE PRINT MODEL · check readiness · download 3MF/STL.</p>
+            <button type="button" data-wiz-go="4">Back</button>
+            <button type="button" id="wizClose2">Done</button>
+          </div>
+        </div>
+      </div>
+
       <section>
         <span class="eyebrow">EXPORTS</span>
         <div class="exports">
