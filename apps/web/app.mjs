@@ -384,7 +384,7 @@ async function loadRoutes(files){
   const routes=[];
   for(const file of list)routes.push(parseGpxText(await file.text(),file.name,{maxPoints:30000}));
   state.routes=routes;state.route=mergeGpxRoutes(routes,routes.length===1?routes[0].name:routes.map(r=>r.name).join(" + "));
-  state.sourceGpxText=serializeGpxRoute(state.route);state.sourceFileName=stem(state.route.name)+".gpx";
+  state.sourceGpxText=serializeGpxRoute(state.route);state.sourceFileName=list.length===1?(list[0].name||stem(state.route.name)+".gpx"):stem(state.route.name)+".gpx";
   state.landcover=[];state.liveDemSampler=null;state.liveDemPromise=null;state.liveDemInfo=null;state.previewGeneration++;
   if(state.previewUrl){URL.revokeObjectURL(state.previewUrl);state.previewUrl=null}
   $("liveModelViewer").removeAttribute("src");$("liveEmpty").hidden=false;$("livePreviewStatus").textContent="BUILDING LIVE 3D · GPX ELEVATION";
