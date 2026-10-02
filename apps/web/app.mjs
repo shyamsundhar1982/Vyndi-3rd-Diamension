@@ -485,7 +485,7 @@ async function generateLivePreview({preferDem=true}={}){
     }
     const model=await generateProductionModel({points:route.points,demSampler,cartography:null,landcover:state.landcover,config,logoImage:state.logoImage,heightmapImage:state.heightmapImage,title});
     if(generation!==state.previewGeneration||route!==state.route)return;
-    if($("visualPreset").value==="premium-medal"&&config.shape.kind==="geo-medallion"&&state.geoOutline){
+    if(config.production.sourceRenderer==="v3d-unified"&&$("visualPreset").value==="premium-medal"&&config.shape.kind==="geo-medallion"&&state.geoOutline){
       try{
         const terrainTexture=await buildPremiumTerrainTexture({projection:model.projection,demSampler,geometry:state.geoOutline,config,resolution:256});
         model.glb=encodeGlb(model.mesh,{title,materials:model.materials,texture:{png:terrainTexture.png,regions:[0,1,2,3,4],uv:premiumTextureUv(model.projection)}});
@@ -572,10 +572,15 @@ async function resolveDem(config,bounds){
 }
 async function generate(){
   if(!state.route)return;
-  const config=currentConfig();if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline){$("productionStatus").textContent="Geographic terrain requires a selected or uploaded boundary.";return}
+  let config=currentConfig();if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline&&config.production.sourceRenderer==="v3d-unified"){$("productionStatus").textContent="Geographic terrain requires a selected or uploaded boundary.";return}
   $("generate").disabled=true;$("productionStatus").textContent="Loading DEM and building governed production mesh…";
   try{
     const bounds=productionBounds(state.route.bounds||previewBounds(state.route.points),config.shape),demSampler=await resolveDem(config,bounds);
+    if(config.production.sourceRenderer==="trailrelief-original"){
+      config=normalizeAdvancedConfig({...config,shape:{...config.shape,kind:"circle",outlineGeometry:null},fabrication:{...config.fabrication,reliefMm:trailReliefSourceRelief(state.route,demSampler,config)},map:{roads:false,trails:false,railways:false,buildings:false},placeLabels:{...config.placeLabels,mode:"none"}});
+    }else if(config.production.sourceRenderer==="vyndi-original"){
+      config=normalizeAdvancedConfig({...config,shape:{...config.shape,kind:"circle",outlineGeometry:null},fabrication:{...config.fabrication,baseMm:VYNDI_SOURCE_DEFAULTS.baseMm,reliefMm:VYNDI_SOURCE_DEFAULTS.reliefLimitMm,routeStyle:VYNDI_SOURCE_DEFAULTS.routeStyle,routeWidthMm:VYNDI_SOURCE_DEFAULTS.routeWidthMm,routeRiseMm:VYNDI_SOURCE_DEFAULTS.routeRiseMm}});
+    }
     const mapEnabled=config.map.roads||config.map.trails||config.map.railways||config.map.buildings||config.placeLabels.mode!=="none";
     let cartography=null;
     if(mapEnabled){$("productionStatus").textContent="Loading roads / trails / railways / buildings / places…";cartography=await loadOpenFreeMapCartography(bounds,{preferredZoom:9,tileBudget:40})}
