@@ -121,6 +121,160 @@ function applyVisualPreset(name=$("visualPreset")?.value||"premium-medal",{initi
   if(!initial){resetGenerated("Presentation preset changed · regenerate production model.");schedulePreview(0)}
 }
 
+
+function sourceMode(){return $("sourceRenderer")?.value||"trailrelief-original"}
+function trailReliefLabel(route=state.route,customization=readOverrides()){
+  const d=TRAILRELIEF_SOURCE_DEFAULTS,bits=[];
+  const title=clean(customization.event)||clean(route?.name);if(title)bits.push(title.toUpperCase());
+  if(clean(customization.date))bits.push(clean(customization.date).toUpperCase());
+  const distance=finite(route?.distanceKm);if(distance>0)bits.push((distance<100?distance.toFixed(1):distance.toFixed(0))+" km");
+  const gain=finite(route?.elevationGainM);if(gain>0)bits.push("+"+Math.round(gain).toLocaleString("en-US")+" m");
+  const seconds=finite(route?.movingTimeSeconds)||finite(route?.elapsedTimeSeconds);
+  if(seconds>0){const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);bits.push(h?h+"h "+m+"m":m+"m")}
+  return bits.join("  -  ");
+}
+function setSourceSurface(mode){
+  const trail=$("trailReliefSourceCanvas"),vyndi=$("sourcePreviewCanvas"),viewer=$("liveModelViewer");
+  if(trail)trail.hidden=mode!=="trailrelief-original";
+  if(vyndi)vyndi.hidden=mode!=="vyndi-original";
+  if(viewer)viewer.hidden=mode!=="v3d-unified";
+}
+function configureReliefControl(mode){
+  const input=$("relief"),label=input?.closest("label");if(!input||!label)return;
+  const first=label.childNodes[0];
+  if(mode==="trailrelief-original"){
+    if(first)first.textContent="Elevation amplification ";
+    input.min=".5";input.max="10";input.step=".1";
+  }else if(mode==="vyndi-original"){
+    if(first)first.textContent="Elevation exaggeration ";
+    input.min="1";input.max="10";input.step=".5";
+  }else{
+    if(first)first.textContent="Elevation relief ";
+    input.min="1";input.max="30";input.step=".5";
+  }
+}
+function applySourceRenderer(mode=sourceMode(),{initial=false}={}){
+  state.trailRenderer?.dispose?.();state.trailRenderer=null;
+  setSourceSurface(mode);configureReliefControl(mode);
+  $("visualPresetRow").hidden=mode!=="v3d-unified";
+  if(mode==="trailrelief-original"){
+    const d=TRAILRELIEF_SOURCE_DEFAULTS;
+    setPalette({land:d.colors.land,forest:d.colors.forest,mountain:d.colors.mountain,snow:d.colors.snow,water:d.colors.water,route:d.colors.route,rim:d.colors.rim,labels:d.colors.text});
+    setControl("routeBufferKm",d.paddingKm);setControl("xyDetail",(d.modelSize/d.resolution).toFixed(2));setControl("relief",d.exaggeration);
+    setControl("mountainM",d.mountainLine);setControl("snowM",d.snowLine);setControl("forestRaise",d.forestRaise);setControl("waterDepth",d.waterDepth);setControl("waterMode","flat");
+    setControl("routeStyle",d.routeMode);setControl("routeWidth",d.routeWidth);setControl("routeRise",d.routeHeight);
+    setControl("shape","circle");setControl("modelWidth",d.modelSize);setControl("baseMm",d.plateThickness);setControl("rimWidthMm",d.rimWidth);setControl("rimHeightMm",d.rimHeight);
+    setControl("surfaceLettering","full");setControl("placeLabelMode","none");setControl("roads",false);setControl("trails",false);setControl("railways",false);setControl("buildings",false);
+    $("qualityBadge").textContent="SOURCE · TRAILRELIEF ORIGINAL";$("livePreviewStatus").textContent="TRAILRELIEF SOURCE RENDERER";
+  }else if(mode==="vyndi-original"){
+    const d=VYNDI_SOURCE_DEFAULTS;
+    setPalette({land:d.terrainColor,forest:d.terrainColor,mountain:d.terrainColor,snow:"#f4f6f2",water:d.waterColor,route:d.routeColor,rim:"#202326",labels:d.labelsColor,roads:d.roadsColor});
+    setControl("relief",d.exaggeration);setControl("waterMode",d.waterMode);setControl("waveHeight",d.waveHeightMm);setControl("waveSpacing",d.wavelengthMm);
+    setControl("baseMm",d.baseMm);setControl("routeStyle",d.routeStyle);setControl("routeWidth",d.routeWidthMm);setControl("routeRise",d.routeRiseMm);setControl("shape",d.shape);
+    $("qualityBadge").textContent="SOURCE · VYNDI TERRAIN MEDAL ORIGINAL";$("livePreviewStatus").textContent="VYNDI SOURCE CANVAS";
+  }else{
+    applyVisualPreset($("visualPreset").value,{initial:true});
+    $("qualityBadge").textContent="V3D UNIFIED";$("livePreviewStatus").textContent="V3D CANONICAL GLB";
+  }
+  syncOutputs();
+  if(!initial){resetGenerated("Renderer source changed · regenerate production model.");schedulePreview(0)}
+}
+function trailReliefSourceRelief(route,demSampler,config){
+  if(!route?.points?.length||typeof demSampler!=="function")return Math.max(.2,finite(config.fabrication.reliefMm,2));
+  const b=route.bounds||previewBounds(route.points),lat0=(b.minLat+b.maxLat)/2,lon0=(b.minLon+b.maxLon)/2,cos=Math.max(.08,Math.cos(lat0*Math.PI/180));
+  let groundR=0,min=Infinity,max=-Infinity;
+  const stride=Math.max(1,Math.ceil(route.points.length/800));
+  for(let i=0;i<route.points.length;i+=stride){
+    const p=route.points[i],x=(finite(p.lon)-lon0)*111320*cos,y=(finite(p.lat)-lat0)*110540;groundR=Math.max(groundR,Math.hypot(x,y));
+    const e=Number(demSampler(p.lat,p.lon));if(Number.isFinite(e)){min=Math.min(min,Math.max(0,e));max=Math.max(max,Math.max(0,e))}
+  }
+  groundR+=finite(config.shape.routeBufferKm,TRAILRELIEF_SOURCE_DEFAULTS.paddingKm)*1000;
+  if(!Number.isFinite(min)||!Number.isFinite(max)||max<=min||groundR<=0)return .25;
+  const terrainRadius=Math.max(1,finite(config.fabrication.modelWidthMm,180)/2-finite(config.fabrication.rimWidthMm,12));
+  const mmPerM=terrainRadius/groundR,exaggeration=finite($("relief").value,TRAILRELIEF_SOURCE_DEFAULTS.exaggeration);
+  return Math.max(.16,(max-min)*mmPerM*exaggeration);
+}
+let trailRendererModule=null;
+async function renderTrailReliefSource(model,config){
+  trailRendererModule||=import("./vendor/trailrelief-source-renderer.mjs");
+  const runtime=await trailRendererModule;
+  state.trailRenderer?.dispose?.();state.trailRenderer=null;
+  setSourceSurface("trailrelief-original");
+  state.trailRenderer=runtime.renderTrailReliefSource({
+    canvas:$("trailReliefSourceCanvas"),model,colors:config.colors,label:trailReliefLabel(),modelWidthMm:config.fabrication.modelWidthMm,
+    rimWidthMm:config.fabrication.rimWidthMm,rimHeightMm:config.fabrication.rimHeightMm,baseMm:config.fabrication.baseMm,
+    textSize:TRAILRELIEF_SOURCE_DEFAULTS.textSize,textDepth:TRAILRELIEF_SOURCE_DEFAULTS.textDepth,
+    cameraFov:40,hemisphereIntensity:.6,directionalIntensity:2.2,roughness:.82,metalness:.02
+  });
+  $("liveEmpty").hidden=true;
+  $("livePreviewStatus").textContent="TRAILRELIEF ORIGINAL · "+model.mesh.vertices.length.toLocaleString()+" vertices · exact source scene";
+  $("qualityBadge").textContent="SOURCE · TRAILRELIEF · 40° CAMERA · ORIGINAL LIGHTING";
+}
+function vyndiFrame(route){
+  const b=route?.bounds||previewBounds(route?.points||[]),midLat=(b.minLat+b.maxLat)/2,midLon=(b.minLon+b.maxLon)/2,lonScale=Math.max(.08,Math.cos(midLat*Math.PI/180));
+  const extent=Math.max((b.maxLon-b.minLon)*lonScale,b.maxLat-b.minLat)*1.18||1;
+  return {midLat,midLon,lonScale,extent,frameSize:1.45};
+}
+function vyndiXY(point,frame){
+  return {x:(finite(point.lon)-frame.midLon)*frame.lonScale/frame.extent*frame.frameSize,y:(finite(point.lat)-frame.midLat)/frame.extent*frame.frameSize,segment:point.segment};
+}
+function projectVyndiSource(x,y,z,cx,cy,scale){
+  const {yaw,pitch}=state.vyndiView,cyaw=Math.cos(yaw),syaw=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const rx=x*cyaw-z*syaw,rz=x*syaw+z*cyaw,ry=y*cp-rz*sp,depth=y*sp+rz*cp,perspective=1/(1+depth*VYNDI_SOURCE_VIEW.perspectiveDepth);
+  return [cx+rx*scale*perspective,cy+ry*scale*perspective,depth,perspective];
+}
+function surfaceHeightVyndiSource(x,y,{demSampler,frame,range,config,waterOverride=null}={}){
+  const lat=frame.midLat+(y/frame.frameSize)*frame.extent,lon=frame.midLon+(x/frame.frameSize)*frame.extent/frame.lonScale,elevation=Number(demSampler(lat,lon));
+  const water=waterOverride===null?(Number.isFinite(elevation)&&elevation<=.5):Boolean(waterOverride);
+  if(water){
+    if(config.surface.waterMode==="flat")return VYNDI_SOURCE_VIEW.waterBase;
+    const frequency=20/Math.max(1.6,finite(config.surface.waveSpacingMm,VYNDI_SOURCE_DEFAULTS.wavelengthMm));
+    return VYNDI_SOURCE_VIEW.waterBase+(finite(config.surface.waveHeightMm,.3)/.3)*.018*(Math.sin((x+y*.32)*frequency)+.45*Math.sin((y-x*.18)*frequency*1.7));
+  }
+  if(Number.isFinite(elevation)&&range.max>range.min){
+    const normalized=Math.max(0,Math.min(1,(elevation-range.min)/(range.max-range.min)));
+    return VYNDI_SOURCE_VIEW.landBase+normalized*(VYNDI_SOURCE_VIEW.landReliefBase+finite($("relief").value,VYNDI_SOURCE_DEFAULTS.exaggeration)*VYNDI_SOURCE_VIEW.exaggerationRelief);
+  }
+  return VYNDI_SOURCE_VIEW.landBase;
+}
+function renderVyndiSourcePreview({route=state.route,demSampler,config=currentConfig()}={}){
+  const canvas=$("sourcePreviewCanvas");if(!canvas||!route?.points?.length||typeof demSampler!=="function")return;
+  state.trailRenderer?.dispose?.();state.trailRenderer=null;setSourceSurface("vyndi-original");$("liveEmpty").hidden=true;
+  const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,globalThis.devicePixelRatio||1),width=Math.max(2,Math.floor(rect.width*dpr)),height=Math.max(2,Math.floor(rect.height*dpr));
+  if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height}
+  const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h*.51,scale=Math.min(w,h)*.34*state.vyndiView.zoom,frame=vyndiFrame(route);
+  let min=Infinity,max=-Infinity;const samples=18;
+  for(let j=0;j<=samples;j++)for(let i=0;i<=samples;i++){const x=-frame.frameSize+2*frame.frameSize*i/samples,y=-frame.frameSize+2*frame.frameSize*j/samples,lat=frame.midLat+(y/frame.frameSize)*frame.extent,lon=frame.midLon+(x/frame.frameSize)*frame.extent/frame.lonScale,e=Number(demSampler(lat,lon));if(Number.isFinite(e)&&e>.5){min=Math.min(min,e);max=Math.max(max,e)}}
+  if(!Number.isFinite(min)||!Number.isFinite(max)||max<=min){min=0;max=1}
+  const range={min,max},n=81,cells=[];
+  for(let j=0;j<n-1;j++)for(let i=0;i<n-1;i++){
+    const x0=-1+2*i/(n-1),x1=-1+2*(i+1)/(n-1),y0=-1+2*j/(n-1),y1=-1+2*(j+1)/(n-1),mx=(x0+x1)/2,my=(y0+y1)/2;
+    if(mx*mx+my*my>1)continue;
+    const corners=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([x,y])=>({x,y,z:surfaceHeightVyndiSource(x,y,{demSampler,frame,range,config})}));
+    const pts=corners.map(p=>projectVyndiSource(p.x,-p.z,p.y,cx,cy,scale)),depth=pts.reduce((sum,p)=>sum+p[2],0)/pts.length;
+    const lat=frame.midLat+(my/frame.frameSize)*frame.extent,lon=frame.midLon+(mx/frame.frameSize)*frame.extent/frame.lonScale,e=Number(demSampler(lat,lon)),water=Number.isFinite(e)&&e<=.5;
+    cells.push({pts,depth,water});
+  }
+  cells.sort((a,b)=>a.depth-b.depth);ctx.clearRect(0,0,w,h);ctx.fillStyle="#091014";ctx.fillRect(0,0,w,h);
+  for(const cell of cells){
+    const shade=Math.max(VYNDI_SOURCE_VIEW.shadeMin,Math.min(VYNDI_SOURCE_VIEW.shadeMax,VYNDI_SOURCE_VIEW.shadeBase-cell.depth*VYNDI_SOURCE_VIEW.shadeDepth));
+    ctx.beginPath();cell.pts.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();
+    ctx.fillStyle=cell.water?`rgb(${shade*.34},${shade*.92},${shade*1.22})`:`rgb(${shade*.72},${shade*.84},${shade*.88})`;ctx.fill();
+    ctx.strokeStyle=cell.water?"#8dd9eb28":"#91a2a518";ctx.lineWidth=.7*dpr;ctx.stroke();
+  }
+  const routePts=route.points.filter((_,i)=>i%Math.max(1,Math.ceil(route.points.length/700))===0||i===route.points.length-1).map(p=>({...vyndiXY(p,frame),raw:p}));
+  if(routePts.length){
+    ctx.beginPath();routePts.forEach((p,i)=>{const z=surfaceHeightVyndiSource(p.x,p.y,{demSampler,frame,range,config})+.012,screen=projectVyndiSource(p.x,-z,p.y,cx,cy,scale);if(!i||p.segment!==routePts[i-1].segment)ctx.moveTo(screen[0],screen[1]);else ctx.lineTo(screen[0],screen[1])});
+    ctx.strokeStyle="#15151566";ctx.lineWidth=5*dpr;ctx.stroke();ctx.strokeStyle=VYNDI_SOURCE_DEFAULTS.routeColor;ctx.lineWidth=Math.max(2*dpr,finite(config.fabrication.routeWidthMm,1.2)*2.1*dpr);ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();
+  }
+  const meta=readOverrides(),hasMeta=Boolean(meta.distance||meta.elevation||meta.duration),titleY=hasMeta?h-154*dpr:h-82*dpr,participantY=hasMeta?h-124*dpr:h-48*dpr;
+  ctx.textAlign="center";ctx.fillStyle=VYNDI_SOURCE_DEFAULTS.labelsColor;ctx.font=`700 ${28*dpr}px Arial`;ctx.fillText((clean(meta.event)||route.name).toUpperCase().slice(0,34),cx,titleY);
+  ctx.fillStyle="#f4f6f2";ctx.font=`700 ${22*dpr}px Arial`;ctx.fillText(clean(meta.name).toUpperCase(),cx,participantY);
+  if(hasMeta){ctx.font=`700 ${12*dpr}px Arial`;ctx.fillStyle="#cbd6d2";[meta.distance,meta.elevation,meta.duration].filter(Boolean).slice(0,3).forEach((line,index)=>ctx.fillText(String(line).toUpperCase(),cx,h-(96-index*18)*dpr))}
+  $("livePreviewStatus").textContent="VYNDI TERRAIN MEDAL ORIGINAL · canvas projection yaw -0.42 · pitch 0.92";
+  $("qualityBadge").textContent="SOURCE · VYNDI ORIGINAL CANVAS";
+}
+
 function syncDemSource(){
   const source=$("demSource").value;
   $("geoTiffRow").hidden=source!=="geotiff";$("arcRow").hidden=source!=="arc";$("openTopoRow").hidden=source!=="opentopography";
