@@ -15,3 +15,37 @@ input,select{width:100%;border:1px solid #443329;background:#211a16;color:var(--
 .advanced{position:fixed;z-index:20;top:0;right:0;width:min(420px,94vw);height:100vh;background:#15110e;border-left:1px solid var(--line);transform:translateX(102%);transition:transform .2s ease;box-shadow:-30px 0 90px #000b}.advanced.open{transform:none}.advanced header{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--line)}.advanced header strong{display:block;letter-spacing:.08em}.advanced header span{display:block;color:var(--muted);font-size:8px;margin-top:3px}.advanced-scroll{height:calc(100vh - 54px);overflow:auto}.advanced details{border-bottom:1px solid var(--line)}.advanced summary{padding:13px;cursor:pointer;color:var(--amber);font-weight:800}.block{padding:0 13px 14px}
 @media(max-width:1250px){.studio{grid-template-columns:286px minmax(0,1fr) 230px}.event-ribbon{grid-template-columns:minmax(230px,1.8fr) repeat(3,minmax(80px,.6fr)) 150px}.metric:nth-of-type(5){display:none}.material-ribbon{overflow-x:auto;grid-template-columns:110px repeat(8,90px)}}
 @media(max-width:950px){body{overflow:auto}.topbar,.event-ribbon,.material-ribbon{position:relative}.event-ribbon{height:auto;min-height:62px;grid-template-columns:1.5fr 1fr 1fr 150px}.metric:nth-of-type(4),.metric:nth-of-type(5){display:none}.studio{height:auto;min-height:calc(100vh - 166px);grid-template-columns:1fr}.control-panel{max-height:none;border-right:0;border-bottom:1px solid var(--line)}.viewport{height:68vh;min-height:520px}.production-rail{border-left:0;border-top:1px solid var(--line)}}
+
+/* Professional output polish */
+.topbar{box-shadow:0 8px 28px #0005;position:relative;z-index:6}
+.brand strong{font-size:14px}.brand small{font-size:9px}
+.event-ribbon{background:linear-gradient(180deg,#18130f,#120f0d)}
+.material-ribbon{box-shadow:0 6px 20px #0003;position:relative;z-index:5}
+.studio{grid-template-columns:300px minmax(0,1fr) 276px}
+.control-panel,.production-rail{background:#14110f}
+.control-panel{box-shadow:10px 0 30px #0002}.production-rail{box-shadow:-10px 0 30px #0002}
+.production-rail section:first-child{position:sticky;top:0;z-index:4;background:#14110ff2;padding-top:2px}
+.panel-tabs{padding:8px;background:#14110ff3;backdrop-filter:blur(10px)}
+.panel-tabs button{border-radius:6px;font-size:10px}
+.tab-panel{padding:12px}
+.tab-panel label,.block label,.compact-grid label{font-size:10px;letter-spacing:.01em}
+input,select{min-height:32px;border-color:#3a3029;background:#1b1714}
+input:focus,select:focus,button:focus-visible{outline:1px solid var(--orange);outline-offset:1px}
+.option-card{border-color:#302821;background:#100d0b;border-radius:6px;padding:10px}
+.viewport{background:#0a0807}
+.view-tabs{height:42px;padding:0 10px;background:#110e0c}
+.stage{inset:42px 0 0}
+model-viewer{background:radial-gradient(circle at 52% 38%,#2b231d 0,#15100d 34%,#0b0908 72%)}
+.camera-tools{position:absolute;z-index:5;right:12px;top:52px;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid #3b3028;border-radius:7px;background:#100d0be8;backdrop-filter:blur(10px);box-shadow:0 8px 24px #0006}
+.camera-tools button{padding:5px 8px;font-size:9px;min-width:34px}
+.quality-badge{padding:5px 8px;border-left:1px solid #3b3028;color:var(--lime);font-size:8px;letter-spacing:.1em;white-space:nowrap}
+.quality-badge.active{color:var(--amber)}
+.stage-note{left:12px;bottom:12px;border-radius:5px;background:#100d0bd9;backdrop-filter:blur(8px)}
+.production-rail .eyebrow{font-size:9px;letter-spacing:.16em}
+.production-rail p{font-size:10px}
+.exports{gap:7px}.exports button{min-height:34px;border-radius:5px}
+.primary{min-height:42px;border-radius:6px;font-size:11px}
+.auth-card,.diagnostic-card{background:#100d0b;border:1px solid #2b241f!important;border-radius:6px;padding:10px!important}
+.diagnostic-card p{line-height:1.55}
+@media(max-width:1250px){.studio{grid-template-columns:280px minmax(0,1fr) 242px}.camera-tools{right:8px}}
+@media(max-width:950px){.studio{grid-template-columns:1fr}.camera-tools{top:50px;right:8px}.quality-badge{display:none}}
