@@ -15,7 +15,7 @@ test("full-union workbench exposes TrailRelief simple tabs plus VYNDI production
     "printerProfile","medalSize","contourEnabled","contourInterval","contourRise","magnetEnabled","magnetDiameter","magnetDepth",
     "hangerEnabled","loopInnerDiameter","loopWall","bottomMark","logoInput","heightmapInput","heightmapStrength",
     "tileEnabled","tileMaxWidth","tileMaxHeight","tileJointType","placeLabelMode","geoJsonInput",
-    "downloadStand","downloadTiles","downloadPrintPackage","downloadJob","issueAuthenticity"
+    "downloadStand","downloadTiles","downloadPrintPackage","downloadJob","issueAuthenticity","openTopoDataset","openTopoKey","loadHighResDem"
   ]) assert.match(html,new RegExp('id="'+id+'"'),id+" missing");
   assert.match(html,/id="gpxInput"[^>]*multiple/);
 });
@@ -84,4 +84,11 @@ test("TrailRelief triangle plate remains available in the unified fabrication en
   assert.equal(pointInsideShape(0,0,"triangle"),true);
   assert.equal(pointInsideShape(2,0,"triangle"),false);
   assert.match(html,/<option value="triangle">Triangle<\/option>/);
+});
+
+test("OpenTopography remains an optional high-resolution DEM while Terrarium stays no-key default",()=>{
+  assert.match(html,/option value="opentopography"/);
+  assert.match(app,/\/api\/terrain\/opentopography/);
+  assert.match(app,/openTopoDataset/);
+  assert.match(app,/openTopoKey/);
 });
