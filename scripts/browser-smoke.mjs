@@ -53,8 +53,11 @@ try{
   const sourceFrame=page.frameLocator("#sourceEngineFrame");
   const trailTitle=await sourceFrame.locator("body").evaluate(()=>document.title);
   if(trailTitle!=="TrailRelief")throw new Error("TrailRelief source engine did not load its original document.");
+  await page.waitForTimeout(5000);
+  const trailButtons=await sourceFrame.locator("button").allTextContents();
+  const trailBody=await sourceFrame.locator("body").innerText();
   const demoButton=sourceFrame.getByRole("button",{name:/Demo/i}).first();
-  await demoButton.waitFor({state:"visible",timeout:30000});
+  if(!await demoButton.count())throw new Error("TrailRelief source UI did not mount · buttons="+JSON.stringify(trailButtons)+" · body="+trailBody.slice(0,600)+" · browser="+errors.join(" | "));
   await demoButton.click();
   await sourceFrame.locator("canvas").first().waitFor({state:"visible",timeout:60000});
 
