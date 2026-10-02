@@ -22,7 +22,7 @@
     <div class="ribbon-actions">
       <label class="upload">UPLOAD GPX<input id="gpxInput" type="file" multiple accept=".gpx,application/gpx+xml"></label>
       <button id="demoRoute">DEMO</button>
-      <button id="premiumPreset" class="premium-btn" type="button" title="One-click industry premium medal">* PREMIUM</button>
+      <button id="premiumPreset" class="premium-btn" type="button" title="One-click industry premium medal">★ PREMIUM</button>
     </div>
   </section>
 
@@ -69,9 +69,22 @@
     <div class="mat-inspector-head">
       <strong id="matInspectorTitle">Land</strong>
       <span id="matInspectorHint">Surface colour and overall relief</span>
+      <span class="mat-tip" id="matTip">Tip: tap a chip, adjust only that layer.</span>
     </div>
     <div class="mat-inspector-body" id="matInspectorBody"></div>
   </section>
+  <nav class="work-flow" aria-label="Workbench steps">
+    <div class="step active" data-flow="1"><span class="num">1</span> Route</div>
+    <span class="sep">-</span>
+    <div class="step" data-flow="2"><span class="num">2</span> Shape</div>
+    <span class="sep">-</span>
+    <div class="step" data-flow="3"><span class="num">3</span> Style</div>
+    <span class="sep">-</span>
+    <div class="step" data-flow="4"><span class="num">4</span> Generate</div>
+    <span class="sep">-</span>
+    <div class="step" data-flow="5"><span class="num">5</span> Export</div>
+  </nav>
+
 
   <main class="studio">
     <aside class="control-panel">
@@ -239,8 +252,8 @@
     <aside class="production-rail">
       <section>
         <span class="eyebrow">PRODUCTION</span>
-        <button id="premiumPresetRail" class="premium-btn rail" type="button">* PREMIUM PRESET</button>
-        <button id="generate" class="primary" disabled>GENERATE PRINT MODEL</button>
+        <button id="premiumPresetRail" class="premium-btn rail" type="button">★ PREMIUM PRESET</button>
+        <div class="prod-actions"><button id="generate" class="primary" disabled>GENERATE PRINT MODEL</button></div><p class="prod-hint" id="prodHint"><strong>Workbench:</strong> 1) GPX / 2) Shape / 3) Premium / 4) Generate / 5) Export 3MF</p>
         <p id="productionStatus">Upload GPX or load Demo.</p>
       </section>
       
