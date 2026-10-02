@@ -146,4 +146,9 @@ test("circular production keeps route geometry inside the object and emits a gov
   const routeRadius=Math.max(...[...routeVertexIds].map(i=>Math.hypot(model.mesh.vertices[i].x,model.mesh.vertices[i].y)));
   assert.ok(routeRadius<=24.001,"route protrudes beyond circular object");
   assert.ok(model.mesh.triangles.some(tri=>tri.region===12),"dark raised rim material missing");
+  const textVertexIds=new Set();
+  for(const tri of model.mesh.triangles)if(tri.region===11){textVertexIds.add(tri.a);textVertexIds.add(tri.b);textVertexIds.add(tri.c);}
+  assert.ok(textVertexIds.size>0,"border personalization missing");
+  const minTextRadius=Math.min(...[...textVertexIds].map(i=>Math.hypot(model.mesh.vertices[i].x,model.mesh.vertices[i].y)));
+  assert.ok(minTextRadius>=19.5,"circular personalization should live on the rim, not cover the terrain");
 });
