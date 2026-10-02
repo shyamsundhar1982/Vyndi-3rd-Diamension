@@ -24,7 +24,7 @@ test("root redirects to the canonical studio directory so relative CSS and JS re
 });
 
 test("HTML receives restrictive production security headers",async()=>{
-  const response=await worker.fetch(new Request("https://example.test/"),{ASSETS:assets});
+  const response=await worker.fetch(new Request("https://example.test/apps/web/"),{ASSETS:assets});
   assert.equal(response.headers.get("x-content-type-options"),"nosniff");
   assert.equal(response.headers.get("x-frame-options"),"DENY");
   assert.equal(response.headers.get("cross-origin-opener-policy"),"same-origin");
