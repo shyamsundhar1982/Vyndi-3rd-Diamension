@@ -1,0 +1,30 @@
+name: Apply advanced features
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/advanced_features.css"
+      - "scripts/advanced_features.b64"
+      - "scripts/help_manual_snip.html"
+      - "scripts/advanced_block.html"
+      - "scripts/patch_advanced.py"
+      - "apps/web/advanced-features.mjs"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if [ -f scripts/advanced_features.b64 ] && [ ! -f apps/web/advanced-features.mjs ]; then
+            base64 -d scripts/advanced_features.b64 > apps/web/advanced-features.mjs
+          fi
+      - run: python3 scripts/patch_advanced.py
+      - run: node --check apps/web/app.mjs
+      - run: |
+          git config user.name "vyndi-advanced"
+          git config user.email "vyndi-advanced@users.noreply.github.com"
+          git add apps/web/index.html apps/web/styles.css apps/web/app.mjs apps/web/advanced-features.mjs
+          git diff --cached --quiet || git commit -m "Help manual, TTF fonts, coastline, shared mesh, Ride Stories, printer package"
+          git push
