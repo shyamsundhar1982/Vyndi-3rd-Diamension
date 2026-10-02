@@ -5,8 +5,8 @@ const page=await browser.newPage({viewport:{width:1600,height:1000}});
 const errors=[],networkErrors=[];
 page.on("pageerror",error=>errors.push(String(error)));
 page.on("console",message=>{if(message.type()==="error")errors.push(message.text())});
-page.on("response",response=>{if(response.status()>=400)networkErrors.push(response.status()+" "+response.url())});
-page.on("requestfailed",request=>networkErrors.push("FAILED "+request.url()+" "+(request.failure()?.errorText||"")));
+page.on("response",response=>{if(response.url().startsWith("http://127.0.0.1:8765/")&&response.status()>=400)networkErrors.push(response.status()+" "+response.url())});
+page.on("requestfailed",request=>{if(request.url().startsWith("http://127.0.0.1:8765/"))networkErrors.push("FAILED "+request.url()+" "+(request.failure()?.errorText||""))});
 
 try{
   await page.goto("http://127.0.0.1:8765/apps/web/index.html",{waitUntil:"networkidle",timeout:60000});
@@ -29,6 +29,23 @@ try{
     }));
     throw new Error("GPX ribbon did not update · "+JSON.stringify({state,errors,networkErrors,cause:String(error)}));
   }
+  await page.waitForFunction(()=>{
+    const frame=document.querySelector("#sourceEngineFrame");
+    const input=frame?.contentDocument?.querySelector('input[type="file"]');
+    return input?.files?.length===1 && /iconic\.gpx/i.test(input.files[0].name);
+  },null,{timeout:20000});
+  await page.waitForFunction(()=>{
+    const frame=document.querySelector("#rideStoriesEngineFrame");
+    const input=frame?.contentDocument?.querySelector("#gpxInput");
+    return input?.files?.length===1 && /iconic\.gpx/i.test(input.files[0].name);
+  },null,{timeout:20000});
+  const exactLabels=await page.evaluate(()=>({
+    trail:document.querySelector("#sourceEngineFrame")?.contentDocument?.body?.innerText||"",
+    ride:document.querySelector("#rideStoriesEngineFrame")?.contentDocument?.body?.innerText||""
+  }));
+  if(!/TrailRelief/i.test(exactLabels.trail))throw new Error("Exact TrailRelief source renderer did not mount.");
+  if(!/MY ROAD|Terrain Medal|VYNDI/i.test(exactLabels.ride))throw new Error("Exact Ride Stories source renderer did not mount.");
+
   const paletteKeys=await page.locator("[data-palette]").evaluateAll(nodes=>[...new Set(nodes.map(node=>node.dataset.palette))]);
   for(const key of ["land","forest","mountain","snow","water","route","roads","labels","rim"]){
     if(!paletteKeys.includes(key))throw new Error("Missing terrain palette control: "+key);
@@ -54,7 +71,7 @@ try{
     if(!labels.includes(expected))throw new Error("Missing Advanced section: "+expected);
   }
   if(errors.length)throw new Error("Browser errors: "+errors.join(" | "));
-  console.log("BROWSER PASS · ribbon + palette + GPX intelligence + Advanced workbench");
+  console.log("BROWSER PASS · exact TrailRelief + exact Ride Stories + V3D live + Advanced workbench");
 }finally{
   await browser.close();
 }
