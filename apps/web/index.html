@@ -76,6 +76,9 @@
     <div class="advanced-scroll">
       <details open><summary>DEM & elevation</summary><div class="block">
         <label>Elevation source<select id="demSource"><option value="terrarium">AWS Terrarium</option><option value="geotiff">Local GeoTIFF</option><option value="arc">Local Arc-ASCII</option></select></label>
+        <label id="geoTiffRow" hidden>GeoTIFF DEM<input id="geoTiffInput" type="file" accept=".tif,.tiff,image/tiff"></label>
+        <label id="arcRow" hidden>Arc-ASCII DEM<input id="arcInput" type="file" accept=".asc,.txt,text/plain"></label>
+        <p id="demStatus">Terrarium will load automatically during production.</p>
         <label>XY detail mm<input id="xyDetail" type="number" min=".25" max="3" step=".05" value="1"></label>
         <label>Elevation reconcile<select id="elevationMode"><option value="dem">DEM</option><option value="blend">Blend GPX + DEM</option><option value="gpx">GPX</option></select></label>
       </div></details>
