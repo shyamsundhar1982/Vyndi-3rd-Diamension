@@ -56,3 +56,26 @@ model-viewer{background:radial-gradient(circle at 52% 38%,#2b231d 0,#15100d 34%,
 .source-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#171411}
 .source-canvas[hidden]{display:none}
 .source-mode-note{color:var(--amber)}
+
+/* —— Clarity layer: onboarding + step emphasis —— */
+.onboard{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#1a140f,#15110e 40%,#1a140f);flex-wrap:wrap}
+.onboard-steps{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.onboard .step{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #3a2d24;border-radius:6px;background:#120f0d;min-width:0}
+.onboard .step span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#2a221c;color:var(--orange);font-weight:900;font-size:10px;flex-shrink:0}
+.onboard .step strong{display:block;font-size:10px;letter-spacing:.04em}
+.onboard .step small{display:block;color:var(--muted);font-size:8px;margin-top:1px}
+.onboard .step.active{border-color:var(--orange);box-shadow:0 0 0 1px #ff9f2f33}
+.onboard .step.done span{background:var(--lime);color:#17100a}
+#dismissOnboard{border-color:var(--orange);color:var(--orange);white-space:nowrap}
+
+.control-panel .section-title,.production-rail .section-title{font-size:9px;letter-spacing:.16em;color:var(--orange);margin:14px 0 8px;text-transform:uppercase}
+.hint-box{border:1px dashed #4a3a2e;border-radius:6px;padding:8px 10px;background:#120f0c;color:var(--muted);font-size:10px;line-height:1.45;margin:8px 0}
+.hint-box strong{color:var(--amber)}
+.printer-guide{font-size:10px;line-height:1.5;color:var(--muted)}
+.printer-guide code{color:var(--lime);font-size:9px}
+
+@media(max-width:900px){
+  .onboard{display:none}
+  body{overflow:auto}
+  .studio{min-height:70vh}
+}
