@@ -1,0 +1,52 @@
+name: Assemble worker embedded
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/assemble-worker-embed.yml"
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore worker from last good blob via git history
+        run: |
+          set -e
+          git fetch --deepen=50 || true
+          GOOD=$(git log --pretty=format:%H -- src/worker.mjs | while read c; do
+            git show "$c:src/worker.mjs" > /tmp/try.mjs 2>/dev/null || continue
+            if grep -q OPEN_TOPO_DATASETS /tmp/try.mjs && grep -q issueReceipt /tmp/try.mjs && ! grep -q PLACEHOLDER /tmp/try.mjs; then
+              if node --check /tmp/try.mjs 2>/dev/null; then echo $c; break; fi
+            fi
+          done)
+          echo GOOD=$GOOD
+          test -n "$GOOD"
+          git show "$GOOD:src/worker.mjs" > src/worker.mjs
+          # ensure merch routes
+          python3 - <<'PY'
+from pathlib import Path
+t=Path('src/worker.mjs').read_text()
+if 'apps/web/merch' not in t and '/merch' not in t:
+    block='''    if(url.pathname==="/"||url.pathname==="/merch"||url.pathname==="/merch.html"||url.pathname==="/apps/web/merch"||url.pathname==="/apps/web/merch/"){\n      const assetUrl=new URL(request.url);\n      assetUrl.pathname="/apps/web/merch/";\n      return secure(await env.ASSETS.fetch(new Request(assetUrl.toString(), request)));\n    }\n    if(url.pathname==="/workbench"||url.pathname==="/studio"){\n      const target=new URL(request.url);target.pathname="/apps/web/";return secure(Response.redirect(target.toString(),302));\n    }\n'''
+    t=t.replace('return secure(await env.ASSETS.fetch(request));', block+'    return secure(await env.ASSETS.fetch(request));', 1)
+    Path('src/worker.mjs').write_text(t)
+# fix index.html path to merch dir if present
+t=Path('src/worker.mjs').read_text()
+t=t.replace('assetUrl.pathname="/index.html";','assetUrl.pathname="/apps/web/merch/";')
+Path('src/worker.mjs').write_text(t)
+print('size', Path('src/worker.mjs').stat().st_size)
+PY
+          node --check src/worker.mjs
+      - name: Ensure merch static exists
+        run: |
+          test -f apps/web/merch.html
+          mkdir -p apps/web/merch
+          cp apps/web/merch.html apps/web/merch/index.html
+      - run: |
+          git config user.name "vyndi-restore"
+          git config user.email "vyndi-restore@users.noreply.github.com"
+          git add src/worker.mjs apps/web/merch/index.html || true
+          git diff --cached --quiet || git commit -m "Restore worker + merch directory index landing"
+          git push
