@@ -224,7 +224,7 @@ async function installLiveModel(model,label){
 async function generateLivePreview({preferDem=true}={}){
   if(!state.route?.points?.length)return;
   const generation=++state.previewGeneration,route=state.route,config=previewConfig();
-  if(config.shape.kind==="geographic"&&!state.geoOutline){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
+  if((config.shape.kind==="geographic"||config.shape.kind==="geo-medallion")&&!state.geoOutline){$("livePreviewStatus").textContent="Select / upload a geographic boundary.";return}
   $("livePreviewStatus").textContent=state.liveDemSampler?"REFINING LIVE 3D · TERRAIN DEM":"BUILDING LIVE 3D · GPX ELEVATION";
   try{
     const demSampler=state.liveDemSampler||gpxPreviewSampler(route.points),title=productionDisplayTitle(route.name,config.customization);
