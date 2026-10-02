@@ -229,8 +229,15 @@ export function expandBoundsKm(bounds,distanceKm=0){
 }
 
 export function productionBounds(route,shape={}){
-  if(shape?.kind==="geographic"&&shape?.outlineGeometry){
-    return expandBounds(geometryBounds(shape.outlineGeometry),.015);
+  if((shape?.kind==="geographic"||shape?.kind==="geo-medallion")&&shape?.outlineGeometry){
+    const geo=geometryBounds(shape.outlineGeometry);
+    if(shape.kind==="geographic")return expandBounds(geo,.015);
+    const base=expandBounds(geo,.12),midLat=(base.minLat+base.maxLat)/2,midLon=(base.minLon+base.maxLon)/2;
+    const lonScale=Math.max(.08,Math.cos(midLat*Math.PI/180)),geoWidth=(base.maxLon-base.minLon)*lonScale,geoHeight=base.maxLat-base.minLat,extent=Math.max(geoWidth,geoHeight)*1.08;
+    return {
+      minLat:Math.max(-85,midLat-extent/2),maxLat:Math.min(85,midLat+extent/2),
+      minLon:Math.max(-180,midLon-extent/(2*lonScale)),maxLon:Math.min(180,midLon+extent/(2*lonScale))
+    };
   }
   const requestedKm=Math.max(0,Number(shape?.routeBufferKm)||0);
   const padded=requestedKm?expandBoundsKm(route,requestedKm):route;
@@ -263,19 +270,19 @@ function opaqueHex(value,fallback){
 export function productionMaterials(config={}){
   const colors={...defaultAdvancedConfig().colors,...(config.colors||{})};
   return [
-    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a")},
-    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a")},
-    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378")},
-    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8")},
-    {name:"Water",color:opaqueHex(colors.water,"#2f86a6")},
-    {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f")},
-    {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5")},
-    {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a")},
-    {name:"Railways",color:opaqueHex(colors.railways,"#7e8791")},
-    {name:"Buildings",color:opaqueHex(colors.buildings,"#d8d1c4")},
-    {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e")},
-    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")},
-    {name:"Rim",color:opaqueHex(colors.rim,"#23201d")}
+    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a"),roughness:.82},
+    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a"),roughness:.86},
+    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378"),roughness:.78},
+    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8"),roughness:.62},
+    {name:"Water",color:opaqueHex(colors.water,"#2f86a6"),roughness:.42,metallic:.05},
+    {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f"),roughness:.38},
+    {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5"),roughness:.8},
+    {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a"),roughness:.82},
+    {name:"Railways",color:opaqueHex(colors.railways,"#7e8791"),roughness:.7,metallic:.08},
+    {name:"Buildings",color:opaqueHex(colors.buildings,"#d8d1c4"),roughness:.74},
+    {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e"),roughness:.42,metallic:.16},
+    {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e"),roughness:.4,metallic:.18},
+    {name:"Rim",color:opaqueHex(colors.rim,"#23201d"),roughness:.34,metallic:.08}
   ];
 }
 
@@ -926,11 +933,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const c=normalizeAdvancedConfig(config);
   const profile=PRINTER_PROFILES[c.production.printerProfile]||PRINTER_PROFILES["bambu-p1s"];
   const geometry=outlineGeometry||c.shape.outlineGeometry;
-  if(c.shape.kind==="geographic"&&!geometry)throw new Error("Geographic shape requires a GeoJSON Polygon or MultiPolygon.");
+  const geographicMode=c.shape.kind==="geographic"||c.shape.kind==="geo-medallion";
+  const medallionMode=c.shape.kind==="geo-medallion";
+  if(geographicMode&&!geometry)throw new Error("Geographic terrain requires a GeoJSON Polygon or MultiPolygon.");
   const shapeForBounds={...c.shape,outlineGeometry:geometry};
   const bounds=productionBounds(routeBounds(points),shapeForBounds),projection=makeProjection(bounds,c.fabrication.modelWidthMm);
   let outlinePolygons=null,outlineFilter={kept:[],removed:[],metrics:{kept:[],removed:[]}};
-  if(c.shape.kind==="geographic"){
+  if(geographicMode){
     const projected=projectGeographicOutline(geometry,bounds,2);
     outlineFilter=filterPrintableOutlinePolygons(projected,{radiusMm:projection.radius,minSpanMm:Math.max(1.2,profile.minFeatureMm*1.5),minAreaMm2:Math.max(1.4,profile.minFeatureMm*profile.minFeatureMm*2.2),maxComponents:24});
     outlinePolygons=outlineFilter.kept;
@@ -938,6 +947,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const insideNormalized=(nx,ny)=>{
     if(c.shape.kind==="route-fit")return Math.abs(nx*projection.radius)<=projection.widthMm/2+.001&&Math.abs(ny*projection.radius)<=projection.heightMm/2+.001;
     if(c.shape.kind==="geographic")return insidePolygons(nx,ny,outlinePolygons);
+    if(medallionMode)return pointInsideShape(nx,ny,"circle",{aspect:1});
     return pointInsideShape(nx,ny,c.shape.kind,{aspect:c.shape.aspect});
   };
   // TrailRelief's 12 mm rim is ~13% of a 180 mm object's radius; preserve that proportion on smaller medals.
@@ -954,7 +964,8 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     return pointInsideShape(nx/rimScale,ny/rimScale,c.shape.kind,{aspect:c.shape.aspect});
   };
   const isRimNormalized=(nx,ny)=>rimWidthMm>0&&insideNormalized(nx,ny)&&!contentInsideNormalized(nx,ny);
-  const range=sampleRange(demSampler,bounds,contentInsideNormalized);
+  const landInsideNormalized=(nx,ny)=>medallionMode?insidePolygons(nx,ny,outlinePolygons):contentInsideNormalized(nx,ny);
+  const range=sampleRange(demSampler,bounds,(nx,ny)=>contentInsideNormalized(nx,ny)&&landInsideNormalized(nx,ny));
   const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const heightmapSampler=heightmapImage?rasterSampler(heightmapImage,{channel:"luminance"}):null;
   const routeChannelAt=buildRouteChannelField(points,projection,c);
@@ -966,6 +977,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(!insideNormalized(nx,ny))return 0;
     if(isRimNormalized(nx,ny))return rimHeightMm;
     if(!contentInsideNormalized(nx,ny))return 0;
+    if(medallionMode&&!landInsideNormalized(nx,ny)){
+      if(c.surface.waterMode==="none")return 0;
+      const spacing=Math.max(.6,Number(c.surface.waveSpacingMm)||2.8),amp=Math.max(0,Number(c.surface.waveHeightMm)||.12);
+      const x=nx*projection.radius,y=ny*projection.radius;
+      const wave=c.surface.waterMode==="procedural-waves"?amp*(.48*Math.sin((x+y*.28)/spacing*Math.PI*2)+.22*Math.sin((y-x*.16)/spacing*Math.PI*2.7)):0;
+      return Math.max(.08,.22+wave);
+    }
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     if(!Number.isFinite(elevation))return 0;
     const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
@@ -990,6 +1008,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
   const terrainRegionNormalized=(nx,ny)=>{
     if(isRimNormalized(nx,ny))return 12;
+    if(medallionMode&&!landInsideNormalized(nx,ny))return 4;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
     return material===4&&c.surface.waterMode==="none"?0:material;
@@ -1023,13 +1042,14 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
   const requestedLabelCount=Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18);
-  const placePlan=planProfessionalPlaceLabels({places:cartography?.places||[],mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,maxLabels:requestedLabelCount,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,radius:projection.radius,insideNormalized:contentInsideNormalized});
-  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:contentInsideNormalized,maxLabels:requestedLabelCount,mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,plan:placePlan});
+  const labelInsideNormalized=medallionMode?(nx,ny)=>contentInsideNormalized(nx,ny)&&landInsideNormalized(nx,ny):contentInsideNormalized;
+  const placePlan=planProfessionalPlaceLabels({places:cartography?.places||[],mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,maxLabels:requestedLabelCount,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,radius:projection.radius,insideNormalized:labelInsideNormalized});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized:labelInsideNormalized,maxLabels:requestedLabelCount,mode:c.placeLabels.mode,selectedNames:c.placeLabels.selectedNames,shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,plan:placePlan});
   const allowSurfaceLettering=surfaceLetteringAllowed({shapeKind:c.shape.kind,modelWidthMm:c.fabrication.modelWidthMm,mode:c.production.surfaceLettering});
   const textMeshes=allowSurfaceLettering?buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7)),
-    rimWidthMm:c.fabrication.rimWidthMm,shape:c.shape.kind
+    rimWidthMm:c.fabrication.rimWidthMm,shape:medallionMode?"circle":c.shape.kind
   }):[];
   const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   let hangerPlacement=null;
@@ -1048,7 +1068,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   const stl=encodeBinaryStl(mesh,{name:title}),threeMf=encode3mf(mesh,{title,materials}),mtl=encodeMtl(materials),obj=encodeObj(mesh,{name:title,materials,mtlFile:"model.mtl"}),glb=encodeGlb(mesh,{title,materials});
   const objBundle=encodeArtifactZip([{name:"model.obj",data:obj},{name:"model.mtl",data:mtl}]);
   const coupon=buildPrintValidationCoupon({technology:profile.technology,nozzleMm:profile.nozzleMm,minFeatureMm:profile.minFeatureMm,minEmbossMm:profile.minEmbossMm});
-  const quality={outlineComponentsRemoved:outlineFilter.removed.length,outlineComponentsKept:outlineFilter.kept.length,placeLabelsPlanned:placePlan.length,placeLabelsRequested:requestedLabelCount,surfaceLetteringSuppressed:!allowSurfaceLettering,hangerAnchored:Boolean(hangerPlacement),printerProfile:profile.label};
+  const quality={outlineComponentsRemoved:outlineFilter.removed.length,outlineComponentsKept:outlineFilter.kept.length,placeLabelsPlanned:placePlan.length,placeLabelsRequested:requestedLabelCount,surfaceLetteringSuppressed:!allowSurfaceLettering,hangerAnchored:Boolean(hangerPlacement),geographicMedallion:medallionMode,printerProfile:profile.label};
   const manifest={title,validation,range,bounds,materials,vertices:mesh.vertices.length,triangles:mesh.triangles.length,cartographyStats:cartography?.stats||null,elevationDiagnostics:routeCorrection.diagnostics,customization:normalizeCustomization(config.customization||{}),quality,config:c};
   const validationBundle=encodeArtifactZip([
     {name:"validation.json",data:JSON.stringify(manifest,null,2)},
