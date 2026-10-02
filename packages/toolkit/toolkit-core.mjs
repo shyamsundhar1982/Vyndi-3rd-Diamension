@@ -85,8 +85,9 @@ export function defaultAdvancedConfig(){
     dem:{source:"terrarium",fillNoData:true,smoothingRadius:0,crsOverride:"",routeElevationMode:"dem",routeElevationBlend:.5,maxDeltaM:150},
     map:{roads:true,trails:true,railways:true,buildings:false},
     shape:{kind:"route-fit",aspect:1.35,outlineGeometry:null,logoEnabled:false,logoAuto:true,logoWidthMm:18,logoRiseMm:.8},
-    colors:{terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e"},
-    customization:{event:"",name:"",date:""},
+    colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8b8378",snow:"#f4f7f8",water:"#2f86a6",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e"},
+    terrainBands:{mountainM:1200,snowM:2600},
+    customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:8,targetXyMm:1,
       routeWidthMm:1.6,routeRiseMm:1.2,
@@ -197,7 +198,11 @@ function opaqueHex(value,fallback){
 export function productionMaterials(config={}){
   const colors={...defaultAdvancedConfig().colors,...(config.colors||{})};
   return [
-    {name:"Terrain",color:opaqueHex(colors.terrain,"#b7a77a")},
+    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a")},
+    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a")},
+    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378")},
+    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8")},
+    {name:"Water",color:opaqueHex(colors.water,"#2f86a6")},
     {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f")},
     {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5")},
     {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a")},
@@ -206,6 +211,36 @@ export function productionMaterials(config={}){
     {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e")},
     {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")}
   ];
+}
+
+function pointInLonLatRing(lat,lon,ring=[]){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const a=ring[i],b=ring[j],xi=Number(a?.lon),yi=Number(a?.lat),xj=Number(b?.lon),yj=Number(b?.lat);
+    if(![xi,yi,xj,yj].every(Number.isFinite))continue;
+    const hit=((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+
+export function classifyTerrainMaterial(sample={},thresholds={},landcover=[]){
+  const lat=Number(sample.lat),lon=Number(sample.lon),elevation=Number(sample.elevation);
+  if(Number.isFinite(lat)&&Number.isFinite(lon)){
+    for(const feature of landcover||[]){
+      if(feature?.kind!=="water")continue;
+      if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 4;
+    }
+    for(const feature of landcover||[]){
+      if(feature?.kind!=="forest")continue;
+      if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 1;
+    }
+  }
+  const mountainM=Number.isFinite(Number(thresholds.mountainM))?Number(thresholds.mountainM):1200;
+  const snowM=Math.max(mountainM,Number.isFinite(Number(thresholds.snowM))?Number(thresholds.snowM):2600);
+  if(Number.isFinite(elevation)&&elevation>=snowM)return 3;
+  if(Number.isFinite(elevation)&&elevation>=mountainM)return 2;
+  return 0;
 }
 
 export function buildRouteElevationCorrection(points,demSampler,projection,range,options={}){
@@ -437,10 +472,10 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
   const stride=Math.max(1,Math.ceil(route.length/1600)),routeLite=[];
   for(let i=0;i<route.length;i+=stride)routeLite.push(route[i]);
   if(routeLite.at(-1)!==route.at(-1))routeLite.push(route.at(-1));
-  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,1,1800);
-  if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,2,700);
-  if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,3,700);
-  if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,4,450);
+  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,6,700);
+  if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,7,700);
+  if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,8,450);
   if(cartography&&config.map.buildings){
     let count=0;
     for(const building of cartography.buildings||[]){
@@ -451,7 +486,7 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
       if(!insideNormalized(center.x/radius,center.y/radius)||!inRect(center.x,center.y,clipRect))continue;
       try{
         const height=Math.max(.6,Math.min(6,Number(building.renderHeight||3)*.06));
-        const mesh=buildExtrudedPolygonMesh({points:pointsMm,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:height,region:5});
+        const mesh=buildExtrudedPolygonMesh({points:pointsMm,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:height,region:9});
         meshes.push(shifted(mesh,offsetX,offsetY));count++;
       }catch{}
     }
@@ -481,7 +516,7 @@ function logoMeshes({logoImage,config,projection,terrainTopMm,insideNormalized,r
     });
     const center=transformed.reduce((acc,p)=>({x:acc.x+p.x/transformed.length,y:acc.y+p.y/transformed.length}),{x:0,y:0});
     if(!insideNormalized(center.x/radius,center.y/radius))continue;
-    try{meshes.push(buildExtrudedPolygonMesh({points:transformed,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:rise,region:6}));}catch{}
+    try{meshes.push(buildExtrudedPolygonMesh({points:transformed,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:rise,region:10}));}catch{}
   }
   return meshes;
 }
@@ -530,7 +565,7 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
         meshes.push(buildExtrudedPolygonMesh({
           points:corners.map(([x,y])=>({x,y})),
           baseZAt:(x,y)=>terrainTopMm(x,y),
-          heightMm:Math.max(.3,riseMm),region:7
+          heightMm:Math.max(.3,riseMm),region:11
         }));
       }catch{}
     }
@@ -628,7 +663,7 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
   return {plan,bundle:encodeArtifactZip(files)};
 }
 
-export async function generateProductionModel({points,demSampler,cartography=null,config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
+export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
@@ -657,6 +692,10 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     return Math.max(0,Math.min(c.fabrication.reliefMm,corrected));
   };
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
+  const terrainRegionNormalized=(nx,ny)=>{
+    const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
+    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcover);
+  };
   const extents=modelExtents(c,projection,outlinePolygons),pockets=makePockets(c,extents);
   let baseMesh;
   if(c.shape.kind==="route-fit"){
@@ -665,13 +704,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       columns:Math.max(24,Math.ceil(projection.widthMm/c.fabrication.targetXyMm)),
       rows:Math.max(24,Math.ceil(projection.heightMm/c.fabrication.targetXyMm)),
       heightAt:(x,y)=>terrainHeightNormalized(x/projection.radius,y/projection.radius),
-      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:()=>0
+      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
     });
   }else if(c.shape.kind==="geographic"){
     baseMesh=(await import("../engine/map-outline-core.mjs")).buildOutlineHeightfieldMesh({
       polygons:outlinePolygons,radiusMm:projection.radius,baseMm:c.fabrication.baseMm,stepMm:c.fabrication.targetXyMm,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:()=>0
+      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
     });
   }else{
     baseMesh=buildRadialMedalMesh({
@@ -680,7 +719,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       segments:Math.max(192,Math.ceil(Math.PI*c.fabrication.modelWidthMm/c.fabrication.targetXyMm/4)*4),
       shape:c.shape.kind,aspect:c.shape.aspect,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:()=>0
+      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
     });
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized});
