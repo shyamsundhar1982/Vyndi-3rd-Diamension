@@ -1,5 +1,5 @@
 import { parseGpxText } from "../../packages/gpx/gpx-core.mjs";
-import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
+import { defaultAdvancedConfig, normalizeAdvancedConfig, productionDisplayTitle, productionBounds, loadTerrariumSampler, loadGeoTiffFile, loadArcAsciiFile, loadOpenFreeMapCartography, generateProductionModel } from "../../packages/toolkit/toolkit-core.mjs";
 import { deriveRibbonMeta, normalizeTerrainPalette, terrainBandForElevation, DEFAULT_TERRAIN_PALETTE } from "../../packages/ui/ribbon-core.mjs";
 import { fetchLandcover } from "../../packages/map/landcover-core.mjs";
 
@@ -101,8 +101,14 @@ async function generate(){
       demSampler=raster.sample;
       $("demStatus").textContent="Arc-ASCII ready · "+raster.grid.ncols+"×"+raster.grid.nrows;
     }
+    const mapEnabled=config.map.roads||config.map.trails||config.map.railways||config.map.buildings;
+    let cartography=null;
+    if(mapEnabled){
+      $("productionStatus").textContent="Loading OpenFreeMap roads / trails / railways / buildings…";
+      cartography=await loadOpenFreeMapCartography(bounds,{preferredZoom:9,tileBudget:40});
+    }
     const title=productionDisplayTitle(state.route.name,config.customization);
-    state.production=await generateProductionModel({points:state.route.points,demSampler,cartography:null,config,title});
+    state.production=await generateProductionModel({points:state.route.points,demSampler,cartography,config,title});
     const p=state.production;
     $("productionStatus").textContent="READY · "+p.mesh.vertices.length.toLocaleString()+" vertices · "+p.mesh.triangles.length.toLocaleString()+" triangles";
     document.querySelectorAll("[data-export]").forEach(b=>b.disabled=false);$("downloadValidation").disabled=!p.validationBundle;
