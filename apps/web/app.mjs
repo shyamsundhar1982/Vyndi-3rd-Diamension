@@ -72,7 +72,7 @@ function updateRibbon(){
 function syncOutputs(){
   $("routeBufferOut").value=finite($("routeBufferKm").value).toFixed(1)+" km";
   $("xyDetailOut").value=finite($("xyDetail").value).toFixed(2)+" mm";
-  $("reliefOut").value=finite($("relief").value).toFixed(1)+" mm";
+  const mode=sourceMode();$("reliefOut").value=mode==="trailrelief-original"?finite($("relief").value).toFixed(1)+"×":mode==="vyndi-original"?finite($("relief").value).toFixed(1)+"×":finite($("relief").value).toFixed(1)+" mm";
   $("mountainOut").value=$("mountainM").value+" m";$("snowOut").value=$("snowM").value+" m";
   $("forestRaiseOut").value=finite($("forestRaise").value).toFixed(1)+" mm";
   $("waterDepthOut").value=finite($("waterDepth").value).toFixed(1)+" mm";
@@ -676,6 +676,7 @@ $("demSource").addEventListener("change",()=>{state.openTopoSampler=null;state.o
 $("loadHighResDem").addEventListener("click",async()=>{if(!state.route)return void($("demStatus").textContent="Load a GPX route first.");try{const config=currentConfig(),bounds=productionBounds(state.route.bounds||previewBounds(state.route.points),config.shape);await loadOpenTopography(bounds);resetGenerated("OpenTopography DEM loaded · generate production model.")}catch(error){$("demStatus").textContent=error.message||String(error)}});
 $("medalSize").addEventListener("change",()=>{syncMedalSize();resetGenerated();schedulePreview()});
 $("printerProfile").addEventListener("change",()=>{syncPrinterProfile();resetGenerated()});
+$("sourceRenderer").addEventListener("change",()=>applySourceRenderer($("sourceRenderer").value));
 $("visualPreset").addEventListener("change",()=>applyVisualPreset($("visualPreset").value));
 
 for(const id of ["riderName","eventDate","eventOverride","eventLocation","bib","resultStatus","startDetail","finishDetail","placing"])$(id).addEventListener("input",()=>{updateRibbon();resetGenerated();schedulePreview(260)});
@@ -708,9 +709,18 @@ $("downloadPrintPackage").addEventListener("click",()=>state.production?.printPa
 $("downloadJob").addEventListener("click",exportJob);
 $("openAdvanced").onclick=()=>{$("advancedDrawer").classList.add("open");$("advancedDrawer").setAttribute("aria-hidden","false")};
 $("closeAdvanced").onclick=()=>{$("advancedDrawer").classList.remove("open");$("advancedDrawer").setAttribute("aria-hidden","true")};
-$("cameraIso").addEventListener("click",()=>applyCameraPreset("iso"));
-$("cameraTop").addEventListener("click",()=>applyCameraPreset("top"));
-$("cameraFit").addEventListener("click",()=>applyCameraPreset("fit"));
-$("resetView").onclick=()=>applyCameraPreset("iso");
+$("cameraIso").addEventListener("click",()=>sourceMode()==="trailrelief-original"?state.trailRenderer?.reset?.():sourceMode()==="vyndi-original"?(state.vyndiView={yaw:VYNDI_SOURCE_VIEW.yaw,pitch:VYNDI_SOURCE_VIEW.pitch,zoom:VYNDI_SOURCE_VIEW.zoom},schedulePreview(0)):applyCameraPreset("iso"));
+$("cameraTop").addEventListener("click",()=>sourceMode()==="v3d-unified"&&applyCameraPreset("top"));
+$("cameraFit").addEventListener("click",()=>sourceMode()==="v3d-unified"?applyCameraPreset("fit"):sourceMode()==="trailrelief-original"?state.trailRenderer?.reset?.():schedulePreview(0));
+$("resetView").onclick=()=>{if(sourceMode()==="trailrelief-original")state.trailRenderer?.reset?.();else if(sourceMode()==="vyndi-original"){state.vyndiView={yaw:VYNDI_SOURCE_VIEW.yaw,pitch:VYNDI_SOURCE_VIEW.pitch,zoom:VYNDI_SOURCE_VIEW.zoom};schedulePreview(0)}else applyCameraPreset("iso")};
 
-applyVisualPreset($("visualPreset").value,{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
+const vyndiCanvas=$("sourcePreviewCanvas");
+if(vyndiCanvas){
+  let sourceDragging=false,last=[0,0];
+  vyndiCanvas.addEventListener("pointerdown",event=>{if(sourceMode()!=="vyndi-original")return;sourceDragging=true;last=[event.clientX,event.clientY];event.currentTarget.setPointerCapture?.(event.pointerId)});
+  vyndiCanvas.addEventListener("pointermove",event=>{if(!sourceDragging||sourceMode()!=="vyndi-original")return;state.vyndiView.yaw+=(event.clientX-last[0])*.008;state.vyndiView.pitch=Math.max(.28,Math.min(1.45,state.vyndiView.pitch+(event.clientY-last[1])*.006));last=[event.clientX,event.clientY];schedulePreview(0)});
+  vyndiCanvas.addEventListener("pointerup",()=>{sourceDragging=false});
+  vyndiCanvas.addEventListener("wheel",event=>{if(sourceMode()!=="vyndi-original")return;event.preventDefault();state.vyndiView.zoom=Math.max(.45,Math.min(2.8,state.vyndiView.zoom*(event.deltaY>0?.92:1.08)));schedulePreview(0)},{passive:false});
+}
+
+applySourceRenderer(sourceMode(),{initial:true});syncOutputs();syncPrinterProfile();syncDemSource();updateRibbon();
