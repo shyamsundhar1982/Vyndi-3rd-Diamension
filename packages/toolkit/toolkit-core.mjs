@@ -503,8 +503,12 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
     for(const pair of segments){
       const list=pair.points||pair;
       for(let i=1;i<list.length&&used<maxSegments;i++){
-        const a=list[i-1].x!==undefined&&list[i-1].lat===undefined?{x:list[i-1].x*radius,y:list[i-1].y*radius}:projection.project(list[i-1]);
-        const b=list[i].x!==undefined&&list[i].lat===undefined?{x:list[i].x*radius,y:list[i].y*radius}:projection.project(list[i]);
+        const toMm=point=>{
+          if(point?.nx!==undefined&&point?.ny!==undefined)return {x:Number(point.x),y:Number(point.y)};
+          if(point?.x!==undefined&&point?.lat===undefined)return {x:Number(point.x)*radius,y:Number(point.y)*radius};
+          return projection.project(point);
+        };
+        const a=toMm(list[i-1]),b=toMm(list[i]);
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
         if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect))continue;
         const zA=terrainTopMm(a.x,a.y),zB=terrainTopMm(b.x,b.y),mesh=segmentPrism(a,b,width,rise,zA,zB,region);
