@@ -46,6 +46,15 @@ try{
   if(!/TrailRelief/i.test(exactLabels.trail))throw new Error("Exact TrailRelief source renderer did not mount.");
   if(!/MY ROAD|Terrain Medal|VYNDI/i.test(exactLabels.ride))throw new Error("Exact Ride Stories source renderer did not mount.");
 
+  await page.waitForFunction(()=>{
+    const frame=document.querySelector("#sourceEngineFrame");
+    const canvas=frame?.contentDocument?.querySelector("canvas");
+    return Boolean(canvas&&canvas.clientWidth>200&&canvas.clientHeight>200);
+  },null,{timeout:30000});
+  await page.waitForTimeout(2500);
+  await page.screenshot({path:"vyndi-3rd-diamension-source-parity.png",fullPage:true});
+  await page.click('[data-view="live"]');
+
   const paletteKeys=await page.locator("[data-palette]").evaluateAll(nodes=>[...new Set(nodes.map(node=>node.dataset.palette))]);
   for(const key of ["land","forest","mountain","snow","water","route","roads","labels","rim"]){
     if(!paletteKeys.includes(key))throw new Error("Missing terrain palette control: "+key);
