@@ -334,9 +334,21 @@ export function encodeGlb(mesh,options={}){
     primitives.push({attributes:{POSITION:0,...(texture&&region===texture.region?{TEXCOORD_0:uvAccessor}:{})},indices:accessor,material:region,mode:4});
   }
   const gltf={
-    asset:{version:"2.0",generator:"VYNDI Terrain Medal"},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0,name:String(options.title||"VYNDI Terrain")}],
+    asset:{version:"2.0",generator:"VYNDI 3rd Diamension"},scene:0,scenes:[{nodes:[0]}],nodes:[{
+      mesh:0,
+      name:String(options.title||"VYNDI Terrain"),
+      rotation:[-0.7071067811865476,0,0,0.7071067811865476]
+    }],
     meshes:[{primitives}],
-    materials:materials.map(material=>{const rgb=parseHexColor(material.color),raw=String(material.color||"").replace("#",""),alpha=raw.length>=8?parseInt(raw.slice(6,8),16)/255:1;return {name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:0,roughnessFactor:.9}}}),
+    materials:materials.map(material=>{
+      const rgb=parseHexColor(material.color),raw=String(material.color||"").replace("#",""),alpha=raw.length>=8?parseInt(raw.slice(6,8),16)/255:1;
+      const out={name:String(material.name||"Material"),pbrMetallicRoughness:{baseColorFactor:[rgb[0],rgb[1],rgb[2],alpha],metallicFactor:0,roughnessFactor:.88}};
+      if(material.emissive){
+        const e=parseHexColor(material.emissive);
+        out.emissiveFactor=[Math.min(.35,e[0]*.35),Math.min(.35,e[1]*.35),Math.min(.35,e[2]*.35)];
+      }
+      return out;
+    }),
     buffers:[{byteLength:binary.length}],bufferViews,accessors
   };
   if(texture){

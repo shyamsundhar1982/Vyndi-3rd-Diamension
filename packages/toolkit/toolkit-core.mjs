@@ -60,8 +60,11 @@ export const PRODUCTION_FORMATS=Object.freeze(["3mf","stl","obj","glb"]);
 export function normalizeCustomization(input={}){
   return {
     event:String(input.event||"").trim().replace(/\s+/g," "),
-    name:String(input.name||"").trim().replace(/\s+/g," "),
-    date:String(input.date||"").trim().replace(/\s+/g," ")
+    name:String(input.name||input.rider||"").trim().replace(/\s+/g," "),
+    date:String(input.date||"").trim().replace(/\s+/g," "),
+    distance:String(input.distance||"").trim().replace(/\s+/g," "),
+    elevation:String(input.elevation||"").trim().replace(/\s+/g," "),
+    duration:String(input.duration||"").trim().replace(/\s+/g," ")
   };
 }
 
@@ -85,8 +88,9 @@ export function defaultAdvancedConfig(){
     dem:{source:"terrarium",fillNoData:true,smoothingRadius:0,crsOverride:"",routeElevationMode:"dem",routeElevationBlend:.5,maxDeltaM:150},
     map:{roads:true,trails:true,railways:true,buildings:false},
     shape:{kind:"route-fit",aspect:1.35,outlineGeometry:null,logoEnabled:false,logoAuto:true,logoWidthMm:18,logoRiseMm:.8},
-    colors:{terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e"},
-    customization:{event:"",name:"",date:""},
+    colors:{land:"#b7a77a",forest:"#3f6b3a",mountain:"#8b8378",snow:"#f4f7f8",water:"#2f86a6",terrain:"#b7a77a",route:"#ff6a1f",roads:"#c9c1b5",trails:"#3f6b3a",railways:"#7e8791",buildings:"#d8d1c4",logo:"#f2c14e",text:"#f2c14e"},
+    terrainBands:{mountainM:1200,snowM:2600},
+    customization:{event:"",name:"",date:"",distance:"",elevation:"",duration:""},
     fabrication:{
       modelWidthMm:180,baseMm:3,reliefMm:8,targetXyMm:1,
       routeWidthMm:1.6,routeRiseMm:1.2,
@@ -197,7 +201,11 @@ function opaqueHex(value,fallback){
 export function productionMaterials(config={}){
   const colors={...defaultAdvancedConfig().colors,...(config.colors||{})};
   return [
-    {name:"Terrain",color:opaqueHex(colors.terrain,"#b7a77a")},
+    {name:"Land",color:opaqueHex(colors.land||colors.terrain,"#b7a77a")},
+    {name:"Forest",color:opaqueHex(colors.forest,"#3f6b3a")},
+    {name:"Mountain",color:opaqueHex(colors.mountain,"#8b8378")},
+    {name:"Snow",color:opaqueHex(colors.snow,"#f4f7f8")},
+    {name:"Water",color:opaqueHex(colors.water,"#2f86a6")},
     {name:"Route",color:opaqueHex(colors.route,"#ff6a1f"),emissive:opaqueHex(colors.route,"#ff6a1f")},
     {name:"Roads",color:opaqueHex(colors.roads,"#c9c1b5")},
     {name:"Trails",color:opaqueHex(colors.trails,"#3f6b3a")},
@@ -206,6 +214,76 @@ export function productionMaterials(config={}){
     {name:"Logo",color:opaqueHex(colors.logo,"#f2c14e")},
     {name:"Text",color:opaqueHex(colors.text,"#f2c14e"),emissive:opaqueHex(colors.text,"#f2c14e")}
   ];
+}
+
+function pointInLonLatRing(lat,lon,ring=[]){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const a=ring[i],b=ring[j],xi=Number(a?.lon),yi=Number(a?.lat),xj=Number(b?.lon),yj=Number(b?.lat);
+    if(![xi,yi,xj,yj].every(Number.isFinite))continue;
+    const hit=((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+
+export function prepareTerrainLandcover(landcover=[],bounds={}){
+  const minLat=Number(bounds.minLat),maxLat=Number(bounds.maxLat),minLon=Number(bounds.minLon),maxLon=Number(bounds.maxLon);
+  const cols=24,rows=24,cells=new Map(),entries=[];
+  const latSpan=Math.max(1e-9,maxLat-minLat),lonSpan=Math.max(1e-9,maxLon-minLon);
+  const key=(x,y)=>x+":"+y;
+  for(const feature of landcover||[]){
+    if(!["water","forest"].includes(feature?.kind))continue;
+    for(const path of feature.paths||[]){
+      if(!Array.isArray(path)||path.length<3)continue;
+      let a=Infinity,b=-Infinity,l=Infinity,r=-Infinity;
+      for(const p of path){const lat=Number(p?.lat),lon=Number(p?.lon);if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;a=Math.min(a,lat);b=Math.max(b,lat);l=Math.min(l,lon);r=Math.max(r,lon);}
+      if(!Number.isFinite(a))continue;
+      const entry={kind:feature.kind,path,minLat:a,maxLat:b,minLon:l,maxLon:r};entries.push(entry);
+      const x0=Math.max(0,Math.min(cols-1,Math.floor((l-minLon)/lonSpan*cols))),x1=Math.max(0,Math.min(cols-1,Math.floor((r-minLon)/lonSpan*cols)));
+      const y0=Math.max(0,Math.min(rows-1,Math.floor((a-minLat)/latSpan*rows))),y1=Math.max(0,Math.min(rows-1,Math.floor((b-minLat)/latSpan*rows)));
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=key(x,y);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(entry);}
+    }
+  }
+  return {
+    entries,
+    query(lat,lon){
+      if(!Number.isFinite(lat)||!Number.isFinite(lon)||!Number.isFinite(minLat))return entries;
+      const x=Math.max(0,Math.min(cols-1,Math.floor((lon-minLon)/lonSpan*cols))),y=Math.max(0,Math.min(rows-1,Math.floor((lat-minLat)/latSpan*rows)));
+      return cells.get(key(x,y))||[];
+    }
+  };
+}
+
+export function classifyTerrainMaterial(sample={},thresholds={},landcover=[]){
+  const lat=Number(sample.lat),lon=Number(sample.lon),elevation=Number(sample.elevation);
+  if(Number.isFinite(lat)&&Number.isFinite(lon)){
+    const candidates=typeof landcover?.query==="function"?landcover.query(lat,lon):null;
+    if(candidates){
+      for(const entry of candidates){
+        if(entry.kind!=="water"||lat<entry.minLat||lat>entry.maxLat||lon<entry.minLon||lon>entry.maxLon)continue;
+        if(pointInLonLatRing(lat,lon,entry.path))return 4;
+      }
+      for(const entry of candidates){
+        if(entry.kind!=="forest"||lat<entry.minLat||lat>entry.maxLat||lon<entry.minLon||lon>entry.maxLon)continue;
+        if(pointInLonLatRing(lat,lon,entry.path))return 1;
+      }
+    }else{
+      for(const feature of landcover||[]){
+        if(feature?.kind!=="water")continue;
+        if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 4;
+      }
+      for(const feature of landcover||[]){
+        if(feature?.kind!=="forest")continue;
+        if((feature.paths||[]).some(path=>path.length>2&&pointInLonLatRing(lat,lon,path)))return 1;
+      }
+    }
+  }
+  const mountainM=Number.isFinite(Number(thresholds.mountainM))?Number(thresholds.mountainM):1200;
+  const snowM=Math.max(mountainM,Number.isFinite(Number(thresholds.snowM))?Number(thresholds.snowM):2600);
+  if(Number.isFinite(elevation)&&elevation>=snowM)return 3;
+  if(Number.isFinite(elevation)&&elevation>=mountainM)return 2;
+  return 0;
 }
 
 export function buildRouteElevationCorrection(points,demSampler,projection,range,options={}){
@@ -425,8 +503,12 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
     for(const pair of segments){
       const list=pair.points||pair;
       for(let i=1;i<list.length&&used<maxSegments;i++){
-        const a=list[i-1].x!==undefined&&list[i-1].lat===undefined?{x:list[i-1].x*radius,y:list[i-1].y*radius}:projection.project(list[i-1]);
-        const b=list[i].x!==undefined&&list[i].lat===undefined?{x:list[i].x*radius,y:list[i].y*radius}:projection.project(list[i]);
+        const toMm=point=>{
+          if(point?.nx!==undefined&&point?.ny!==undefined)return {x:Number(point.x),y:Number(point.y)};
+          if(point?.x!==undefined&&point?.lat===undefined)return {x:Number(point.x)*radius,y:Number(point.y)*radius};
+          return projection.project(point);
+        };
+        const a=toMm(list[i-1]),b=toMm(list[i]);
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
         if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect))continue;
         const zA=terrainTopMm(a.x,a.y),zB=terrainTopMm(b.x,b.y),mesh=segmentPrism(a,b,width,rise,zA,zB,region);
@@ -437,10 +519,10 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
   const stride=Math.max(1,Math.ceil(route.length/1600)),routeLite=[];
   for(let i=0;i<route.length;i+=stride)routeLite.push(route[i]);
   if(routeLite.at(-1)!==route.at(-1))routeLite.push(route.at(-1));
-  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,1,1800);
-  if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,2,700);
-  if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,3,700);
-  if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,4,450);
+  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,6,700);
+  if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,7,700);
+  if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,8,450);
   if(cartography&&config.map.buildings){
     let count=0;
     for(const building of cartography.buildings||[]){
@@ -451,7 +533,7 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
       if(!insideNormalized(center.x/radius,center.y/radius)||!inRect(center.x,center.y,clipRect))continue;
       try{
         const height=Math.max(.6,Math.min(6,Number(building.renderHeight||3)*.06));
-        const mesh=buildExtrudedPolygonMesh({points:pointsMm,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:height,region:5});
+        const mesh=buildExtrudedPolygonMesh({points:pointsMm,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:height,region:9});
         meshes.push(shifted(mesh,offsetX,offsetY));count++;
       }catch{}
     }
@@ -481,7 +563,7 @@ function logoMeshes({logoImage,config,projection,terrainTopMm,insideNormalized,r
     });
     const center=transformed.reduce((acc,p)=>({x:acc.x+p.x/transformed.length,y:acc.y+p.y/transformed.length}),{x:0,y:0});
     if(!insideNormalized(center.x/radius,center.y/radius))continue;
-    try{meshes.push(buildExtrudedPolygonMesh({points:transformed,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:rise,region:6}));}catch{}
+    try{meshes.push(buildExtrudedPolygonMesh({points:transformed,baseZAt:(x,y)=>terrainTopMm(x,y),heightMm:rise,region:10}));}catch{}
   }
   return meshes;
 }
@@ -530,7 +612,7 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
         meshes.push(buildExtrudedPolygonMesh({
           points:corners.map(([x,y])=>({x,y})),
           baseZAt:(x,y)=>terrainTopMm(x,y),
-          heightMm:Math.max(.3,riseMm),region:7
+          heightMm:Math.max(.3,riseMm),region:11
         }));
       }catch{}
     }
@@ -540,13 +622,45 @@ function textLineMeshes(text,{centerX=0,centerY=0,maxWidth=120,cellMm=1.2,riseMm
 
 export function buildPersonalizationMeshes({customization={},extents,insideNormalized,radius,terrainTopMm,riseMm=.8}={}){
   if(!extents||!Number.isFinite(radius)||radius<=0||typeof terrainTopMm!=="function")return [];
-  const meta=normalizeCustomization(customization),event=meta.event,secondary=[meta.name,meta.date].filter(Boolean).join(" · ");
-  if(!event&&!secondary)return [];
+  const meta=normalizeCustomization(customization);
+  const identity=[meta.name,meta.date].filter(Boolean).join(" · ");
+  const stats=[meta.distance,meta.elevation,meta.duration].filter(Boolean).join(" · ");
+  if(!meta.event&&!identity&&!stats)return [];
   const width=Math.max(1,extents.maxX-extents.minX),height=Math.max(1,extents.maxY-extents.minY);
   const inside=(x,y)=>typeof insideNormalized==="function"?insideNormalized(x/radius,y/radius):true;
-  const meshes=[],maxWidth=width*.72,baseCell=Math.max(.65,Math.min(2.2,width/115));
-  if(event)meshes.push(...textLineMeshes(event,{centerX:0,centerY:extents.minY+height*.32,maxWidth,cellMm:baseCell,riseMm,terrainTopMm,inside}));
-  if(secondary)meshes.push(...textLineMeshes(secondary,{centerX:0,centerY:extents.minY+height*.21,maxWidth,cellMm:baseCell*.78,riseMm:Math.max(.3,riseMm*.78),terrainTopMm,inside}));
+  const meshes=[],maxWidth=width*.82,baseCell=Math.max(.7,Math.min(2.4,width/105));
+  if(meta.event)meshes.push(...textLineMeshes(meta.event,{
+    centerX:0,centerY:extents.maxY-height*.17,maxWidth,cellMm:baseCell,
+    riseMm:Math.max(.45,riseMm),terrainTopMm,inside
+  }));
+  if(identity)meshes.push(...textLineMeshes(identity,{
+    centerX:0,centerY:extents.minY+height*.18,maxWidth,cellMm:baseCell*.78,
+    riseMm:Math.max(.35,riseMm*.82),terrainTopMm,inside
+  }));
+  if(stats)meshes.push(...textLineMeshes(stats,{
+    centerX:0,centerY:extents.minY+height*.105,maxWidth,cellMm:baseCell*.56,
+    riseMm:Math.max(.3,riseMm*.68),terrainTopMm,inside
+  }));
+  return meshes;
+}
+
+export function buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels=18}={}){
+  if(!cartography?.places?.length||!projection||typeof terrainTopMm!=="function")return [];
+  const radius=projection.radius,meshes=[],occupied=[];
+  const places=(cartography.places||[]).filter(p=>p?.name&&["city","town","village"].includes(p.class)).slice(0,Math.max(0,maxLabels));
+  for(const place of places){
+    const nx=Number(place.x),ny=Number(place.y);
+    if(!Number.isFinite(nx)||!Number.isFinite(ny)||!insideNormalized(nx,ny))continue;
+    if(ny>.56||ny<-.56)continue;
+    const x=nx*radius,y=ny*radius;
+    if(occupied.some(p=>Math.hypot(p.x-x,p.y-y)<radius*.18))continue;
+    const cell=place.class==="city"?Math.max(.62,radius/82):place.class==="town"?Math.max(.56,radius/94):Math.max(.50,radius/108);
+    const labels=textLineMeshes(String(place.name),{
+      centerX:x,centerY:y,maxWidth:radius*.42,cellMm:cell,riseMm:.38,
+      terrainTopMm,inside:(px,py)=>insideNormalized(px/radius,py/radius)
+    });
+    if(labels.length){meshes.push(...labels);occupied.push({x,y});}
+  }
   return meshes;
 }
 
@@ -580,7 +694,7 @@ function makePockets(config,extents){
   ];
 }
 
-function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainTopMm,points,cartography,extents}){
+function buildTileBundle({config,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents}){
   const widthMm=extents.maxX-extents.minX,heightMm=extents.maxY-extents.minY;
   const adaptive=adaptiveLargeFormatPlan({
     widthMm,heightMm,targetXyMm:config.fabrication.targetXyMm,maxVerticesPerTile:160000,maxTileMm:config.fabrication.maxTileMm
@@ -607,7 +721,10 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
         }
         return depth;
       },
-      regionAt:()=>0
+      regionAt:(lx,ly)=>{
+        const gx=centerX+lx,gy=centerY+ly;
+        return terrainRegionNormalized(gx/projection.radius,gy/projection.radius);
+      }
     });
     const clip={minX:centerX-tile.widthMm/2,maxX:centerX+tile.widthMm/2,minY:centerY-tile.heightMm/2,maxY:centerY+tile.heightMm/2};
     const overlays=featureMeshes({points,cartography,config,projection,terrainTopMm,insideNormalized,clipRect:clip,offsetX:centerX,offsetY:centerY});
@@ -628,7 +745,7 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
   return {plan,bundle:encodeArtifactZip(files)};
 }
 
-export async function generateProductionModel({points,demSampler,cartography=null,config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
+export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
@@ -657,6 +774,11 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     return Math.max(0,Math.min(c.fabrication.reliefMm,corrected));
   };
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
+  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
+  const terrainRegionNormalized=(nx,ny)=>{
+    const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
+    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+  };
   const extents=modelExtents(c,projection,outlinePolygons),pockets=makePockets(c,extents);
   let baseMesh;
   if(c.shape.kind==="route-fit"){
@@ -665,13 +787,13 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       columns:Math.max(24,Math.ceil(projection.widthMm/c.fabrication.targetXyMm)),
       rows:Math.max(24,Math.ceil(projection.heightMm/c.fabrication.targetXyMm)),
       heightAt:(x,y)=>terrainHeightNormalized(x/projection.radius,y/projection.radius),
-      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:()=>0
+      bottomAt:(x,y)=>magnetPocketDepth(x,y,pockets),regionAt:(x,y)=>terrainRegionNormalized(x/projection.radius,y/projection.radius)
     });
   }else if(c.shape.kind==="geographic"){
     baseMesh=(await import("../engine/map-outline-core.mjs")).buildOutlineHeightfieldMesh({
       polygons:outlinePolygons,radiusMm:projection.radius,baseMm:c.fabrication.baseMm,stepMm:c.fabrication.targetXyMm,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:()=>0
+      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
     });
   }else{
     baseMesh=buildRadialMedalMesh({
@@ -680,16 +802,17 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       segments:Math.max(192,Math.ceil(Math.PI*c.fabrication.modelWidthMm/c.fabrication.targetXyMm/4)*4),
       shape:c.shape.kind,aspect:c.shape.aspect,
       heightAt:(nx,ny)=>terrainHeightNormalized(nx,ny),
-      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:()=>0
+      bottomAt:(nx,ny)=>magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),regionAt:terrainRegionNormalized
     });
   }
   const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized,routePoints:points});
+  const placeLabels=buildPlaceLabelMeshes({cartography,projection,terrainTopMm,insideNormalized,maxLabels:c.shape.kind==="route-fit"?14:18});
   const textMeshes=buildPersonalizationMeshes({
     customization:c.customization,extents,insideNormalized,radius:projection.radius,terrainTopMm,
     riseMm:Math.max(.55,Math.min(1.4,c.fabrication.routeRiseMm*.7))
   });
-  const meshes=[baseMesh,...overlays,...logos,...textMeshes];
+  const meshes=[baseMesh,...overlays,...logos,...placeLabels,...textMeshes];
   if(c.fabrication.hangerEnabled){
     const outer=7,inner=3,centerY=extents.maxY+outer*.55;
     meshes.push(buildAnnulusMesh({outerRadiusMm:outer,innerRadiusMm:inner,heightMm:c.fabrication.baseMm+1.5,centerX:0,centerY,segments:64}));
@@ -708,7 +831,7 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   ]);
   let tilePlan=null,tileBundle=null;
   if(c.fabrication.tiled){
-    const tiled=buildTileBundle({config:c,projection,insideNormalized,terrainHeightNormalized,terrainTopMm,points,cartography,extents});
+    const tiled=buildTileBundle({config:c,projection,insideNormalized,terrainHeightNormalized,terrainRegionNormalized,terrainTopMm,points,cartography,extents});
     tilePlan=tiled.plan;tileBundle=tiled.bundle;
   }
   let standStl=null;
