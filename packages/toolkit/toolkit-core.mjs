@@ -508,6 +508,29 @@ function inRect(x,y,rect){
   return !rect||(x>=rect.minX&&x<=rect.maxX&&y>=rect.minY&&y<=rect.maxY);
 }
 
+function buildRouteChannelField(points,projection,config){
+  const style=String(config?.fabrication?.routeStyle||"raised");
+  if(!["engraved","inlay"].includes(style))return ()=>0;
+  const width=Math.max(.2,Number(config.fabrication.routeWidthMm)||1.2),depth=Math.max(.05,Number(config.fabrication.routeRiseMm)||.8);
+  const projected=(points||[]).map(point=>projection.project(point));
+  const stride=Math.max(1,Math.ceil(projected.length/1400)),route=[];
+  for(let i=0;i<projected.length;i+=stride)route.push(projected[i]);
+  if(projected.length&&route.at(-1)!==projected.at(-1))route.push(projected.at(-1));
+  const pointSegmentDistance=(x,y,a,b)=>{
+    const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+    if(d2<1e-12)return Math.hypot(x-a.x,y-a.y);
+    const t=Math.max(0,Math.min(1,((x-a.x)*dx+(y-a.y)*dy)/d2));
+    return Math.hypot(x-(a.x+t*dx),y-(a.y+t*dy));
+  };
+  return (x,y)=>{
+    let best=Infinity;
+    for(let i=1;i<route.length;i++)best=Math.min(best,pointSegmentDistance(x,y,route[i-1],route[i]));
+    if(best>=width*.62)return 0;
+    const edge=Math.max(0,Math.min(1,1-best/(width*.62)));
+    return depth*edge;
+  };
+}
+
 function featureMeshes({points,cartography,config,projection,terrainTopMm,insideNormalized,clipRect=null,offsetX=0,offsetY=0}){
   const meshes=[],radius=projection.radius,route=points.map(point=>projection.project(point));
   const addSegments=(segments,width,rise,region,maxSegments)=>{
@@ -533,7 +556,10 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
   const stride=Math.max(1,Math.ceil(route.length/1600)),routeLite=[];
   for(let i=0;i<route.length;i+=stride)routeLite.push(route[i]);
   if(routeLite.at(-1)!==route.at(-1))routeLite.push(route.at(-1));
-  addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  const routeStyle=String(config.fabrication.routeStyle||"raised");
+  if(routeStyle==="raised")addSegments([routeLite],config.fabrication.routeWidthMm,config.fabrication.routeRiseMm,5,1800);
+  else if(routeStyle==="inlay")addSegments([routeLite],config.fabrication.routeWidthMm,Math.max(.05,config.fabrication.routeRiseMm),5,1800);
+  else if(routeStyle==="color")addSegments([routeLite],config.fabrication.routeWidthMm,.08,5,1800);
   if(cartography&&config.map.roads)addSegments(cartography.roads,.45,.28,6,700);
   if(cartography&&config.map.trails)addSegments(cartography.trails,.32,.24,7,700);
   if(cartography&&config.map.railways)addSegments(cartography.railways,.40,.30,8,450);
@@ -805,7 +831,7 @@ function buildTileBundle({config,projection,insideNormalized,terrainHeightNormal
   return {plan,bundle:encodeArtifactZip(files)};
 }
 
-export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,title="TrailRelief"}={}){
+export async function generateProductionModel({points,demSampler,cartography=null,landcover=[],config={},outlineGeometry=null,logoImage=null,heightmapImage=null,title="TrailRelief"}={}){
   if(!Array.isArray(points)||points.length<2)throw new Error("Upload a GPX route first.");
   if(typeof demSampler!=="function")throw new Error("An elevation source is required.");
   const c=normalizeAdvancedConfig(config);
@@ -835,6 +861,9 @@ export async function generateProductionModel({points,demSampler,cartography=nul
   };
   const isRimNormalized=(nx,ny)=>rimWidthMm>0&&insideNormalized(nx,ny)&&!contentInsideNormalized(nx,ny);
   const range=sampleRange(demSampler,bounds,contentInsideNormalized);
+  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
+  const heightmapSampler=heightmapImage?rasterSampler(heightmapImage,{channel:"luminance"}):null;
+  const routeChannelAt=buildRouteChannelField(points,projection,c);
   const routeCorrection=buildRouteElevationCorrection(points,demSampler,projection,range,{
     mode:c.dem.routeElevationMode,blend:c.dem.routeElevationBlend,maxDeltaM:c.dem.maxDeltaM,
     reliefMm:c.fabrication.reliefMm,routeWidthMm:c.fabrication.routeWidthMm
@@ -845,16 +874,31 @@ export async function generateProductionModel({points,demSampler,cartography=nul
     if(!contentInsideNormalized(nx,ny))return 0;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
     if(!Number.isFinite(elevation))return 0;
-    const base=(elevation-range.min)/(range.max-range.min)*c.fabrication.reliefMm;
-    const corrected=base+routeCorrection.at(nx*projection.radius,ny*projection.radius);
-    return Math.max(0,Math.min(c.fabrication.reliefMm,corrected));
+    const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    const span=Math.max(1e-9,range.max-range.min);
+    let relief=(elevation-range.min)/span*c.fabrication.reliefMm;
+    relief+=routeCorrection.at(nx*projection.radius,ny*projection.radius);
+    if(material===1)relief+=Math.max(0,Number(c.surface.forestRaiseMm)||0);
+    if(material===4&&c.surface.waterMode!=="none"){
+      relief-=Math.max(0,Number(c.surface.waterDepthMm)||0);
+      if(c.surface.waterMode==="procedural-waves"){
+        const spacing=Math.max(.4,Number(c.surface.waveSpacingMm)||2.6),amp=Math.max(0,Number(c.surface.waveHeightMm)||.3);
+        const x=nx*projection.radius,y=ny*projection.radius;
+        relief+=amp*(.58*Math.sin((x+y*.31)/spacing*Math.PI*2)+.28*Math.sin((y-x*.17)/spacing*Math.PI*3.1));
+      }
+    }
+    if(heightmapSampler)relief+=heightmapSampler(nx,ny)*Math.max(0,Number(c.fabrication.heightmapStrengthMm)||0);
+    relief+=contourEmbossHeight(relief,c.contours);
+    relief-=routeChannelAt(nx*projection.radius,ny*projection.radius);
+    const extra=Math.max(0,Number(c.surface.forestRaiseMm)||0,Number(c.contours.riseMm)||0,Number(c.fabrication.heightmapStrengthMm)||0,Number(c.surface.waveHeightMm)||0);
+    return Math.max(0,Math.min(c.fabrication.reliefMm+extra,relief));
   };
   const terrainTopMm=(x,y)=>c.fabrication.baseMm+terrainHeightNormalized(x/projection.radius,y/projection.radius);
-  const landcoverIndex=prepareTerrainLandcover(landcover,bounds);
   const terrainRegionNormalized=(nx,ny)=>{
     if(isRimNormalized(nx,ny))return 12;
     const geo=projection.unproject(nx,ny),elevation=demSampler(geo.lat,geo.lon);
-    return classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    const material=classifyTerrainMaterial({lat:geo.lat,lon:geo.lon,elevation},c.terrainBands,landcoverIndex);
+    return material===4&&c.surface.waterMode==="none"?0:material;
   };
   const extents=modelExtents(c,projection,outlinePolygons),pockets=makePockets(c,extents);
   let baseMesh;
