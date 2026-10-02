@@ -1,0 +1,32 @@
+import { chromium } from "playwright";
+
+const browser=await chromium.launch({headless:true,args:["--use-gl=swiftshader","--enable-webgl","--ignore-gpu-blocklist"]});
+const page=await browser.newPage({viewport:{width:1600,height:1000}});
+const errors=[];
+page.on("pageerror",error=>errors.push(String(error)));
+page.on("console",message=>{if(message.type()==="error")errors.push(message.text())});
+
+try{
+  await page.goto("http://127.0.0.1:8765/apps/web/index.html",{waitUntil:"networkidle",timeout:60000});
+  const gpx=`<gpx version="1.1"><trk><name>VYNDI ICONIC TEST</name><trkseg>
+  <trkpt lat="10.0000" lon="76.0000"><ele>100</ele><time>2026-10-02T00:00:00Z</time></trkpt>
+  <trkpt lat="10.0100" lon="76.0100"><ele>160</ele><time>2026-10-02T00:10:00Z</time></trkpt>
+  <trkpt lat="10.0200" lon="76.0200"><ele>140</ele><time>2026-10-02T00:20:00Z</time></trkpt>
+  </trkseg></trk></gpx>`;
+  await page.setInputFiles("#gpxInput",{name:"iconic.gpx",mimeType:"application/gpx+xml",buffer:Buffer.from(gpx)});
+  await page.waitForFunction(()=>document.querySelector("#ribbonEvent")?.textContent==="VYNDI ICONIC TEST");
+  await page.waitForFunction(()=>document.querySelector("#ribbonPoints")?.textContent==="3 PTS");
+  const paletteCount=await page.locator("[data-palette]").count();
+  if(paletteCount!==8)throw new Error("Expected 8 terrain palette controls, got "+paletteCount);
+  await page.click("#openAdvanced");
+  await page.waitForFunction(()=>document.querySelector("#advancedDrawer")?.classList.contains("open"));
+  const labels=await page.locator("#advancedDrawer summary").allTextContents();
+  for(const expected of ["DEM & elevation","Map layers","Shape & branding","Fabrication","Export & validation"]){
+    if(!labels.includes(expected))throw new Error("Missing Advanced section: "+expected);
+  }
+  await page.screenshot({path:"vyndi-3rd-diamension-studio.png",fullPage:true});
+  if(errors.length)throw new Error("Browser errors: "+errors.join(" | "));
+  console.log("BROWSER PASS · ribbon + palette + GPX intelligence + Advanced workbench");
+}finally{
+  await browser.close();
+}
