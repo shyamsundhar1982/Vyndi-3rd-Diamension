@@ -25,7 +25,8 @@ const KNOWN_EVENT_PROFILES = [
     match: /paris\s*brest\s*paris|\bpbp\b/i,
     event: "Paris Brest Paris 2023",
     location: "Rambouillet, France",
-    bib: "I277",
+    date: "20 Aug 2023",
+    bibByRider: { shyam: "I277", "shyam sundhar": "I277" },
     status: "Finished",
     start: "Rambouillet",
     finish: "Rambouillet"
@@ -36,7 +37,8 @@ function applyKnownEventProfile(route=state.route){
   const source=[route?.name,$("eventOverride")?.value].filter(Boolean).join(" ");
   const profile=KNOWN_EVENT_PROFILES.find(item=>item.match.test(source));
   if(!profile)return false;
-  const values={eventOverride:profile.event,eventLocation:profile.location,bib:profile.bib,resultStatus:profile.status,startDetail:profile.start,finishDetail:profile.finish};
+  const rider=clean($("riderName")?.value).toLowerCase();
+  const values={eventOverride:profile.event,eventDate:profile.date,eventLocation:profile.location,bib:profile.bibByRider?.[rider]||"",resultStatus:profile.status,startDetail:profile.start,finishDetail:profile.finish};
   for(const [id,value] of Object.entries(values)){const el=$(id);if(el&&!clean(el.value))el.value=value}
   return true;
 }
