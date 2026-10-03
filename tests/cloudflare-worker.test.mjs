@@ -14,11 +14,13 @@ test("health endpoint identifies the dedicated V3D worker and disables caching",
   const response=await worker.fetch(new Request("https://example.test/health"),{ASSETS:assets});
   assert.equal(response.status,200);
   assert.equal(response.headers.get("cache-control"),"no-store");
-  assert.deepEqual(await response.json(),{ok:true,service:"vyndi-3rd-diamension",version:"0.1.0"});
+  assert.deepEqual(await response.json(),{ok:true,service:"vyndi-3rd-diamension",version:"0.3.0",merch:"ride-stories"});
 });
 
-test("root redirects to the canonical studio directory so relative CSS and JS resolve correctly",async()=>{
-  const response=await worker.fetch(new Request("https://example.test/"),{ASSETS:assets});
+test("root serves the synced merchandise landing while Workbench aliases redirect to the studio",async()=>{
+  const root=await worker.fetch(new Request("https://example.test/"),{ASSETS:assets});
+  assert.equal(root.status,200);
+  const response=await worker.fetch(new Request("https://example.test/workbench"),{ASSETS:assets});
   assert.equal(response.status,302);
   assert.equal(response.headers.get("location"),"https://example.test/apps/web/");
 });
