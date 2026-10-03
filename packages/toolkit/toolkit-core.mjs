@@ -1097,7 +1097,10 @@ export async function generateProductionModel({points,demSampler,cartography=nul
       bottomAt:(nx,ny)=>Math.max(magnetPocketDepth(nx*projection.radius,ny*projection.radius,pockets),bottomTextDepthAt(nx*projection.radius,ny*projection.radius,c,extents)),regionAt:terrainRegionNormalized
     });
   }
-  const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized});
+  const routeInsideNormalized=medallionMode
+    ? (nx,ny)=>insideNormalized(nx,ny)&&landInsideNormalized(nx,ny)
+    : contentInsideNormalized;
+  const overlays=featureMeshes({points,cartography,config:c,projection,terrainTopMm,insideNormalized:routeInsideNormalized});
   const logos=logoMeshes({logoImage,config:c,projection,terrainTopMm,insideNormalized:contentInsideNormalized,routePoints:points});
   const requestedLabelCount=Number(c.placeLabels.maxCount)||(c.shape.kind==="route-fit"?14:18);
   const labelInsideNormalized=medallionMode?(nx,ny)=>contentInsideNormalized(nx,ny)&&landInsideNormalized(nx,ny):contentInsideNormalized;
