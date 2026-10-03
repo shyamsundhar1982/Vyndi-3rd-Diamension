@@ -56,7 +56,7 @@
     </div>
   </section>
 <main class="studio">
-    <aside class="control-panel v2-design-rail"><div class="rail-title"><span>DESIGN</span><small>Relevant controls · all features retained</small></div>
+    <aside class="control-panel v2-design-rail"><div class="rail-title"><span>DESIGN</span><small id="landcoverStatus">Relevant controls · all features retained</small></div>
       <div class="route-brief">
         <strong id="routeBrief">No route loaded</strong>
         <span id="routeDetail">Drop one or more GPX files or use Demo.</span>
@@ -91,7 +91,7 @@
         </div>
       </details>
 
-      <div class="panel-tabs" role="tablist"><button data-panel-tab="event">Event</button><button data-panel-tab="map">Map</button>
+      <section class="mat-inspector" id="matInspector" hidden><strong id="matInspectorTitle">Material</strong><span id="matInspectorHint"></span><div id="matInspectorBody"></div></section><div class="panel-tabs" role="tablist"><button data-panel-tab="event">Event</button><button data-panel-tab="map">Map</button>
         <button class="active" data-panel-tab="terrain">Terrain</button>
         <button data-panel-tab="colours">Colours</button>
         <button data-panel-tab="plate">Plate</button>
