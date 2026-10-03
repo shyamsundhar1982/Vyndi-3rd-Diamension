@@ -5,10 +5,10 @@ import { readFileSync } from "node:fs";
 const html=readFileSync(new URL("../apps/web/index.html",import.meta.url),"utf8");
 const app=readFileSync(new URL("../apps/web/app.mjs",import.meta.url),"utf8");
 
-test("studio keeps TrailRelief simplicity with event and material ribbons",()=>{
-  assert.match(html,/class="event-ribbon"/);
-  assert.match(html,/class="material-ribbon"/);
-  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Labels"])assert.match(html,new RegExp(">"+name+"<"));
+test("studio keeps fast route identity and all terrain/material capabilities",()=>{
+  assert.match(html,/class="v2-sourcebar"/);
+  assert.match(html,/data-panel="colours"/);
+  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Labels"])assert.match(html,new RegExp(name));
 });
 
 test("event ribbon is data-driven from GPX rather than static copy",()=>{
