@@ -32,7 +32,7 @@ test("advanced defaults carry both TrailRelief surface controls and VYNDI fabric
   const c=defaultAdvancedConfig();
   assert.equal(c.fabrication.routeStyle,"raised");
   assert.equal(c.surface.forestRaiseMm,.4);
-  assert.equal(c.surface.waterDepthMm,.6);
+  assert.equal(c.surface.waterDepthMm,1.1);
   assert.equal(c.surface.waterMode,"procedural-waves");
   assert.equal(c.contours.enabled,false);
   assert.equal(c.placeLabels.mode,"major");
