@@ -59,3 +59,22 @@ test("Workbench keeps production diagnostics DOM contract and known-event person
   assert.match(app, /Rambouillet/);
   assert.match(app, /applyKnownEventProfile/);
 });
+
+
+test("Workbench V2 preserves capability while progressively disclosing complexity",()=>{
+  for(const token of ["SOURCE","EVENT","MAP","DESIGN","MAKE","GUIDED","PRO","featureSearch","eventSearch","eventResults","mapSuggestions","productChoices","authIdentity"]) assert.match(html,new RegExp(token));
+  for(const id of ["gpxInput","geoSearch","geoJsonInput","shape","routeBufferKm","printerProfile","demSource","roads","trails","railways","buildings","logoInput","generate"]) assert.match(html,new RegExp('id="'+id+'"'));
+});
+
+test("GPX load drives editable metadata and automatic geography suggestions",()=>{
+  assert.match(app,/suggestGeographyFromRoute/);
+  assert.match(app,/mapSuggestions/);
+  assert.match(app,/applyMapSuggestion/);
+  assert.match(app,/Reset to GPX/);
+});
+
+test("event discovery and official branding remain first class capabilities",()=>{
+  assert.match(app,/searchOfficialEvent/);
+  assert.match(app,/eventResults/);
+  assert.match(app,/officialLogo/);
+});
