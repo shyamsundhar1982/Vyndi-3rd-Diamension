@@ -3,7 +3,14 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/deploy-qualified-v2.yml']
+    paths:
+      - 'src/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'scripts/build-web.mjs'
+      - 'package.json'
+      - 'wrangler.jsonc'
+      - '.github/workflows/deploy-qualified-v2.yml'
 permissions:
   contents: read
 concurrency:
@@ -17,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ed095970dde1aa9155ba6c55afad1e835b5f4292
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -48,7 +54,8 @@ jobs:
               const options = { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(20000) };
               const healthResponse = await fetch(base + '/health', options);
               const health = await healthResponse.json();
-              const response = await fetch(base + '/apps/web/?deploy=ed09597&attempt=' + attempt, {headers: {'Cache-Control':'no-cache'}, signal:AbortSignal.timeout(20000)});
+              const revision = String(process.env.GITHUB_SHA || 'main').slice(0, 12);
+              const response = await fetch(base + '/apps/web/?deploy=' + revision + '&attempt=' + attempt, {headers: {'Cache-Control':'no-cache'}, signal:AbortSignal.timeout(20000)});
               const html = await response.text();
               const stages = ['source', 'event', 'map', 'design', 'make'];
               if (healthResponse.ok && health.ok === true && health.service === 'vyndi-3rd-diamension' &&
