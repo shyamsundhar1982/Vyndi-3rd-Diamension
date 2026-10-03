@@ -621,7 +621,19 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
           if(point?.x!==undefined&&point?.lat===undefined)return {x:Number(point.x)*radius,y:Number(point.y)*radius};
           return projection.project(point);
         };
-        const a=toMm(list[i-1]),b=toMm(list[i]);
+        let a=toMm(list[i-1]),b=toMm(list[i]);
+        const clipPoint=(point)=>{
+          if(insideNormalized(point.x/radius,point.y/radius))return point;
+          let lo=0,hi=1,best=null;
+          const anchor=insideNormalized(a.x/radius,a.y/radius)?a:insideNormalized(b.x/radius,b.y/radius)?b:null;
+          if(!anchor)return null;
+          const outside=anchor===a?b:a;
+          for(let step=0;step<18;step++){const t=(lo+hi)/2,p={x:anchor.x+(outside.x-anchor.x)*t,y:anchor.y+(outside.y-anchor.y)*t};if(insideNormalized(p.x/radius,p.y/radius)){best=p;lo=t}else hi=t}
+          return best||anchor;
+        };
+        const aIn=insideNormalized(a.x/radius,a.y/radius),bIn=insideNormalized(b.x/radius,b.y/radius);
+        if(!aIn&&!bIn)continue;
+        if(!aIn)a=clipPoint(a);if(!bIn)b=clipPoint(b);if(!a||!b)continue;
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
         const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
         if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect)||len>5.5)continue;
