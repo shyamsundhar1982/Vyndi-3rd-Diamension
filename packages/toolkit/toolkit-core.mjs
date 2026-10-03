@@ -632,8 +632,14 @@ function featureMeshes({points,cartography,config,projection,terrainTopMm,inside
           return best||anchor;
         };
         const aIn=insideNormalized(a.x/radius,a.y/radius),bIn=insideNormalized(b.x/radius,b.y/radius);
-        if(!aIn&&!bIn)continue;
-        if(!aIn)a=clipPoint(a);if(!bIn)b=clipPoint(b);if(!a||!b)continue;
+        if(!aIn&&!bIn){
+          const steps=Math.max(2,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/Math.max(.5,width))),samples=[];
+          for(let k=0;k<=steps;k++){const t=k/steps,p={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};if(insideNormalized(p.x/radius,p.y/radius))samples.push(p)}
+          if(samples.length<2)continue;
+          a=samples[0];b=samples.at(-1);
+        }else{
+          if(!aIn)a=clipPoint(a);if(!bIn)b=clipPoint(b);if(!a||!b)continue;
+        }
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nx=mx/radius,ny=my/radius;
         const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
         if(!insideNormalized(nx,ny)||!inRect(mx,my,clipRect)||len>5.5)continue;
