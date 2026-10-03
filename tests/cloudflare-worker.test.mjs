@@ -113,3 +113,38 @@ test("geography outline returns a polygon usable as a medal shape",async()=>{
     assert.equal(data.source,"OpenStreetMap Nominatim");
   }finally{globalThis.fetch=originalFetch}
 });
+
+
+test("geography search accepts GPX centroid coordinates for automatic region suggestions",async()=>{
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=async request=>{
+    const url=new URL(typeof request==="string"?request:request.url);
+    assert.equal(url.pathname,"/reverse");
+    assert.equal(url.searchParams.get("lat"),"22.3511");
+    assert.equal(url.searchParams.get("lon"),"78.6677");
+    return new Response(JSON.stringify({
+      osm_type:"relation",osm_id:1950071,name:"Madhya Pradesh",display_name:"Madhya Pradesh, India",
+      addresstype:"state",type:"administrative",lat:"23.8143419",lon:"77.5340719",
+      boundingbox:["21.0781832","26.8681093","74.0370615","82.8093495"]
+    }),{status:200,headers:{"content-type":"application/json"}});
+  };
+  try{
+    const response=await worker.fetch(new Request("https://example.test/api/geo/search?city=22.3511%2C78.6677",{headers:{"sec-fetch-site":"same-origin"}}),{ASSETS:assets});
+    assert.equal(response.status,200);
+    const data=await response.json();
+    assert.equal(data.results[0].name,"Madhya Pradesh");
+    assert.equal(data.results[0].osmType,"relation");
+  }finally{globalThis.fetch=originalFetch}
+});
+
+test("geography API converts upstream failures into JSON instead of leaking an empty response",async()=>{
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=async()=>new Response("",{status:502,headers:{"content-type":"text/html"}});
+  try{
+    const response=await worker.fetch(new Request("https://example.test/api/geo/search?city=India",{headers:{"sec-fetch-site":"same-origin"}}),{ASSETS:assets});
+    assert.equal(response.status,502);
+    assert.match(response.headers.get("content-type")||"",/application\/json/);
+    const data=await response.json();
+    assert.match(data.error,/geography service/i);
+  }finally{globalThis.fetch=originalFetch}
+});
