@@ -8,7 +8,7 @@ const app=readFileSync(new URL("../apps/web/app.mjs",import.meta.url),"utf8");
 test("studio keeps fast route identity and all terrain/material capabilities",()=>{
   assert.match(html,/class="v2-sourcebar"/);
   assert.match(html,/data-panel="colours"/);
-  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Labels"])assert.match(html,new RegExp(name));
+  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Border text"])assert.match(html,new RegExp(name));
 });
 
 test("event ribbon is data-driven from GPX rather than static copy",()=>{
