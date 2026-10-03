@@ -45,7 +45,7 @@ jobs:
                       and health.get("ok") is True
                       and health.get("service")=="vyndi-3rd-diamension"
                       and ss==200
-                      and "VYNDI 3rd DIAMENSION" in sbody
+                      and 'id="featureSearch"' in sbody
                       and "/apps/web/" in surl
                       and sheaders.get("x-content-type-options")=="nosniff"
                   ):
@@ -53,7 +53,7 @@ jobs:
                       print("health:",hurl)
                       print("studio:",surl)
                       raise SystemExit(0)
-                  last=f"health={hs} {health} studio={ss} url={surl} marker={'VYNDI 3rd DIAMENSION' in sbody}"
+                  last=f"health={hs} {health} studio={ss} url={surl} feature_search={'id="featureSearch"' in sbody}"
               except Exception as e:
                   last=repr(e)
               time.sleep(5)
