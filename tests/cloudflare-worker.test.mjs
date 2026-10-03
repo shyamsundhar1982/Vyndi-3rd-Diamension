@@ -69,7 +69,7 @@ test("directory route does not request index.html from Cloudflare Static Assets"
 test("geography search returns stable JSON results for the medal boundary picker",async()=>{
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async request=>{
-    const url=new URL(typeof request==="string"?request:request.url);
+    const url=new URL(request instanceof URL?request.toString():typeof request==="string"?request:request.url);
     assert.equal(url.origin,"https://nominatim.openstreetmap.org");
     assert.equal(url.pathname,"/search");
     assert.equal(url.searchParams.get("q"),"India");
@@ -93,7 +93,7 @@ test("geography search returns stable JSON results for the medal boundary picker
 test("geography outline returns a polygon usable as a medal shape",async()=>{
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async request=>{
-    const url=new URL(typeof request==="string"?request:request.url);
+    const url=new URL(request instanceof URL?request.toString():typeof request==="string"?request:request.url);
     assert.equal(url.origin,"https://nominatim.openstreetmap.org");
     assert.equal(url.pathname,"/lookup");
     assert.equal(url.searchParams.get("osm_ids"),"R304716");
@@ -118,7 +118,7 @@ test("geography outline returns a polygon usable as a medal shape",async()=>{
 test("geography search accepts GPX centroid coordinates for automatic region suggestions",async()=>{
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async request=>{
-    const url=new URL(typeof request==="string"?request:request.url);
+    const url=new URL(request instanceof URL?request.toString():typeof request==="string"?request:request.url);
     assert.equal(url.pathname,"/reverse");
     assert.equal(url.searchParams.get("lat"),"22.3511");
     assert.equal(url.searchParams.get("lon"),"78.6677");
