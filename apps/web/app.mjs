@@ -16,7 +16,7 @@ const state={
   production:null,glbUrl:null,previewUrl:null,previewTimer:null,previewGeneration:0,
   liveDemSampler:null,liveDemPromise:null,liveDemInfo:null,demFile:null,arcFile:null,openTopoSampler:null,openTopoInfo:null,
   landcover:[],logoImage:null,heightmapImage:null,geoOutline:null,geoMeta:null,
-  authenticity:null,
+  authenticity:null,gpxMetadata:null,autoGeography:[],officialEvent:null,
   trailRenderer:null,sourceRenderGeneration:0,vyndiView:{yaw:VYNDI_SOURCE_VIEW.yaw,pitch:VYNDI_SOURCE_VIEW.pitch,zoom:VYNDI_SOURCE_VIEW.zoom}
 };
 
@@ -544,6 +544,55 @@ async function loadLandcover(){
   }catch{state.landcover=[];$("landcoverStatus").textContent="terrain palette · landcover unavailable"}
   schedulePreview(0);
 }
+function snapshotGpxMetadata(){
+  const route=state.route||{};state.gpxMetadata={event:route.name||"",date:route.startTime?new Date(route.startTime).toISOString().slice(0,10):"",rider:"",location:"",bib:"",status:"",start:"",finish:"",placing:""};
+}
+function restoreGpxMetadata(){
+  const m=state.gpxMetadata||{};for(const [id,key] of [["eventOverride","event"],["eventDate","date"],["riderName","rider"],["eventLocation","location"],["bib","bib"],["resultStatus","status"],["startDetail","start"],["finishDetail","finish"],["placing","placing"]])if($(id))$(id).value=m[key]||"";
+  applyKnownEventProfile(state.route);updateRibbon();resetGenerated("Reset to GPX metadata · regenerate production model.");schedulePreview(0);
+}
+function routeCentroid(route=state.route){const pts=route?.points||[];if(!pts.length)return null;const stride=Math.max(1,Math.ceil(pts.length/500));let lat=0,lon=0,n=0;for(let i=0;i<pts.length;i+=stride){lat+=Number(pts[i].lat);lon+=Number(pts[i].lon);n++}return n?{lat:lat/n,lon:lon/n}:null}
+async function suggestGeographyFromRoute(route=state.route){
+  const host=$("mapSuggestions"),status=$("autoGeoStatus");if(!host||!route)return;host.replaceChildren();status.textContent="Detecting country / region from GPX…";
+  const c=routeCentroid(route),queries=[];if(c)queries.push(c.lat.toFixed(4)+","+c.lon.toFixed(4));const name=clean(route.name).replace(/[_-]+/g," ");if(name)queries.push(name);
+  const seen=new Set(),items=[];
+  for(const q of queries){try{const response=await fetch("/api/geo/search?city="+encodeURIComponent(q));if(!response.ok)continue;const data=await response.json();for(const item of (data.results||[]).slice(0,5)){const key=(item.displayName||item.name||"").toLowerCase();if(key&&!seen.has(key)){seen.add(key);items.push(item)}}}catch{}}
+  state.autoGeography=items;status.textContent=items.length?"GPX geography detected · choose a print area":"Automatic geography unavailable · manual country / region search remains available.";
+  const routeBtn=document.createElement("button");routeBtn.textContent="ROUTE CORRIDOR";routeBtn.title="Print the terrain surrounding the GPX route";routeBtn.addEventListener("click",()=>applyMapSuggestion({kind:"route-fit"}));host.append(routeBtn);
+  for(const item of items.slice(0,4)){const b=document.createElement("button");b.textContent=(item.name||item.displayName||"MAP").toUpperCase();b.title=item.displayName||item.name||"";b.addEventListener("click",()=>void applyMapSuggestion({kind:"boundary",item}));host.append(b)}
+  const surrounding=document.createElement("button");surrounding.textContent="SURROUNDING MAP";surrounding.title="Preserve surrounding terrain around the selected geography";surrounding.addEventListener("click",()=>{if($("shape"))$("shape").value="geo-medallion";resetGenerated();schedulePreview(0)});host.append(surrounding);
+}
+async function applyMapSuggestion(choice){
+  if(choice.kind==="route-fit"){setControl("shape","route-fit");resetGenerated();schedulePreview(0);return}
+  if(choice.item){await selectGeography(choice.item);setControl("shape","geo-medallion");resetGenerated();schedulePreview(0)}
+}
+async function searchOfficialEvent(){
+  const q=clean($("eventSearch")?.value)||clean($("eventOverride")?.value)||clean(state.route?.name);const host=$("eventResults");if(!q||!host)return;host.replaceChildren();
+  const known=KNOWN_EVENT_PROFILES.filter(p=>p.match.test(q));for(const p of known){const b=document.createElement("button");b.textContent=p.event.toUpperCase();b.title="Known event profile · import editable details";b.addEventListener("click",()=>{state.officialEvent=p;for(const [id,value] of Object.entries({eventOverride:p.event,eventDate:p.date,eventLocation:p.location,resultStatus:p.status,startDetail:p.start,finishDetail:p.finish}))if($(id))$(id).value=value||"";applyKnownEventProfile(state.route);$("officialLogo").textContent="Official logo: use verified event source or upload logo";updateRibbon();resetGenerated();schedulePreview(0)});host.append(b)}
+  try{const response=await fetch("/api/geo/search?city="+encodeURIComponent(q));if(response.ok&&!known.length){const data=await response.json();for(const item of (data.results||[]).slice(0,3)){const b=document.createElement("button");b.textContent="WEB / MAP · "+(item.name||item.displayName||q);b.title="Discovery candidate — verify official event source before logo use";host.append(b)}}}catch{}
+  if(!host.children.length)host.textContent="No verified event source found. Keep GPX metadata or enter official details manually.";
+}
+function setWorkbenchStep(step){
+  document.querySelectorAll("[data-v2-step]").forEach(b=>b.classList.toggle("active",b.dataset.v2Step===step));
+  document.querySelectorAll("[data-stage-panel]").forEach(p=>p.classList.toggle("active",p.dataset.stagePanel===step));
+}
+function selectProduct(product){
+  document.querySelectorAll("[data-product]").forEach(b=>b.classList.toggle("active",b.dataset.product===product));
+  const values={"terrain-medal":"circle","country-relief":"geographic","surrounding-map":"geo-medallion","route-relief":"route-fit","wall-map":"route-fit"};
+  if(values[product])setControl("shape",values[product]);if(product==="wall-map")setControl("tileEnabled",true);resetGenerated();schedulePreview(0);
+}
+function setupWorkbenchV2(){
+  document.body.dataset.workbenchMode="guided";
+  document.querySelectorAll("[data-workbench-mode]").forEach(b=>b.addEventListener("click",()=>{document.body.dataset.workbenchMode=b.dataset.workbenchMode;document.querySelectorAll("[data-workbench-mode]").forEach(x=>x.classList.toggle("active",x===b))}));
+  document.querySelectorAll("[data-v2-step]").forEach(b=>b.addEventListener("click",()=>setWorkbenchStep(b.dataset.v2Step)));
+  document.querySelectorAll("[data-product]").forEach(b=>{b.addEventListener("click",()=>selectProduct(b.dataset.product));b.addEventListener("mouseenter",()=>b.title="Preview "+b.textContent.trim()+" using current GPX")});
+  $("toggleRideDetails")?.addEventListener("click",()=>{$("rideDetails").open=!$("rideDetails").open});
+  $("resetGpxMeta")?.addEventListener("click",restoreGpxMetadata);$("eventSearchButton")?.addEventListener("click",()=>void searchOfficialEvent());$("eventSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();void searchOfficialEvent()}});
+  const features=[["terrain","Terrain relief"],["routeStyle","Route style"],["geoSearch","Country / region map"],["placeLabelMode","Place labels"],["roads","Roads"],["trails","Trails"],["railways","Railways"],["buildings","Buildings"],["logoInput","Logo"],["demSource","DEM elevation"],["printerProfile","Printer"],["magnetEnabled","Magnet pocket"],["hangerEnabled","Hanger"],["tileEnabled","Tiled wall map"],["advancedDrawer","Advanced engineering"]];
+  $("featureSearch")?.addEventListener("input",e=>{const q=clean(e.target.value).toLowerCase(),host=$("featureSearchResults");host.replaceChildren();if(!q)return host.classList.remove("open");for(const [id,label] of features.filter(x=>x[1].toLowerCase().includes(q)).slice(0,8)){const b=document.createElement("button");b.textContent=label;b.addEventListener("click",()=>{host.classList.remove("open");if(id==="advancedDrawer")$("advancedDrawer").classList.add("open");else $(id)?.scrollIntoView({behavior:"smooth",block:"center"})});host.append(b)}host.classList.toggle("open",host.children.length>0)});
+}
+setupWorkbenchV2();
+
 async function loadRoutes(files){
   const list=[...(files||[])];if(!list.length)return;
   $("productionStatus").textContent="Reading "+list.length+" GPX file"+(list.length>1?"s":"")+"…";
@@ -554,9 +603,10 @@ async function loadRoutes(files){
   if(state.previewUrl){URL.revokeObjectURL(state.previewUrl);state.previewUrl=null}
   $("liveModelViewer").removeAttribute("src");$("liveEmpty").hidden=false;$("livePreviewStatus").textContent="BUILDING LIVE 3D · GPX ELEVATION";
   resetGenerated("Route loaded · production model not generated.");
+  snapshotGpxMetadata();
   applyKnownEventProfile(state.route);
   updateRibbon();$("generate").disabled=false;$("downloadJob").disabled=false;
-  void generateLivePreview();void loadLandcover();
+  void generateLivePreview();void loadLandcover();void suggestGeographyFromRoute(state.route);
 }
 function demoRoute(){
   const pts=[];const start=Date.parse("2026-08-20T06:00:00Z");

@@ -5,10 +5,10 @@ import { readFileSync } from "node:fs";
 const html=readFileSync(new URL("../apps/web/index.html",import.meta.url),"utf8");
 const app=readFileSync(new URL("../apps/web/app.mjs",import.meta.url),"utf8");
 
-test("studio keeps TrailRelief simplicity with event and material ribbons",()=>{
-  assert.match(html,/class="event-ribbon"/);
-  assert.match(html,/class="material-ribbon"/);
-  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Labels"])assert.match(html,new RegExp(">"+name+"<"));
+test("studio keeps fast route identity and all terrain/material capabilities",()=>{
+  assert.match(html,/class="v2-sourcebar"/);
+  assert.match(html,/data-panel="colours"/);
+  for(const name of ["Land","Forest","Mountain","Snow","Water","Route","Roads","Border text"])assert.match(html,new RegExp(name));
 });
 
 test("event ribbon is data-driven from GPX rather than static copy",()=>{
@@ -58,4 +58,23 @@ test("Workbench keeps production diagnostics DOM contract and known-event person
   assert.match(app, /I277/);
   assert.match(app, /Rambouillet/);
   assert.match(app, /applyKnownEventProfile/);
+});
+
+
+test("Workbench V2 preserves capability while progressively disclosing complexity",()=>{
+  for(const token of ["SOURCE","EVENT","MAP","DESIGN","MAKE","GUIDED","PRO","featureSearch","eventSearch","eventResults","mapSuggestions","productChoices","authIdentity"]) assert.match(html,new RegExp(token));
+  for(const id of ["gpxInput","geoSearch","geoJsonInput","shape","routeBufferKm","printerProfile","demSource","roads","trails","railways","buildings","logoInput","generate"]) assert.match(html,new RegExp('id="'+id+'"'));
+});
+
+test("GPX load drives editable metadata and automatic geography suggestions",()=>{
+  assert.match(app,/suggestGeographyFromRoute/);
+  assert.match(app,/mapSuggestions/);
+  assert.match(app,/applyMapSuggestion/);
+  assert.match(app,/Reset to GPX/);
+});
+
+test("event discovery and official branding remain first class capabilities",()=>{
+  assert.match(app,/searchOfficialEvent/);
+  assert.match(app,/eventResults/);
+  assert.match(app,/officialLogo/);
 });

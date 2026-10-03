@@ -8,90 +8,55 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><span class="mark">V3D</span><div><strong>VYNDI 3rd DIAMENSION</strong><small>TRAILRELIEF LIVE · VYNDI PRODUCTION</small></div></div>
-    <nav><button id="openAdvanced">Advanced</button><button id="resetView">Reset view</button>
-      <button type="button" id="merchHomeBtn" class="ghost" onclick="location.href='/'">Merchandise</button>
-      <button type="button" id="helpOpenBtn" class="ghost">Help</button></nav>
+  <header class="topbar v2-topbar">
+    <div class="brand"><span class="mark">V3D</span><div><strong>VYNDI 3RD DIMENSION</strong><small>MY ROAD — MY GLORY · VĀYÚ SHASTR</small></div></div>
+    <div class="v2-mode"><button class="active" data-workbench-mode="guided">GUIDED</button><button data-workbench-mode="pro">PRO</button><button id="openAdvanced" type="button">ADVANCED</button><button id="resetView" type="button">RESET VIEW</button><button id="merchHomeBtn" type="button" onclick="location.href='/'">MERCH</button><button id="helpOpenBtn" type="button">HELP</button></div>
+    <div class="v2-search"><input id="featureSearch" placeholder="Find a feature…"><div id="featureSearchResults"></div></div>
+    <div class="auth-identity" id="authIdentity"><span class="auth-dot"></span><div><strong>VYNDI RIDER</strong><small>Authenticated project workspace</small></div><button id="accountMenu" type="button">ACCOUNT ▾</button></div>
   </header>
-<div id="wb-path-bar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:6px 14px;background:#0e0e10;border-bottom:1px solid #2a2a30;font:11px system-ui,sans-serif;color:#a1a1aa"><div><strong style="color:#ff9f2f">Production workbench</strong> - Terrain medal print studio - <span style="color:#71717a">/apps/web/</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><a href="/" style="color:#e4e4e7;text-decoration:none;border:1px solid #3f3f46;padding:4px 10px;border-radius:999px">&larr; Merchandise home</a><a href="/apps/web/" style="color:#0a0a0b;background:linear-gradient(180deg,#ffb347,#e8891a);text-decoration:none;padding:4px 10px;border-radius:999px;font-weight:700">Workbench</a></div></div>
-
-
-  <section class="event-ribbon" aria-label="Route event ribbon">
-    <div class="event-id"><span>EVENT</span><strong id="ribbonEvent">UPLOAD A GPX</strong><small id="ribbonRider">RIDER · DATE</small></div>
-    <div class="metric"><span>DISTANCE</span><strong id="ribbonDistance">— KM</strong></div>
-    <div class="metric"><span>ELEVATION</span><strong id="ribbonElevation">— M</strong></div>
-    <div class="metric"><span>TIME</span><strong id="ribbonDuration">—</strong></div>
-    <div class="metric"><span>DATA</span><strong id="ribbonPoints">— PTS</strong></div>
-    <div class="ribbon-actions">
-      <label class="upload">UPLOAD GPX<input id="gpxInput" type="file" multiple accept=".gpx,application/gpx+xml"></label>
-      <button id="demoRoute">DEMO</button>
-      <button id="premiumPreset" class="premium-btn" type="button" title="One-click industry premium medal">★ PREMIUM</button>
-    </div>
-  </section>
-
-  <section class="material-ribbon" aria-label="Material selector">
-    <div class="ribbon-label">
-      <strong>MATERIALS</strong>
-      <span id="landcoverStatus">tap a layer · edit colour &amp; settings</span>
-    </div>
-    <button type="button" class="mat-chip active" data-mat="land" title="Land surface">
-      <input data-palette="land" type="color" value="#6f9f46" aria-label="Land colour">
-      <span>Land</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="forest" title="Forest raise">
-      <input data-palette="forest" type="color" value="#2f6c31" aria-label="Forest colour">
-      <span>Forest</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="mountain" title="Mountain band">
-      <input data-palette="mountain" type="color" value="#8b5a31" aria-label="Mountain colour">
-      <span>Mountain</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="snow" title="Snow line">
-      <input data-palette="snow" type="color" value="#f7f7f3" aria-label="Snow colour">
-      <span>Snow</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="water" title="Sea and lakes">
-      <input data-palette="water" type="color" value="#155b8a" aria-label="Water colour">
-      <span>Water</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="route" title="Your GPX route">
-      <input data-palette="route" type="color" value="#ff2f24" aria-label="Route colour">
-      <span>Route</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="rim" title="Medal rim">
-      <input data-palette="rim" type="color" value="#22201f" aria-label="Rim colour">
-      <span>Rim</span>
-    </button>
-    <button type="button" class="mat-chip" data-mat="labels" title="Place labels">
-      <input data-palette="labels" type="color" value="#f3c56a" aria-label="Label colour">
-      <span>Labels</span>
-    </button>
-  </section>
-
-  <section class="mat-inspector" id="matInspector" aria-label="Selected material settings">
-    <div class="mat-inspector-head">
-      <strong id="matInspectorTitle">Land</strong>
-      <span id="matInspectorHint">Surface colour and overall relief</span>
-      <span class="mat-tip" id="matTip">Tip: tap a chip, adjust only that layer.</span>
-    </div>
-    <div class="mat-inspector-body" id="matInspectorBody"></div>
-  </section>
-  <nav class="work-flow" aria-label="Workbench steps">
-    <div class="step active" data-flow="1"><span class="num">1</span> Route</div>
-    <span class="sep">-</span>
-    <div class="step" data-flow="2"><span class="num">2</span> Shape</div>
-    <span class="sep">-</span>
-    <div class="step" data-flow="3"><span class="num">3</span> Style</div>
-    <span class="sep">-</span>
-    <div class="step" data-flow="4"><span class="num">4</span> Generate</div>
-    <span class="sep">-</span>
-    <div class="step" data-flow="5"><span class="num">5</span> Export</div>
+  <nav class="v2-flow" aria-label="VYNDI creation workflow">
+    <button class="active" data-v2-step="source"><span>01</span>SOURCE</button>
+    <button data-v2-step="event"><span>02</span>EVENT</button>
+    <button data-v2-step="map"><span>03</span>MAP</button>
+    <button data-v2-step="design"><span>04</span>DESIGN</button>
+    <button data-v2-step="make"><span>05</span>MAKE</button>
   </nav>
-
-
-  <main class="studio">
-    <aside class="control-panel">
+  <section class="v2-sourcebar">
+    <div class="source-file"><label class="upload">UPLOAD GPX<input id="gpxInput" type="file" multiple accept=".gpx,application/gpx+xml"></label><button id="demoRoute">DEMO</button><strong id="routeBrief">No route loaded</strong><span id="routeDetail">Upload one or more GPX files.</span></div>
+    <div class="source-metrics"><span><small>DISTANCE</small><strong id="ribbonDistance">— KM</strong></span><span><small>ELEVATION</small><strong id="ribbonElevation">— M</strong></span><span><small>TIME</small><strong id="ribbonDuration">—</strong></span><span><small>DATA</small><strong id="ribbonPoints">— PTS</strong></span></div>
+  </section>
+  <section class="v2-stage-strip" id="stageStrip">
+    <div data-stage-panel="source" class="stage-panel active">
+      <div><span class="eyebrow">RIDE IDENTITY</span><strong id="ribbonEvent">UPLOAD A GPX</strong><small id="ribbonRider">RIDER · DATE</small></div>
+      <button type="button" id="toggleRideDetails">EDIT DETAILS</button><button type="button" id="resetGpxMeta">Reset to GPX</button>
+    </div>
+    <div data-stage-panel="event" class="stage-panel">
+      <div><span class="eyebrow">OFFICIAL EVENT</span><strong>Search results, finish details & official branding</strong></div>
+      <div class="inline-search"><input id="eventSearch" placeholder="Search official event / edition"><button id="eventSearchButton" type="button">SEARCH EVENT</button></div>
+      <div id="eventResults" class="suggestion-row"></div>
+    </div>
+    <div data-stage-panel="map" class="stage-panel">
+      <div><span class="eyebrow">PRINT GEOGRAPHY</span><strong id="autoGeoStatus">Upload GPX for automatic country / region suggestions</strong></div>
+      <div id="mapSuggestions" class="suggestion-row"></div>
+    </div>
+    <div data-stage-panel="design" class="stage-panel">
+      <div><span class="eyebrow">WHAT ARE YOU MAKING?</span><strong>Hover to inspect · select to configure</strong></div>
+      <div id="productChoices" class="product-choices">
+        <button data-product="terrain-medal">TERRAIN MEDAL<small>Round terrain + route</small></button>
+        <button data-product="country-relief">COUNTRY RELIEF<small>Exact geographic outline</small></button>
+        <button data-product="surrounding-map">SURROUNDING MAP<small>Boundary + surrounding terrain</small></button>
+        <button data-product="route-relief">ROUTE RELIEF<small>Tight route-fit plaque</small></button>
+        <button data-product="wall-map">WALL MAP<small>Large-format tiled terrain</small></button>
+        <button data-product="custom">CUSTOM<small>All shape controls</small></button>
+      </div>
+    </div>
+    <div data-stage-panel="make" class="stage-panel">
+      <div><span class="eyebrow">MAKE</span><strong>Printer · size · material · validation · export</strong></div>
+      <button id="premiumPreset" class="premium-btn" type="button">★ PREMIUM</button>
+    </div>
+  </section>
+<main class="studio">
+    <aside class="control-panel v2-design-rail"><div class="rail-title"><span>DESIGN</span><small id="landcoverStatus">Relevant controls · all features retained</small></div>
       <div class="route-brief">
         <strong id="routeBrief">No route loaded</strong>
         <span id="routeDetail">Drop one or more GPX files or use Demo.</span>
@@ -111,7 +76,7 @@
         </label>
       </div>
 
-      <details class="personalise" open>
+      <details class="personalise" id="rideDetails">
         <summary>PERSONALISE <small id="personaliseSummary">event · rider · date</small></summary>
         <div class="compact-grid">
           <label>Event<input id="eventOverride" placeholder="Auto from GPX"></label>
@@ -126,14 +91,14 @@
         </div>
       </details>
 
-      <div class="panel-tabs" role="tablist">
+      <section class="mat-inspector" id="matInspector" hidden><strong id="matInspectorTitle">Material</strong><span id="matInspectorHint"></span><div id="matInspectorBody"></div></section><div class="panel-tabs" role="tablist"><button data-panel-tab="event">Event</button><button data-panel-tab="map">Map</button>
         <button class="active" data-panel-tab="terrain">Terrain</button>
         <button data-panel-tab="colours">Colours</button>
         <button data-panel-tab="plate">Plate</button>
         <button data-panel-tab="print">Print</button>
       </div>
 
-      <section class="tab-panel active" data-panel="terrain">
+      <section class="tab-panel" data-panel="event"><div class="option-card"><strong>Official event enrichment</strong><p class="hint">Search official event information above. Imported values remain editable.</p><div id="officialLogo" class="official-logo-slot">Official logo preview appears here</div><label>Official website<input id="officialEventUrl" type="url" placeholder="Official source"></label></div></section><section class="tab-panel" data-panel="map"><label>Search country / region / continent<input id="geoSearch" placeholder="e.g. France, Brittany, India"></label><button id="geoSearchButton" type="button">Search geography</button><p id="geoSearchStatus">GPX suggestions appear automatically; manual search remains available.</p><div id="geoResults"></div><label>GeoJSON boundary<input id="geoJsonInput" type="file" accept=".json,.geojson,application/geo+json,application/json"></label></section><section class="tab-panel active" data-panel="terrain">
         <label>Area around route <output id="routeBufferOut">5 km</output><input id="routeBufferKm" type="range" min=".5" max="50" step=".5" value="5"></label>
         <label>Detail / grid <output id="xyDetailOut">1.00 mm</output><input id="xyDetail" type="range" min=".25" max="3" step=".05" value="1"></label>
         <label>Elevation relief <output id="reliefOut">12.0 mm</output><input id="relief" type="range" min="1" max="30" step=".5" value="12"></label>
@@ -201,13 +166,7 @@
           <label>Heightmap strength mm<input id="heightmapStrength" type="number" min="0" max="8" step=".1" value="0"></label>
         </div>
         <label>GeoJSON boundary<input id="geoJsonInput" type="file" accept=".json,.geojson,application/geo+json,application/json"></label>
-        <div class="geo-search">
-          <label>Search country / region / place<input id="geoSearch" placeholder="e.g. Kerala, India"></label>
-          <button id="geoSearchButton" type="button">Search geography</button>
-          <p id="geoSearchStatus">Use search or a local GeoJSON when Geographic shape is selected.</p>
-          <div id="geoResults"></div>
-        </div>
-      </section>
+        </section>
 
       <section class="tab-panel" data-panel="print">
         <label>Printer / production profile<select id="printerProfile"><option value="bambu-p1s">Bambu Lab P1S / AMS</option><option value="generic-fdm">Generic FDM · 0.4 mm</option><option value="fine-fdm">Fine FDM · 0.25 mm</option><option value="resin">MSLA / SLA resin</option><option value="sls">SLS / MJF service</option></select></label>
@@ -253,7 +212,7 @@
       </div>
     </section>
 
-    <aside class="production-rail">
+    <aside class="production-rail v2-make-rail"><div class="rail-title"><span>MAKE / PRINT</span><small>Manufacturing & qualification</small></div>
       <section>
         <span class="eyebrow">PRODUCTION</span>
         <button id="premiumPresetRail" class="premium-btn rail" type="button">★ PREMIUM PRESET</button>
